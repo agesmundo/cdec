@@ -11,8 +11,10 @@ decoder/small_vector_test
 training/atools
 training/collapse_weights
 training/lbfgs_test
-training/mr_em_train
 training/mr_optimize_reduce
+training/mr_em_adapted_reduce
+training/mr_em_map_adapter
+training/mr_reduce_to_weights
 training/optimize_test
 training/plftools
 vest/fast_score

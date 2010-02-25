@@ -12,6 +12,10 @@ my %fclass = ();
 load_classes($class_e, \%eclass);
 load_classes($class_f, \%fclass);
 
+our @IDENT_BINS = qw (Ident0 Ident1 Ident2 Ident3 Ident4 Ident5 Ident6 Ident7 Ident8_9 Ident8_9 Ident10_11 Ident10_11 Ident12_14 Ident12_14 Ident12_14);
+die unless scalar @IDENT_BINS == 15;
+our $MAX_IDENT_BIN = 'IdentGT' . scalar @IDENT_BINS;
+
 our %cache;
 open EF, "<$effile" or die;
 open M1, "<$model1" or die;
@@ -101,6 +105,10 @@ my $ADD_NULL = 0;
 my $ADD_STEM_ID = 1;
 my $ADD_SYM = 0;
 my $BEAM_RATIO = 50;
+my $BIN_ORTHO = 1;
+my $BIN_DLEN = 1;
+my $BIN_IDENT = 1;
+my $BIN_DICE = 1;
 
 my %fdict;
 my %fcounts;
@@ -113,9 +121,15 @@ while(<EF>) {
   my ($f, $e) = split /\s*\|\|\|\s*/;
   my @es = split /\s+/, $e;
   my @fs = split /\s+/, $f;
-  for my $ew (@es){ $ecounts{$ew}++; }
+  for my $ew (@es){
+    die "E: Empty word" if $ew eq '';
+    $ecounts{$ew}++;
+  }
   push @fs, '<eps>' if $ADD_NULL;
-  for my $fw (@fs){ $fcounts{$fw}++; }
+  for my $fw (@fs){
+    die "F: Empty word" if $fw eq '';
+    $fcounts{$fw}++;
+  }
   for my $fw (@fs){
     for my $ew (@es){
       $fdict{$fw}->{$ew}++;
@@ -149,10 +163,16 @@ for my $f (sort keys %fdict) {
     die "Can't find orthonorm form for $f" unless defined $of;
     my $len_e = length($oe);
     my $len_f = length($of);
-    push @feats, "Dice=$dice" if $ADD_DICE;
+    if ($ADD_DICE) {
+      if ($BIN_DICE) {
+        push @feats, dicebin($dice) . '=1';
+      } else {
+        push @feats, "Dice=$dice";
+      }
+    }
     if ($ADD_CLASS_CLASS) {
-      my $ce = $eclass{$e} or die "E- no class for: $e";
-      my $cf = $fclass{$f} or die "F- no class for: $f";
+      my $ce = $eclass{$e} or die "E- no class for: '$e'";
+      my $cf = $fclass{$f} or die "F- no class for: '$f'";
       push @feats, "C${cf}_${ce}=1";
     }
     my $is_null = undef;
@@ -163,7 +183,11 @@ for my $f (sort keys %fdict) {
     if ($ADD_LEN) {
       if (!$is_null) {
         my $dlen = abs($len_e - $len_f);
-        push @feats, "DLen=$dlen";
+        if ($BIN_DLEN) {
+          push @feats, dlenbin($dlen) . '=1';
+        } else {
+          push @feats, "DLen=$dlen";
+        }
       }
     }
     my $f_num = ($of =~ /^-?\d[0-9\.\,]+%?$/ && (length($of) > 3));
@@ -203,11 +227,21 @@ for my $f (sort keys %fdict) {
         $ld = ($eff - levenshtein($oe, $of)) / sqrt($eff);
       }
       if ($ld > 1.5) { $is_good_pair = 1; }
-      push @feats, "OrthoSim=$ld";
+      if ($BIN_ORTHO) {
+        push @feats, orthobin($ld) . '=1';
+      } else {
+        push @feats, "OrthoSim=$ld";
+      }
     }
     my $ident = ($e eq $f);
     if ($ident) { $is_good_pair = 1; }
-    if ($ident && $ADD_ID) { push @feats, "Identical=$len_e"; }
+    if ($ident && $ADD_ID) {
+      if ($BIN_IDENT) {
+        push @feats, identbin($len_e) . '=1';
+      } else {
+        push @feats, "Identical=$len_e";
+      }
+    }
     if ($efcount == 1 && $ecounts{$e} == 1 && $fcounts{$f} == 1) {
       $is_good_pair = 1;
       if ($ADD_111) {
@@ -336,4 +370,66 @@ sub load_classes {
   }
   close F;
 }
+
+sub dicebin {
+  my $x = shift;
+  if ($x < 0.05) { return 'DiceLT005'; }
+  elsif ($x >= 0.05 && $x < 0.1) { return 'Dice005_01'; }
+  elsif ($x >= 0.1 && $x < 0.2) { return 'Dice01_02'; }
+  elsif ($x >= 0.2 && $x < 0.3) { return 'Dice02_03'; }
+  elsif ($x >= 0.3 && $x < 0.4) { return 'Dice03_04'; }
+  elsif ($x >= 0.4 && $x < 0.5) { return 'Dice04_05'; }
+  elsif ($x >= 0.5 && $x < 0.6) { return 'Dice05_06'; }
+  elsif ($x >= 0.6 && $x < 0.7) { return 'Dice06_07'; }
+  elsif ($x >= 0.7 && $x < 0.8) { return 'Dice07_08'; }
+  elsif ($x >= 0.8 && $x < 0.9) { return 'Dice08_09'; }
+  elsif ($x >= 0.9 && $x < 1.0) { return 'Dice09_10'; }
+  elsif ($x >= 1.0 && $x < 1.1) { return 'Dice10_11'; }
+  elsif ($x >= 1.1 && $x < 1.2) { return 'Dice11_12'; }
+  elsif ($x >= 1.2 && $x < 1.4) { return 'Dice12_14'; }
+  elsif ($x >= 1.4 && $x < 1.6) { return 'Dice14_16'; }
+  elsif ($x >= 1.6 && $x < 1.8) { return 'Dice16_18'; }
+  elsif ($x >= 1.8 && $x < 2.0) { return 'Dice18_20'; }
+  elsif ($x >= 2.0 && $x < 2.3) { return 'Dice20_23'; }
+  elsif ($x >= 2.3) { return 'DiceGT23'; }
+}
+
+sub orthobin {
+  my $x = shift;
+  if ($x < 0.9) { return 'OrthoLT09'; }
+  elsif ($x >= 0.9 && $x < 1.1) { return 'Ortho09_11'; }
+  elsif ($x >= 1.1 && $x < 1.3) { return 'Ortho11_13'; }
+  elsif ($x >= 1.3 && $x < 1.5) { return 'Ortho13_15'; }
+  elsif ($x >= 1.5 && $x < 1.7) { return 'Ortho15_17'; }
+  elsif ($x >= 1.7 && $x < 1.9) { return 'Ortho17_19'; }
+  elsif ($x >= 1.9 && $x < 2.1) { return 'Ortho19_21'; }
+  elsif ($x >= 2.1 && $x < 2.3) { return 'Ortho21_23'; }
+  elsif ($x >= 2.3 && $x < 2.5) { return 'Ortho23_25'; }
+  elsif ($x >= 2.5 && $x < 2.7) { return 'Ortho25_27'; }
+  elsif ($x >= 2.7 && $x < 2.9) { return 'Ortho27_29'; }
+  elsif ($x >= 2.9) { return 'OrthoGT29'; }
+}
+
+sub dlenbin {
+  my $x = shift;
+  if ($x == 0) { return 'DLen0'; }
+  elsif ($x == 1) { return 'DLen1'; }
+  elsif ($x == 2) { return 'DLen2'; }
+  elsif ($x == 3) { return 'DLen3'; }
+  elsif ($x == 4) { return 'DLen4'; }
+  elsif ($x == 5) { return 'DLen5'; }
+  elsif ($x == 6) { return 'DLen6'; }
+  elsif ($x == 7) { return 'DLen7'; }
+  elsif ($x == 8) { return 'DLen8'; }
+  elsif ($x == 9) { return 'DLen9'; }
+  elsif ($x >= 10) { return 'DLenGT10'; }
+}
+
+sub identbin {
+  my $x = shift;
+  if ($x == 0) { die; }
+  if ($x > scalar @IDENT_BINS) { return $MAX_IDENT_BIN; }
+  return $IDENT_BINS[$x];
+}
+
 

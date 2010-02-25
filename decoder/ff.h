@@ -118,6 +118,7 @@ class ModelSet {
   // must be.
   void AddFeaturesToEdge(const SentenceMetadata& smeta,
                          const Hypergraph& hg,
+                         const std::vector<std::string>& node_states,
                          Hypergraph::Edge* edge,
                          std::string* residual_context,
                          prob_t* combination_cost_estimate = NULL) const;

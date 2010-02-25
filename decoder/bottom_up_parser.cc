@@ -170,7 +170,7 @@ void PassiveChart::ApplyRule(const int i,
   const Cat2NodeMap::iterator ni = c2n.find(r->GetLHS());
   Hypergraph::Node* node = NULL;
   if (ni == c2n.end()) {
-    node = forest_->AddNode(r->GetLHS(), "");
+    node = forest_->AddNode(r->GetLHS());
     c2n[r->GetLHS()] = node->id_;
     if (is_goal) {
       assert(goal_idx_ == -1);

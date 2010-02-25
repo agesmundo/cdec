@@ -544,7 +544,7 @@ class EarleyComposerImpl {
       if (!node) {
         // cerr << "Creating phrases for " << edge->tps << endl;
         const vector<TRulePtr>& rules = edge->tps->GetRules();
-        node = hg->AddNode(kPHRASE, "");
+        node = hg->AddNode(kPHRASE);
         for (int i = 0; i < rules.size(); ++i) {
           Hypergraph::Edge* hg_edge = hg->AddEdge(rules[i], Hypergraph::TailNodeVector());
           hg_edge->feature_values_ += rules[i]->GetFeatureValues();
@@ -555,7 +555,7 @@ class EarleyComposerImpl {
     }
     Hypergraph::Node*& head_node = edge2node[edge];
     if (!head_node)
-      head_node = hg->AddNode(kPHRASE, "");
+      head_node = hg->AddNode(kPHRASE);
     if (edge->cat == start_cat_ && edge->q == q_0_ && edge->r == q_0_ && edge->IsPassive()) {
       assert(goal_node == NULL || goal_node == head_node);
       goal_node = head_node;

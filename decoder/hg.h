@@ -19,14 +19,13 @@ class Hypergraph {
   // SmallVector is a fast, small vector<int> implementation for sizes <= 2
   typedef SmallVector TailNodeVector;
 
-  // TODO get rid of state_ and cat_?
+  // TODO get rid of cat_?
   struct Node {
     Node() : id_(), cat_() {}
     int id_; // equal to this object's position in the nodes_ vector
     WordID cat_;  // non-terminal category if <0, 0 if not set
     std::vector<int> in_edges_;   // contents refer to positions in edges_
     std::vector<int> out_edges_;  // contents refer to positions in edges_
-    std::string state_;           // opaque state
   };
 
   // TODO get rid of edge_prob_? (can be computed on the fly as the dot
@@ -84,10 +83,9 @@ class Hypergraph {
     return edge;
   }
 
-  Node* AddNode(const WordID& cat, const std::string& state = "") {
+  Node* AddNode(const WordID& cat) {
     nodes_.push_back(Node());
     nodes_.back().cat_ = cat;
-    nodes_.back().state_ = state;
     nodes_.back().id_ = nodes_.size() - 1;
     return &nodes_.back();
   }

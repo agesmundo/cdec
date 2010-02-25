@@ -60,7 +60,7 @@ struct FSTTranslatorImpl {
     }
     if (composed) {
       Hypergraph::TailNodeVector tail(1, forest->nodes_.size() - 1);
-      Hypergraph::Node* goal = forest->AddNode(TD::Convert("Goal")*-1, "");
+      Hypergraph::Node* goal = forest->AddNode(TD::Convert("Goal")*-1);
       Hypergraph::Edge* hg_edge = forest->AddEdge(kGOAL_RULE, tail);
       forest->ConnectEdgeToHeadNode(hg_edge, goal);
       forest->Reweight(weights);

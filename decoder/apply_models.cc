@@ -18,6 +18,9 @@ typedef SmallVector JVector;
 typedef vector<Candidate*> CandidateHeap;
 typedef vector<Candidate*> CandidateList;
 
+// default vector size (* sizeof string is memory used)
+static const size_t kRESERVE_NUM_NODES = 500000ul;
+
 // life cycle: candidates are created, placed on the heap
 // and retrieved by their estimated cost, when they're
 // retrieved, they're incorporated into the +LM hypergraph
@@ -44,13 +47,14 @@ struct Candidate {
             const JVector& j,
             const Hypergraph& out_hg,
             const vector<CandidateList>& D,
+            const vector<string>& node_states,
             const SentenceMetadata& smeta,
             const ModelSet& models,
             bool is_goal) :
       node_index_(-1),
       in_edge_(&e),
       j_(j) {
-    InitializeCandidate(out_hg, smeta, D, models, is_goal);
+    InitializeCandidate(out_hg, smeta, D, node_states, models, is_goal);
   }
 
   // used to query uniqueness
@@ -64,6 +68,7 @@ struct Candidate {
   void InitializeCandidate(const Hypergraph& out_hg,
                            const SentenceMetadata& smeta,
                            const vector<vector<Candidate*> >& D,
+                           const vector<string>& node_states,
                            const ModelSet& models,
                            const bool is_goal) {
     const Hypergraph::Edge& in_edge = *in_edge_;
@@ -86,10 +91,10 @@ struct Candidate {
     prob_t edge_estimate = prob_t::One();
     if (is_goal) {
       assert(tail.size() == 1);
-      const string& ant_state = out_hg.nodes_[tail.front()].state_;
+      const string& ant_state = node_states[tail.front()];
       models.AddFinalFeatures(ant_state, &out_edge_);
     } else {
-      models.AddFeaturesToEdge(smeta, out_hg, &out_edge_, &state_, &edge_estimate);
+      models.AddFeaturesToEdge(smeta, out_hg, node_states, &out_edge_, &state_, &edge_estimate);
     }
     vit_prob_ = out_edge_.edge_prob_ * p;
     est_prob_ = vit_prob_ * edge_estimate;
@@ -160,6 +165,7 @@ public:
       D(in.nodes_.size()),
       pop_limit_(pop_limit) {
     cerr << "  Applying feature functions (cube pruning, pop_limit = " << pop_limit_ << ')' << endl;
+    node_states_.reserve(kRESERVE_NUM_NODES);
   }
 
   void Apply() {
@@ -204,7 +210,8 @@ public:
     
     int& node_id = o_item->node_index_;
     if (node_id < 0) {
-      Hypergraph::Node* new_node = out.AddNode(in.nodes_[item->in_edge_->head_node_].cat_, item->state_);
+      Hypergraph::Node* new_node = out.AddNode(in.nodes_[item->in_edge_->head_node_].cat_);
+      node_states_.push_back(item->state_);
       node_id = new_node->id_;
     }
     Hypergraph::Node* node = &out.nodes_[node_id];
@@ -236,7 +243,7 @@ public:
     for (int i = 0; i < in_edges.size(); ++i) {
       const Hypergraph::Edge& edge = in.edges_[in_edges[i]];
       const JVector j(edge.tail_nodes_.size(), 0);
-      cand.push_back(new Candidate(edge, j, out, D, smeta, models, is_goal));
+      cand.push_back(new Candidate(edge, j, out, D, node_states_, smeta, models, is_goal));
       assert(unique_cands.insert(cand.back()).second);  // these should all be unique!
     }
 //    cerr << "  making heap of " << cand.size() << " candidates\n";
@@ -275,7 +282,7 @@ public:
       if (j[i] < D[item.in_edge_->tail_nodes_[i]].size()) {
         Candidate query_unique(*item.in_edge_, j);
         if (cs->count(&query_unique) == 0) {
-          Candidate* new_cand = new Candidate(*item.in_edge_, j, out, D, smeta, models, is_goal);
+          Candidate* new_cand = new Candidate(*item.in_edge_, j, out, D, node_states_, smeta, models, is_goal);
           cand.push_back(new_cand);
           push_heap(cand.begin(), cand.end(), HeapCandCompare());
           assert(cs->insert(new_cand).second);  // insert into uniqueness set, sanity check
@@ -290,8 +297,10 @@ public:
   Hypergraph& out;
 
   vector<CandidateList> D;   // maps nodes in in-HG to the
-                                   // equivalent nodes (many due to state
-                                   // splits) in the out-HG.
+                             // equivalent nodes (many due to state
+                             // splits) in the out-HG.
+  vector<string> node_states_;  // for each node in the out-HG what is
+                             // its q function value?
   const int pop_limit_;
 };
 
@@ -303,6 +312,7 @@ struct NoPruningRescorer {
       out(*o),
       nodemap(i.nodes_.size()) {
     cerr << "  Rescoring forest (full intersection)\n";
+    node_states_.reserve(kRESERVE_NUM_NODES);
   }
 
   typedef unordered_map<string, int, boost::hash<string> > State2NodeIndex;
@@ -328,15 +338,16 @@ struct NoPruningRescorer {
       string head_state;
       if (is_goal) {
         assert(tail.size() == 1);
-        const string& ant_state = out.nodes_[tail.front()].state_;
+        const string& ant_state = node_states_[tail.front()];
         models.AddFinalFeatures(ant_state, new_edge);
       } else {
         prob_t edge_estimate; // this is a full intersection, so we disregard this
-        models.AddFeaturesToEdge(smeta, out, new_edge, &head_state, &edge_estimate);
+        models.AddFeaturesToEdge(smeta, out, node_states_, new_edge, &head_state, &edge_estimate);
       }
       int& head_plus1 = (*state2node)[head_state];
       if (!head_plus1) {
-        head_plus1 = out.AddNode(in_edge.rule_->GetLHS(), head_state)->id_ + 1;
+        head_plus1 = out.AddNode(in_edge.rule_->GetLHS())->id_ + 1;
+        node_states_.push_back(head_state);
         nodemap[in_edge.head_node_].push_back(head_plus1 - 1);
       }
       const int head_index = head_plus1 - 1;
@@ -383,6 +394,8 @@ struct NoPruningRescorer {
   Hypergraph& out;
 
   vector<vector<int> > nodemap;
+  vector<string> node_states_;  // for each node in the out-HG what is
+                             // its q function value?
 };
 
 // each node in the graph has one of these, it keeps track of

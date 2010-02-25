@@ -70,6 +70,7 @@ ModelSet::ModelSet(const vector<double>& w, const vector<const FeatureFunction*>
 
 void ModelSet::AddFeaturesToEdge(const SentenceMetadata& smeta,
                                  const Hypergraph& hg,
+                                 const vector<string>& node_states,
                                  Hypergraph::Edge* edge,
                                  string* context,
                                  prob_t* combination_cost_estimate) const {
@@ -86,7 +87,7 @@ void ModelSet::AddFeaturesToEdge(const SentenceMetadata& smeta,
       int spos = model_state_pos_[i];
       cur_ff_context = &(*context)[spos];
       for (int i = 0; i < ants.size(); ++i) {
-        ants[i] = &hg.nodes_[edge->tail_nodes_[i]].state_[spos];
+        ants[i] = &node_states[edge->tail_nodes_[i]][spos];
       }
     }
     ff.TraversalFeatures(smeta, *edge, ants, &edge->feature_values_, &est_vals, cur_ff_context);

@@ -17,7 +17,7 @@ struct HGReader : public JSONParser {
   void CreateNode(const string& cat, const vector<int>& in_edges) {
     WordID c = TD::Convert("X") * -1;
     if (!cat.empty()) c = TD::Convert(cat) * -1;
-    Hypergraph::Node* node = hg.AddNode(c, "");
+    Hypergraph::Node* node = hg.AddNode(c);
     for (int i = 0; i < in_edges.size(); ++i) {
       if (in_edges[i] >= hg.edges_.size()) {
         cerr << "JSONParser: in_edges[" << i << "]=" << in_edges[i]

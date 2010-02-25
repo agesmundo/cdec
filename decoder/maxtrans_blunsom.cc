@@ -191,7 +191,7 @@ public:
     
     int& node_id = o_item->node_index_;
     if (node_id < 0) {
-      Hypergraph::Node* new_node = out.AddNode(in.nodes_[item->in_edge_->head_node_].cat_, "");
+      Hypergraph::Node* new_node = out.AddNode(in.nodes_[item->in_edge_->head_node_].cat_);
       node_id = new_node->id_;
     }
     Hypergraph::Node* node = &out.nodes_[node_id];

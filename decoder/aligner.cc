@@ -78,8 +78,11 @@ void AlignerTools::SerializePharaohFormat(const Array2D<bool>& alignment, ostrea
 // compute the coverage vectors of each edge
 // prereq: all derivations yield the same string pair
 void ComputeCoverages(const Hypergraph& g,
-                      vector<EdgeCoverageInfo>* pcovs) {
+                      vector<EdgeCoverageInfo>* pcovs,
+                      vector<bool>* edgeset = NULL) {
   for (int i = 0; i < g.edges_.size(); ++i) {
+    if (edgeset && !(*edgeset)[i]) continue;
+
     const Hypergraph::Edge& edge = g.edges_[i];
     EdgeCoverageInfo& cov = (*pcovs)[i];
     // no words
@@ -151,9 +154,12 @@ void ComputeCoverages(const Hypergraph& g,
 void AlignerTools::WriteAlignment(const string& input,
                                   const Lattice& ref,
                                   const Hypergraph& g,
-                                  bool map_instead_of_viterbi) {
+                                  ostream* out,
+                                  bool map_instead_of_viterbi,
+                                  const vector<const Hypergraph::Edge*>* edges) {
   if (!map_instead_of_viterbi) {
-    assert(!"not implemented!");
+    assert(!edges);
+    assert(!"not implemented");
   }
   vector<prob_t> edge_posteriors(g.edges_.size());
   {
@@ -163,7 +169,14 @@ void AlignerTools::WriteAlignment(const string& input,
       edge_posteriors[i] = posts[i];
   }
   vector<EdgeCoverageInfo> edge2cov(g.edges_.size());
-  ComputeCoverages(g, &edge2cov);
+  if (edges) {
+    vector<bool> edgeset(g.edges_.size(), false);
+    for (int i = 0; i < edges->size(); ++i)
+      edgeset[(*edges)[i]->id_] = true;
+    ComputeCoverages(g, &edge2cov, &edgeset);
+  } else {
+    ComputeCoverages(g, &edge2cov);
+  }
 
   Lattice src;
   // currently only dealing with src text, even if the
@@ -197,8 +210,11 @@ void AlignerTools::WriteAlignment(const string& input,
     for (int i = 0; i < src.size(); ++i)
       grid(i, j) = align(i, j) >= threshold;
   }
-  cerr << align << endl;
-  cerr << grid << endl;
-  SerializePharaohFormat(grid, &cout);
+  if (out == &cout) {
+    // TODO need to do some sort of verbose flag
+    cerr << align << endl;
+    cerr << grid << endl;
+  }
+  SerializePharaohFormat(grid, out);
 };
 

@@ -435,6 +435,20 @@ TEST_F(HGTest, TestGenericKBest) {
   }
 }
 
+TEST_F(HGTest, TestReadWriteHG) {
+  Hypergraph hg,hg2;
+  CreateHG(&hg);
+  hg.edges_.front().j_ = 23;
+  hg.edges_.back().prev_i_ = 99;
+  ostringstream os;
+  HypergraphIO::WriteToJSON(hg, false, &os);
+  istringstream is(os.str());
+  HypergraphIO::ReadFromJSON(&is, &hg2);
+  EXPECT_EQ(hg2.NumberOfPaths(), hg.NumberOfPaths());
+  EXPECT_EQ(hg2.edges_.front().j_, 23);
+  EXPECT_EQ(hg2.edges_.back().prev_i_, 99);
+}
+
 int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

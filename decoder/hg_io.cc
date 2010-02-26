@@ -30,6 +30,10 @@ struct HGReader : public JSONParser {
   void CreateEdge(const TRulePtr& rule, SparseVector<double>* feats, const SmallVector& tail) {
     Hypergraph::Edge* edge = hg.AddEdge(rule, tail);
     feats->swap(edge->feature_values_);
+    edge->i_ = spans[0];
+    edge->j_ = spans[1];
+    edge->prev_i_ = spans[2];
+    edge->prev_j_ = spans[3];
   }
 
   bool HandleJSONEvent(int type, const JSON_value* value) {
@@ -125,7 +129,7 @@ struct HGReader : public JSONParser {
       break;
 
     //   "edges": [ { "tail": null, "feats" : [0,1.63,1,-0.54], "rule": 12},
-    //         { "tail": null, "feats" : [0,0.87,1,0.02], "rule": 17},
+    //         { "tail": null, "feats" : [0,0.87,1,0.02], "spans":[1,2,3,4], "rule": 17},
     //         { "tail": [0], "feats" : [1,2.3,2,15.3,"ExtraFeature",1.2], "rule": 13}]
     case 13:
       assert(type == JSON_T_ARRAY_BEGIN);
@@ -147,6 +151,7 @@ struct HGReader : public JSONParser {
       cur_key = value->vu.str.value;
       //cerr << "edge key " << cur_key << endl;
       if (cur_key == "rule") { assert(!cur_rule); state = 16; break; }
+      if (cur_key == "spans") { assert(!cur_rule); state = 22; break; }
       if (cur_key == "feats") { assert(feats.empty()); state = 17; break; }
       if (cur_key == "tail") { assert(tail.empty()); state = 20; break; }
       cerr << "Unexpected key " << cur_key << " in edge specification\n";
@@ -205,6 +210,18 @@ struct HGReader : public JSONParser {
       assert(type == JSON_T_INTEGER);
       tail.push_back(value->vu.integer_value);
       break;
+    case 22:     // edge.spans
+      assert(type == JSON_T_ARRAY_BEGIN);
+      state = 23;
+      spans[0] = spans[1] = spans[2] = spans[3] = -1;
+      spanc = 0;
+      break;
+    case 23:
+      if (type == JSON_T_ARRAY_END) { state = 15; break; }
+      assert(type == JSON_T_INTEGER);
+      assert(spanc < 4);
+      spans[spanc] = value->vu.integer_value;
+      ++spanc;
     }
     return true;
   }
@@ -220,6 +237,8 @@ struct HGReader : public JSONParser {
   int fid;
   int nodes;
   int edges;
+  int spans[4];
+  int spanc;
   string cur_key;
   Hypergraph& hg;
   int rule_id;
@@ -283,6 +302,8 @@ bool HypergraphIO::WriteToJSON(const Hypergraph& hg, bool remove_rules, ostream*
         o << (k > 0 ? "," : "") << edge.tail_nodes_[k];
       }
       o << "],";
+
+      o << "\"spans\":[" << edge.i_ << "," << edge.j_ << "," << edge.prev_i_ << "," << edge.prev_j_ << "],";
 
       o << "\"feats\":[";
       bool first = true;

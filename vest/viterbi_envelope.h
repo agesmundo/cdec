@@ -12,13 +12,13 @@ static const double kMinusInfinity = -std::numeric_limits<double>::infinity();
 static const double kPlusInfinity = std::numeric_limits<double>::infinity();
 
 struct Segment {
-  Segment() : x(), m(), b() {}
+  Segment() : x(), m(), b(), edge() {}
   Segment(double _m, double _b) :
-    x(kMinusInfinity), m(_m), b(_b) {}
+    x(kMinusInfinity), m(_m), b(_b), edge() {}
   Segment(double _x, double _m, double _b, const boost::shared_ptr<Segment>& p1_, const boost::shared_ptr<Segment>& p2_) :
-    x(_x), m(_m), b(_b), p1(p1_), p2(p2_) {}
-  Segment(double _m, double _b, TRulePtr _rule) :
-    x(kMinusInfinity), m(_m), b(_b), rule(_rule) {}
+    x(_x), m(_m), b(_b), p1(p1_), p2(p2_), edge() {}
+  Segment(double _m, double _b, const Hypergraph::Edge& edge) :
+    x(kMinusInfinity), m(_m), b(_b), edge(&edge) {}
 
   double x;                   // x intersection with previous segment in env, or -inf if none
   double m;                   // this line's slope
@@ -31,7 +31,8 @@ struct Segment {
 
   // only Segments created from an edge using the ViterbiEnvelopeWeightFunction
   // have rules
-  TRulePtr rule;
+  // TRulePtr rule;
+  const Hypergraph::Edge* edge;
 
   // recursively recover the Viterbi translation that will result from setting
   // the weights to origin + axis * x, where x is any value from this->x up
@@ -52,7 +53,7 @@ struct ViterbiEnvelope {
   const ViterbiEnvelope& operator+=(const ViterbiEnvelope& other);
   const ViterbiEnvelope& operator*=(const ViterbiEnvelope& other);
   bool IsMultiplicativeIdentity() const {
-    return size() == 1 && (segs[0]->b == 0.0 && segs[0]->m == 0.0) && (!segs[0]->rule); }
+    return size() == 1 && (segs[0]->b == 0.0 && segs[0]->m == 0.0) && (!segs[0]->edge); }
   const std::vector<boost::shared_ptr<Segment> >& GetSortedSegs() const {
     if (!is_sorted) Sort();
     return segs;
@@ -61,7 +62,7 @@ struct ViterbiEnvelope {
 
  private:
   bool IsEdgeEnvelope() const {
-    return segs.size() == 1 && segs[0]->rule; }
+    return segs.size() == 1 && segs[0]->edge; }
   void Sort() const;
   mutable bool is_sorted;
   mutable std::vector<boost::shared_ptr<Segment> > segs;

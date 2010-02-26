@@ -93,7 +93,7 @@ const ViterbiEnvelope& ViterbiEnvelope::operator*=(const ViterbiEnvelope& other)
       const double b = seg.b + edge_b;
       const double& x = seg.x;       // x's don't change with *
       segs.push_back(shared_ptr<Segment>(new Segment(x, m, b, edge_parent, other.segs[i])));
-      assert(segs.back()->p1->rule);
+      assert(segs.back()->p1->edge);
     }
 //    if (other.size() > 1)
 //      cerr << " = " << *this << endl;
@@ -146,7 +146,7 @@ const ViterbiEnvelope& ViterbiEnvelope::operator*=(const ViterbiEnvelope& other)
 void Segment::ConstructTranslation(vector<WordID>* trans) const {
   const Segment* cur = this;
   vector<vector<WordID> > ant_trans;
-  while(!cur->rule) {
+  while(!cur->edge) {
     ant_trans.resize(ant_trans.size() + 1);
     cur->p2->ConstructTranslation(&ant_trans.back());
     cur = cur->p1.get();
@@ -155,13 +155,13 @@ void Segment::ConstructTranslation(vector<WordID>* trans) const {
   vector<const vector<WordID>*> pants(ant_size);
   --ant_size;
   for (int i = 0; i < pants.size(); ++i) pants[ant_size - i] = &ant_trans[i];
-  cur->rule->ESubstitute(pants, trans);
+  cur->edge->rule_->ESubstitute(pants, trans);
 }
 
 ViterbiEnvelope ViterbiEnvelopeWeightFunction::operator()(const Hypergraph::Edge& e) const {
   const double m = direction.dot(e.feature_values_);
   const double b = origin.dot(e.feature_values_);
-  Segment* seg = new Segment(m, b, e.rule_);
+  Segment* seg = new Segment(m, b, e);
   return ViterbiEnvelope(1, seg);
 }
 

@@ -38,6 +38,7 @@ struct Segment {
   // the weights to origin + axis * x, where x is any value from this->x up
   // until the next largest x in the containing ViterbiEnvelope
   void ConstructTranslation(std::vector<WordID>* trans) const;
+  void CollectEdgesUsed(std::vector<bool>* edges_used) const;
 };
 
 // this is the semiring value type,

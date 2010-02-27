@@ -166,8 +166,8 @@ TEST_F(OptTest, TestS1) {
   envs[1] = Inside<ViterbiEnvelope, ViterbiEnvelopeWeightFunction>(hg2, NULL, wf);
 
   vector<ErrorSurface> es(2);
-  scorer1->ComputeErrorSurface(envs[0], &es[0]);
-  scorer2->ComputeErrorSurface(envs[1], &es[1]);
+  scorer1->ComputeErrorSurface(envs[0], &es[0], IBM_BLEU, hg);
+  scorer2->ComputeErrorSurface(envs[1], &es[1], IBM_BLEU, hg2);
   cerr << envs[0].size() << " " << envs[1].size() << endl;
   cerr << es[0].size() << " " << es[1].size() << endl;
   envs.clear();

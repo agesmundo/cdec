@@ -471,7 +471,7 @@ int main(int argc, char** argv) {
           assert(writer.Write(forest, minimal_forests));
         }
         if (aligner_mode && !output_training_vector)
-          AlignerTools::WriteAlignment(to_translate, ref, forest, &cout);
+          AlignerTools::WriteAlignment(forest, &cout);
         if (write_gradient) {
           log_ref_z = log(
             InsideOutside<prob_t, EdgeProb, SparseVector<double>, EdgeFeaturesWeightFunction>(forest, &ref_exp));

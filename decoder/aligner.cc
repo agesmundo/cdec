@@ -79,7 +79,7 @@ void AlignerTools::SerializePharaohFormat(const Array2D<bool>& alignment, ostrea
 // prereq: all derivations yield the same string pair
 void ComputeCoverages(const Hypergraph& g,
                       vector<EdgeCoverageInfo>* pcovs,
-                      vector<bool>* edgeset = NULL) {
+                      const vector<bool>* edgeset = NULL) {
   for (int i = 0; i < g.edges_.size(); ++i) {
     if (edgeset && !(*edgeset)[i]) continue;
 
@@ -151,12 +151,10 @@ void ComputeCoverages(const Hypergraph& g,
   }
 }
 
-void AlignerTools::WriteAlignment(const string& input,
-                                  const Lattice& ref,
-                                  const Hypergraph& g,
+void AlignerTools::WriteAlignment(const Hypergraph& g,
                                   ostream* out,
                                   bool map_instead_of_viterbi,
-                                  const vector<const Hypergraph::Edge*>* edges) {
+                                  const vector<bool>* edges) {
   if (!map_instead_of_viterbi) {
     assert(!edges);
     assert(!"not implemented");
@@ -169,22 +167,19 @@ void AlignerTools::WriteAlignment(const string& input,
       edge_posteriors[i] = posts[i];
   }
   vector<EdgeCoverageInfo> edge2cov(g.edges_.size());
-  if (edges) {
-    vector<bool> edgeset(g.edges_.size(), false);
-    for (int i = 0; i < edges->size(); ++i)
-      edgeset[(*edges)[i]->id_] = true;
-    ComputeCoverages(g, &edge2cov, &edgeset);
-  } else {
-    ComputeCoverages(g, &edge2cov);
+  ComputeCoverages(g, &edge2cov, edges);
+
+  // figure out the src and reference size;
+  int src_size = 0;
+  int ref_size = 0;
+  for (int c = 0; c < g.edges_.size(); ++c) {
+    if (g.edges_[c].j_      > ref_size) ref_size = g.edges_[c].j_;
+    if (g.edges_[c].prev_j_ > src_size) src_size = g.edges_[c].prev_j_;
   }
+  assert(src_size > 0);
+  assert(ref_size > 0);
 
-  Lattice src;
-  // currently only dealing with src text, even if the
-  // model supports lattice translation (which it probably does)
-  LatticeTools::ConvertTextToLattice(input, &src);
-  // TODO assert that src is a "real lattice"
-
-  Array2D<prob_t> align(src.size(), ref.size(), prob_t::Zero());
+  Array2D<prob_t> align(src_size, ref_size, prob_t::Zero());
   for (int c = 0; c < g.edges_.size(); ++c) {
     const prob_t& p = edge_posteriors[c];
     const EdgeCoverageInfo& eci = edge2cov[c];
@@ -199,15 +194,15 @@ void AlignerTools::WriteAlignment(const string& input,
   prob_t threshold(0.9);
   const bool use_soft_threshold = true; // TODO configure
 
-  Array2D<bool> grid(src.size(), ref.size(), false);
-  for (int j = 0; j < ref.size(); ++j) {
+  Array2D<bool> grid(src_size, ref_size, false);
+  for (int j = 0; j < ref_size; ++j) {
     if (use_soft_threshold) {
       threshold = prob_t::Zero();
-      for (int i = 0; i < src.size(); ++i)
+      for (int i = 0; i < src_size; ++i)
         if (align(i, j) > threshold) threshold = align(i, j);
       //threshold *= prob_t(0.99);
     }
-    for (int i = 0; i < src.size(); ++i)
+    for (int i = 0; i < src_size; ++i)
       grid(i, j) = align(i, j) >= threshold;
   }
   if (out == &cout) {

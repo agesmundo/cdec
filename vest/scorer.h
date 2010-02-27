@@ -8,6 +8,7 @@
 
 class ViterbiEnvelope;
 class ErrorSurface;
+class Hypergraph;  // needed for alignment
 
 enum ScoreType { IBM_BLEU, NIST_BLEU, Koehn_BLEU, TER, BLEU_minus_TER_over_2, SER, AER };
 ScoreType ScoreTypeFromString(const std::string& st);
@@ -29,7 +30,7 @@ class Score {
 class SentenceScorer {
  public:
   virtual ~SentenceScorer();
-  void ComputeErrorSurface(const ViterbiEnvelope& ve, ErrorSurface* es) const;
+  void ComputeErrorSurface(const ViterbiEnvelope& ve, ErrorSurface* es, const ScoreType type, const Hypergraph& hg) const;
   virtual Score* ScoreCandidate(const std::vector<WordID>& hyp) const = 0;
   static Score* CreateScoreFromString(const ScoreType type, const std::string& in);
   static SentenceScorer* CreateSentenceScorer(const ScoreType type,

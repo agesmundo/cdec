@@ -9,6 +9,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include "aligner.h"
 #include "viterbi_envelope.h"
 #include "error_surface.h"
 #include "ter.h"
@@ -310,7 +311,7 @@ Score* SentenceScorer::CreateScoreFromString(const ScoreType type, const std::st
   }
 }
 
-void SentenceScorer::ComputeErrorSurface(const ViterbiEnvelope& ve, ErrorSurface* env) const {
+void SentenceScorer::ComputeErrorSurface(const ViterbiEnvelope& ve, ErrorSurface* env, const ScoreType type, const Hypergraph& hg) const {
   vector<WordID> prev_trans;
   const vector<shared_ptr<Segment> >& ienv = ve.GetSortedSegs();
   env->resize(ienv.size());
@@ -319,7 +320,16 @@ void SentenceScorer::ComputeErrorSurface(const ViterbiEnvelope& ve, ErrorSurface
   for (int i = 0; i < ienv.size(); ++i) {
     const Segment& seg = *ienv[i];
     vector<WordID> trans;
-    seg.ConstructTranslation(&trans);
+    if (type == AER) {
+      vector<bool> edges(hg.edges_.size(), false);
+      seg.CollectEdgesUsed(&edges);  // get the set of edges in the viterbi
+                                     // alignment
+      ostringstream os;
+      AlignerTools::WriteAlignment(hg, &os, true, &edges);
+      TD::ConvertSentence(os.str(), &trans);
+    } else {
+      seg.ConstructTranslation(&trans);
+    }
     // cerr << "Scoring: " << TD::GetString(trans) << endl;
     if (trans == prev_trans) {
       if (!minimize_segments) {

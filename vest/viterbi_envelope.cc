@@ -158,6 +158,15 @@ void Segment::ConstructTranslation(vector<WordID>* trans) const {
   cur->edge->rule_->ESubstitute(pants, trans);
 }
 
+void Segment::CollectEdgesUsed(std::vector<bool>* edges_used) const {
+  if (edge) {
+    assert(edge->id_ < edges_used->size());
+    (*edges_used)[edge->id_] = true;
+  }
+  if (p1) p1->CollectEdgesUsed(edges_used);
+  if (p2) p2->CollectEdgesUsed(edges_used);
+}
+
 ViterbiEnvelope ViterbiEnvelopeWeightFunction::operator()(const Hypergraph::Edge& e) const {
   const double m = direction.dot(e.feature_values_);
   const double b = origin.dot(e.feature_values_);

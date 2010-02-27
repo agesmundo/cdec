@@ -13,8 +13,7 @@ struct AlignerTools {
 
   // assumption: g contains derivations of input/ref and
   // ONLY input/ref.
-  // if edges is non-NULL, only the edges in the vector will be used in computing
-  // the alignment
+  // if edges is non-NULL, the alignment corresponding to the edge rules will be written
   static void WriteAlignment(const Hypergraph& g,
                              std::ostream* out,
                              bool map_instead_of_viterbi = true,

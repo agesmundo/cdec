@@ -19,6 +19,7 @@ boost::shared_ptr<Array2D<bool> > AlignerTools::ReadPharaohAlignmentGrid(const s
   int max_y = 0;
   int i = 0;
   while (i < al.size()) {
+    if (al[i] == '\n' || al[i] == '\r') break;
     int x = 0;
     while(i < al.size() && is_digit(al[i])) {
       x *= 10;
@@ -42,6 +43,7 @@ boost::shared_ptr<Array2D<bool> > AlignerTools::ReadPharaohAlignmentGrid(const s
   boost::shared_ptr<Array2D<bool> > grid(new Array2D<bool>(max_x + 1, max_y + 1));
   i = 0;
   while (i < al.size()) {
+    if (al[i] == '\n' || al[i] == '\r') break;
     int x = 0;
     while(i < al.size() && is_digit(al[i])) {
       x *= 10;
@@ -78,11 +80,8 @@ void AlignerTools::SerializePharaohFormat(const Array2D<bool>& alignment, ostrea
 // compute the coverage vectors of each edge
 // prereq: all derivations yield the same string pair
 void ComputeCoverages(const Hypergraph& g,
-                      vector<EdgeCoverageInfo>* pcovs,
-                      const vector<bool>* edgeset = NULL) {
+                      vector<EdgeCoverageInfo>* pcovs) {
   for (int i = 0; i < g.edges_.size(); ++i) {
-    if (edgeset && !(*edgeset)[i]) continue;
-
     const Hypergraph::Edge& edge = g.edges_[i];
     EdgeCoverageInfo& cov = (*pcovs)[i];
     // no words
@@ -159,15 +158,18 @@ void AlignerTools::WriteAlignment(const Hypergraph& g,
     assert(!edges);
     assert(!"not implemented");
   }
-  vector<prob_t> edge_posteriors(g.edges_.size());
-  {
+  vector<prob_t> edge_posteriors(g.edges_.size(), prob_t::Zero());
+  if (edges) {
+    for (int i = 0; i < edges->size(); ++i)
+      if ((*edges)[i]) edge_posteriors[i] = prob_t::One();
+  } else { 
     SparseVector<prob_t> posts;
     InsideOutside<prob_t, EdgeProb, SparseVector<prob_t>, TransitionEventWeightFunction>(g, &posts);
     for (int i = 0; i < edge_posteriors.size(); ++i)
       edge_posteriors[i] = posts[i];
   }
   vector<EdgeCoverageInfo> edge2cov(g.edges_.size());
-  ComputeCoverages(g, &edge2cov, edges);
+  ComputeCoverages(g, &edge2cov);
 
   // figure out the src and reference size;
   int src_size = 0;

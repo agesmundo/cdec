@@ -17,12 +17,12 @@ namespace po = boost::program_options;
 void InitCommandLine(int argc, char** argv, po::variables_map* conf) {
   po::options_description opts("Configuration options");
   opts.add_options()
-        ("loss_function,l",po::value<string>()->default_value("ibm_bleu"), "Loss function being optimized")
+        ("loss_function,l",po::value<string>(), "Loss function being optimized")
         ("help,h", "Help");
   po::options_description dcmdline_options;
   dcmdline_options.add(opts);
   po::store(parse_command_line(argc, argv, dcmdline_options), *conf);
-  bool flag = false;
+  bool flag = conf->count("loss_function") == 0;
   if (flag || conf->count("help")) {
     cerr << dcmdline_options << endl;
     exit(1);
@@ -35,8 +35,9 @@ int main(int argc, char** argv) {
   const string loss_function = conf["loss_function"].as<string>();
   ScoreType type = ScoreTypeFromString(loss_function);
   LineOptimizer::ScoreType opt_type = LineOptimizer::MAXIMIZE_SCORE;
-  if (type == TER)
+  if (type == TER || type == AER) {
     opt_type = LineOptimizer::MINIMIZE_SCORE;
+  }
   string last_key;
   vector<ErrorSurface> esv;
   while(cin) {
@@ -70,8 +71,8 @@ int main(int argc, char** argv) {
     esv.back().Deserialize(type, encoded);
   }
   if (!esv.empty()) {
-        cerr << "ESV=" << esv.size() << endl;
-        for (int i = 0; i < esv.size(); ++i) { cerr << esv[i].size() << endl; }
+    // cerr << "ESV=" << esv.size() << endl;
+    // for (int i = 0; i < esv.size(); ++i) { cerr << esv[i].size() << endl; }
     float score;
     double x = LineOptimizer::LineOptimize(esv, opt_type, &score);
     cout << last_key << "|" << x << "|" << score << endl;

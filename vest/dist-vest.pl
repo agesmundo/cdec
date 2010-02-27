@@ -13,7 +13,7 @@ my $refFiles;
 my $bin_dir = $SCRIPT_DIR;
 die "Bin directory $bin_dir missing/inaccessible" unless -d $bin_dir;
 my $FAST_SCORE="$bin_dir/fast_score";
-die "Can't find $FAST_SCORE" unless -x $FAST_SCORE;
+die "Can't execute $FAST_SCORE" unless -x $FAST_SCORE;
 my $MAPINPUT = "$bin_dir/mr_vest_generate_mapper_input";
 my $MAPPER = "$bin_dir/mr_vest_map";
 my $REDUCER = "$bin_dir/mr_vest_reduce";
@@ -24,12 +24,12 @@ die "Can't find $forestUnion" unless -x $forestUnion;
 my $cdec = "$bin_dir/../decoder/cdec";
 die "Can't find decoder in $cdec" unless -x $cdec;
 my $decoder = $cdec;
-my $lines_per_mapper = 440;
-my $rand_directions = 10;
+my $lines_per_mapper = 400;
+my $rand_directions = 15;
 my $iteration = 1;
 my $run_local = 0;
 my $best_weights;
-my $max_iterations = 40;
+my $max_iterations = 15;
 my $optimization_iters = 6;
 my $num_rand_points = 20;
 my $mert_nodes = join(" ", grep(/^c\d\d$/, split(/\n/, `pbsnodes -a`))); # "1 1 1 1 1" fails due to file staging conflicts
@@ -43,6 +43,7 @@ my $epsilon = 0.0001;
 my $interval = 5;
 my $dryrun = 0;
 my $ranges;
+my $last_score = -10000000;
 my $restart = 0;
 my $metric = "ibm_bleu";
 my $dir;
@@ -86,6 +87,7 @@ if ($metric =~ /^(combi|ter)$/i) {
 
 ($iniFile) = @ARGV;
 
+
 sub write_config;
 sub enseg;
 sub print_help;
@@ -93,11 +95,15 @@ sub print_help;
 my $nodelist;
 my $host =`hostname`; chomp $host;
 my $bleu;
-my $best_bleu = 0.0;
 my $interval_count = 0;
-my $epsilon_bleu = $best_bleu + $epsilon;
 my $logfile;
 my $projected_score;
+
+# used in sorting scores
+my $DIR_FLAG = '-r';
+if ($metric =~ /^ter$|^aer$/i) {
+  $DIR_FLAG = '';
+}
 
 my $refs_comma_sep = get_comma_sep_refs($refFiles);
 
@@ -360,7 +366,7 @@ while (1){
 		print LOGFILE "Results for $tol/$til lines\n";
 		print LOGFILE "\nSORTING AND RUNNING FMERT REDUCER\n";
 		print LOGFILE `date`;
-		$cmd="sort -k1 @mapoutputs | $REDUCER > $dir/redoutput.$im1";
+		$cmd="sort -k1 @mapoutputs | $REDUCER -l $metric > $dir/redoutput.$im1";
 		print LOGFILE "COMMAND:\n$cmd\n";
 		$result = system($cmd);
 		unless ($result == 0){
@@ -368,7 +374,7 @@ while (1){
 			print LOGFILE "ERROR: reducer command returned non-zero exit code $result\n";
 			die;
 		}
-		$cmd="sort -rnk3 '-t|' $dir/redoutput.$im1 | head -1";
+		$cmd="sort -nk3 $DIR_FLAG '-t|' $dir/redoutput.$im1 | head -1";
 		my $best=`$cmd`; chomp $best;
 		print LOGFILE "$best\n";
 		my ($oa, $x, $xscore) = split /\|/, $best;
@@ -378,6 +384,12 @@ while (1){
 			print LOGFILE "\nOPTIMIZER: no score improvement: abs($x) < $epsilon\n";
 			last;
 		}
+                my $psd = $score - $last_score;
+                $last_score = $score;
+		if (abs($psd) < $epsilon) {
+			print LOGFILE "\nOPTIMIZER: no score improvement: abs($psd) < $epsilon\n";
+			last;
+		}
 		my ($origin, $axis) = split /\s+/, $oa;
 
 		my %ori = convert($origin);
@@ -385,8 +397,14 @@ while (1){
 
 		my $finalFile="$dir/weights.$im1-$opt_iter";
 		open W, ">$finalFile" or die "Can't write: $finalFile: $!";
+                my $norm = 0;
 		for my $k (sort keys %ori) {
-			my $v = $ori{$k} + $axi{$k} * $x;
+			my $dd = $ori{$k} + $axi{$k} * $x;
+                        $norm += $dd * $dd;
+		}
+                $norm = sqrt($norm);
+		for my $k (sort keys %ori) {
+			my $v = ($ori{$k} + $axi{$k} * $x) / $norm;
 			print W "$k $v\n";
 		}
 
@@ -487,7 +505,6 @@ sub write_config {
 	if ($restart){
 		print $fh "PROJECTED BLEU:   $projected_score\n";
 		print $fh "BEST WEIGHTS:     $best_weights\n";
-		print $fh "BEST BLEU:        $best_bleu\n";
 	}
 }
 

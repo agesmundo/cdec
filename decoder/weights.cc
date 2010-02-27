@@ -29,6 +29,10 @@ void Weights::InitFromFile(const std::string& filename, vector<string>* feature_
     int fid = FD::Convert(buf.substr(start, end - start));
     while(end < buf.size() && buf[end] == ' ') ++end;
     val = strtod(&buf.c_str()[end], NULL);
+    if (isnan(val)) {
+      cerr << FD::Convert(fid) << " has weight NaN!\n";
+      abort();
+    }
     if (wv_.size() <= fid)
       wv_.resize(fid + 1);
     wv_[fid] = val;

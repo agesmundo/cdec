@@ -18,10 +18,11 @@ struct IntervalComp {
 };	
 
 double LineOptimizer::LineOptimize(
-  const vector<ErrorSurface>& surfaces,
-  const LineOptimizer::ScoreType type,
-  float* best_score,
-  const double epsilon) {
+    const vector<ErrorSurface>& surfaces,
+    const LineOptimizer::ScoreType type,
+    float* best_score,
+    const double epsilon) {
+  // cerr << "MIN=" << MINIMIZE_SCORE << " MAX=" << MAXIMIZE_SCORE << "  MINE=" << type << endl;
   vector<ErrorIter> all_ints;
   for (vector<ErrorSurface>::const_iterator i = surfaces.begin();
        i != surfaces.end(); ++i) {
@@ -54,6 +55,7 @@ double LineOptimizer::LineOptimize(
 	}
 	// cerr << "NEW BEST: " << pos << "  (score=" << cur_best_score << ")\n";
       }
+      // string xx; acc->ScoreDetails(&xx); cerr << "---- " << xx;
       // cerr << "---- s=" << sco << "\n";
       last_boundary = seg.x;
     }

@@ -420,7 +420,8 @@ int main(int argc, char** argv) {
 
     if (conf.count("forest_output") && !has_ref) {
       ForestWriter writer(conf["forest_output"].as<string>(), sent_id);
-      assert(writer.Write(forest, minimal_forests));
+      const bool succeeded = writer.Write(forest, minimal_forests);
+      assert(succeeded);
     }
 
     if (sample_max_trans) {
@@ -468,7 +469,8 @@ int main(int argc, char** argv) {
         //DumpKBest(sent_id, forest, 1000);
         if (conf.count("forest_output")) {
           ForestWriter writer(conf["forest_output"].as<string>(), sent_id);
-          assert(writer.Write(forest, minimal_forests));
+          bool succeeded = writer.Write(forest, minimal_forests);
+          assert(succeeded);
         }
         if (aligner_mode && !output_training_vector)
           AlignerTools::WriteAlignment(forest, &cout);

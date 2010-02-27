@@ -1,5 +1,6 @@
 #include "aer_scorer.h"
 
+#include <cmath>
 #include <cassert>
 #include <sstream>
 
@@ -40,6 +41,7 @@ class AERScore : public Score {
     const float prec = Precision();
     const float rec = Recall();
     const float f = (2.0 * prec * rec) / (rec + prec);
+    if (isnan(f)) return 1.0f;
     return 1.0f - f;
   }
   virtual bool IsAdditiveIdentity() const {
@@ -47,7 +49,8 @@ class AERScore : public Score {
   }
   virtual void ScoreDetails(std::string* out) const {
     ostringstream os;
-    os << "F=" << (100 - ComputeScore() * 100.0)
+    os << "AER=" << (ComputeScore() * 100.0)
+       << " F=" << (100 - ComputeScore() * 100.0)
        << " P=" << (Precision() * 100.0) << " R=" << (Recall() * 100.0)
        << " [" << num_matches << " " << num_predicted << " " << num_in_ref << "]";
     *out = os.str();
@@ -86,7 +89,6 @@ Score* AERScorer::ScoreCandidate(const vector<WordID>& shyp) const {
   int m = 0;
   int r = 0;
   int p = 0;
-  cerr << *hyp << endl;
   int i_len = ref_->width();
   int j_len = ref_->height();
   for (int i = 0; i < i_len; ++i) {

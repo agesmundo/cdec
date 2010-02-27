@@ -87,7 +87,7 @@ int main(int argc, char** argv) {
     ErrorSurface es;
     ds[sent_id]->ComputeErrorSurface(ve, &es, type, hg);
     //cerr << "Viterbi envelope has " << ve.size() << " segments\n";
-    cerr << "Error surface has " << es.size() << " segments\n";
+    // cerr << "Error surface has " << es.size() << " segments\n";
     string val;
     es.Serialize(&val);
     cout << 'M' << ' ' << s_origin << ' ' << s_axis << '\t';

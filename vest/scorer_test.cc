@@ -5,6 +5,7 @@
 
 #include "tdict.h"
 #include "scorer.h"
+#include "aer_scorer.h"
 
 using namespace std;
 
@@ -169,6 +170,30 @@ TEST_F(ScorerTest, TestCombiScorer) {
   delete cz;
   delete t2;
   delete t1;
+}
+
+TEST_F(ScorerTest, AERTest) {
+  vector<vector<WordID> > refs0(1);
+  TD::ConvertSentence("0-0 2-1 1-2 3-3", &refs0[0]);
+
+  vector<WordID> hyp;
+  TD::ConvertSentence("0-0 1-1", &hyp);
+  AERScorer* as = new AERScorer(refs0);
+  Score* x = as->ScoreCandidate(hyp);
+  string details;
+  x->ScoreDetails(&details);
+  cerr << details << endl;
+  string enc;
+  x->Encode(&enc);
+  delete x;
+  delete as;
+  cerr << "ENC size: " << enc.size() << endl;
+  Score* y = SentenceScorer::CreateScoreFromString(AER, enc);
+  string d2;
+  y->ScoreDetails(&d2);
+  cerr << d2 << endl;
+  delete y;
+  EXPECT_EQ(d2, details);
 }
 
 int main(int argc, char **argv) {

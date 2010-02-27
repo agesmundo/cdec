@@ -9,7 +9,7 @@
 class ViterbiEnvelope;
 class ErrorSurface;
 
-enum ScoreType { IBM_BLEU, NIST_BLEU, Koehn_BLEU, TER, BLEU_minus_TER_over_2, SER };
+enum ScoreType { IBM_BLEU, NIST_BLEU, Koehn_BLEU, TER, BLEU_minus_TER_over_2, SER, AER };
 ScoreType ScoreTypeFromString(const std::string& st);
 
 class Score {

@@ -27,7 +27,7 @@ struct Command {
   void EnsureSize(const Array2D<bool>& a, const Array2D<bool>& b, Array2D<bool>* x) {
     x->resize(max(a.width(), b.width()), max(a.height(), b.width()));
   }
-  bool Safe(const Array2D<bool>& a, int i, int j) const {
+  static bool Safe(const Array2D<bool>& a, int i, int j) {
     if (i >= 0 && j >= 0 && i < a.width() && j < a.height())
       return a(i,j);
     else

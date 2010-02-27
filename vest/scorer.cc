@@ -12,6 +12,7 @@
 #include "viterbi_envelope.h"
 #include "error_surface.h"
 #include "ter.h"
+#include "aer_scorer.h"
 #include "comb_scorer.h"
 #include "tdict.h"
 #include "stringlib.h"
@@ -27,6 +28,8 @@ ScoreType ScoreTypeFromString(const std::string& st) {
     return SER;
   if (sl == "ter")
     return TER;
+  if (sl == "aer")
+    return AER;
   if (sl == "bleu" || sl == "ibm_bleu")
     return IBM_BLEU;
   if (sl == "nist_bleu")
@@ -279,6 +282,7 @@ SentenceScorer* SentenceScorer::CreateSentenceScorer(const ScoreType type,
     case IBM_BLEU: return new IBM_BLEUScorer(refs, 4);
     case NIST_BLEU: return new NIST_BLEUScorer(refs, 4);
     case Koehn_BLEU: return new Koehn_BLEUScorer(refs, 4);
+    case AER: return new AERScorer(refs);
     case TER: return new TERScorer(refs);
     case SER: return new SERScorer(refs);
     case BLEU_minus_TER_over_2: return new BLEUTERCombinationScorer(refs);
@@ -295,6 +299,8 @@ Score* SentenceScorer::CreateScoreFromString(const ScoreType type, const std::st
       return BLEUScorerBase::ScoreFromString(in);
     case TER:
       return TERScorer::ScoreFromString(in);
+    case AER:
+      return AERScorer::ScoreFromString(in);
     case SER:
       return SERScorer::ScoreFromString(in);
     case BLEU_minus_TER_over_2:

@@ -100,8 +100,8 @@ void TextGrammar::ReadFromFile(const string& filename) {
   assert(in_file);
   long long int rule_count = 0;
   bool fl = false;
+  string line;
   while(in_file) {
-    string line;
     getline(in_file, line);
     if (line.empty()) continue;
     ++rule_count;

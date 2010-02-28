@@ -8,6 +8,7 @@ decoder/grammar_test
 decoder/hg_test
 decoder/parser_test
 decoder/small_vector_test
+decoder/rule_lexer.cc
 training/atools
 training/collapse_weights
 training/lbfgs_test

@@ -35,9 +35,13 @@ LDADD = libcdec.a
 AM_CPPFLAGS = -W -Wall -Wno-sign-compare $(GTEST_CPPFLAGS)
 AM_LDFLAGS = -lz
 
+rule_lexer.cc: rule_lexer.l
+	$(LEX) -s -CF -8 -o $@ $<
+
 noinst_LIBRARIES = libcdec.a
 
 libcdec_a_SOURCES = \
+  rule_lexer.cc \
   fst_translator.cc \
   csplit.cc \
   scfg_translator.cc \

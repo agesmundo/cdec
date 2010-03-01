@@ -17,6 +17,12 @@ struct SpanInfo;
 class TRule {
  public:
   TRule() : lhs_(0), prev_i(-1), prev_j(-1) { }
+  TRule(WordID lhs, const WordID* src, int src_size, const WordID* trg, int trg_size, const int* feat_ids, const double* feat_vals, int feat_size, int arity) :
+      e_(trg, trg + trg_size), f_(src, src + src_size), lhs_(lhs), arity_(arity), prev_i(-1), prev_j(-1) {
+    for (int i = 0; i < feat_size; ++i)
+      scores_.set_value(feat_ids[i], feat_vals[i]);
+  }
+
   explicit TRule(const std::vector<WordID>& e) : e_(e), lhs_(0), prev_i(-1), prev_j(-1) {}
   TRule(const std::vector<WordID>& e, const std::vector<WordID>& f, const WordID& lhs) :
     e_(e), f_(f), lhs_(lhs), prev_i(-1), prev_j(-1) {}
@@ -26,15 +32,18 @@ class TRule {
     ReadFromString(text, strict, mono);
   }
 
+  // deprecated, use lexer
   // make a rule from a hiero-like rule table, e.g.
   //    [X] ||| [X,1] DE [X,2] ||| [X,2] of the [X,1]
   // if misformatted, returns NULL
   static TRule* CreateRuleSynchronous(const std::string& rule);
 
+  // deprecated, use lexer
   // make a rule from a phrasetable entry (i.e., one that has no LHS type), e.g:
   //    el gato ||| the cat ||| Feature_2=0.34
   static TRule* CreateRulePhrasetable(const std::string& rule);
 
+  // deprecated, use lexer
   // make a rule from a non-synchrnous CFG representation, e.g.:
   //    [LHS] ||| term1 [NT] term2 [OTHER_NT] [YET_ANOTHER_NT]
   static TRule* CreateRuleMonolingual(const std::string& rule);

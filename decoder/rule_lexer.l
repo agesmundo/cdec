@@ -1,23 +1,35 @@
 %{
+#include "rule_lexer.h"
+
 #include <string>
 #include <iostream>
 #include <cstring>
+#include <cassert>
 #include "tdict.h"
 #include "fdict.h"
+#include "trule.h"
+
+std::istream* scfglex_stream = NULL;
+RuleLexer::RuleCallback rule_callback = NULL;
+void* rule_callback_extra = NULL;
+std::string scfglex_fname = "Phr_X";
+
+#undef YY_INPUT
+#define YY_INPUT(buf, result, max_size) (result = scfglex_stream->read(buf, max_size).gcount())
 
 #define YY_SKIP_YYWRAP 1
 int num_rules = 0;
 int yywrap() { return 1; }
-
+bool fl = true;
 #define MAX_TOKEN_SIZE 255
 std::string scfglex_tmp_token(MAX_TOKEN_SIZE, '\0');
 
 #define MAX_RULE_SIZE 48
-int scfglex_src_rhs[MAX_RULE_SIZE];
-int scfglex_trg_rhs[MAX_RULE_SIZE];
+WordID scfglex_src_rhs[MAX_RULE_SIZE];
+WordID scfglex_trg_rhs[MAX_RULE_SIZE];
 int scfglex_src_rhs_size;
 int scfglex_trg_rhs_size;
-int scfglex_lhs;
+WordID scfglex_lhs;
 int scfglex_src_arity;
 int scfglex_trg_arity;
 
@@ -30,8 +42,13 @@ int scfglex_num_feats;
 int scfglex_nt_sanity[MAX_ARITY];
 int scfglex_src_nts[MAX_ARITY];
 
-void sanity_check_trg_symbol(int index) {
-  // TODO once we populate scfglex_src_nts;
+void sanity_check_trg_symbol(WordID nt, int index) {
+  if (scfglex_src_nts[index-1] != nt) {
+    std::cerr << "Target symbol with index " << index << " is of type " << TD::Convert(nt*-1)
+              << " but corresponding source is of type "
+              << TD::Convert(scfglex_src_nts[index-1] * -1) << std::endl;
+    abort();
+  }
 }
 
 void sanity_check_trg_index(int index) {
@@ -57,26 +74,26 @@ void scfglex_reset() {
 
 %}
 
-REAL -?[0-9]+(\.[0-9]*([eE][-+]*[0-9]+)?)?|inf|-inf
+REAL [\-+]?[0-9]+(\.[0-9]*([eE][-+]*[0-9]+)?)?|inf|[\-+]inf
 NT [A-Z_][A-Z+/=_0-9!:@]*
 
-%x LHS_END SRC TRG FEATS FEATVAL
+%x LHS_END SRC TRG FEATS FEATVAL ALIGNS
 %%
 
 <INITIAL>[ \t]	;
 
 <INITIAL>\[{NT}\]   {
 		scfglex_tmp_token.assign(yytext + 1, yyleng - 2);
-		TD::Convert(scfglex_tmp_token);
+		scfglex_lhs = -TD::Convert(scfglex_tmp_token);
 		// std::cerr << scfglex_tmp_token << "\n";
   		BEGIN(LHS_END);
 		}
 
 <SRC>\[{NT}\]   {
 		scfglex_tmp_token.assign(yytext + 1, yyleng - 2);
-		TD::Convert(scfglex_tmp_token);
+		scfglex_src_nts[scfglex_src_arity] = scfglex_src_rhs[scfglex_src_rhs_size] = -TD::Convert(scfglex_tmp_token);
 		++scfglex_src_arity;
-		int index = scfglex_src_arity;
+		++scfglex_src_rhs_size;
 		}
 
 <SRC>\[{NT},[1-9][0-9]?\]   {
@@ -87,13 +104,14 @@ NT [A-Z_][A-Z+/=_0-9!:@]*
 		  scfglex_tmp_token.assign(yytext + 1, yyleng - 5);
 		  index += 10 * (yytext[yyleng - 3] - '0');
 		}
-		++scfglex_src_arity;
-		if (scfglex_src_arity != index) {
+		if ((scfglex_src_arity+1) != index) {
 			std::cerr << "Src indices must go in order: expected " << scfglex_src_arity << " but got " << index << std::endl;
 			abort();
 		}
-		TD::Convert(scfglex_tmp_token);
-}
+		scfglex_src_nts[scfglex_src_arity] = scfglex_src_rhs[scfglex_src_rhs_size] = -TD::Convert(scfglex_tmp_token);
+		++scfglex_src_rhs_size;
+		++scfglex_src_arity;
+		}
 
 <TRG>\[{NT},[1-9][0-9]?\]   {
 		int index = yytext[yyleng - 2] - '0';
@@ -105,9 +123,10 @@ NT [A-Z_][A-Z+/=_0-9!:@]*
 		}
 		++scfglex_trg_arity;
 		// std::cerr << "TRG INDEX: " << index << std::endl;
-		sanity_check_trg_symbol(index);
+		sanity_check_trg_symbol(-TD::Convert(scfglex_tmp_token), index);
 		sanity_check_trg_index(index);
-		TD::Convert(scfglex_tmp_token);
+		scfglex_trg_rhs[scfglex_trg_rhs_size] = 1 - index;
+		++scfglex_trg_rhs_size;
 }
 
 <TRG>\[[1-9][0-9]?\]   {
@@ -117,6 +136,8 @@ NT [A-Z_][A-Z+/=_0-9!:@]*
 		}
 		++scfglex_trg_arity;
 		sanity_check_trg_index(index);
+		scfglex_trg_rhs[scfglex_trg_rhs_size] = 1 - index;
+		++scfglex_trg_rhs_size;
 }
 
 <LHS_END>[ \t] { ; }
@@ -135,7 +156,8 @@ NT [A-Z_][A-Z+/=_0-9!:@]*
 		}
 <SRC>[^ \t]+	{ 
 		scfglex_tmp_token.assign(yytext, yyleng);
-		TD::Convert(scfglex_tmp_token);
+		scfglex_src_rhs[scfglex_src_rhs_size] = TD::Convert(scfglex_tmp_token);
+		++scfglex_src_rhs_size;
 		}
 <SRC>[ \t]+	{ ; }
 
@@ -144,23 +166,34 @@ NT [A-Z_][A-Z+/=_0-9!:@]*
 		}
 <TRG>[^ \t]+	{
 		scfglex_tmp_token.assign(yytext, yyleng);
-		TD::Convert(scfglex_tmp_token);
+		scfglex_trg_rhs[scfglex_trg_rhs_size] = TD::Convert(scfglex_tmp_token);
+		++scfglex_trg_rhs_size;
 		}
 <TRG>[ \t]+	{ ; }
 
-<TRG,FEATS>\n	{
+<TRG,FEATS,ALIGNS>\n	{
+		TRulePtr rp(new TRule(scfglex_lhs, scfglex_src_rhs, scfglex_src_rhs_size, scfglex_trg_rhs, scfglex_trg_rhs_size, scfglex_feat_ids, scfglex_feat_vals, scfglex_num_feats, scfglex_src_arity));
+		rule_callback(rp, rule_callback_extra);
+		// std::cerr << rp->AsString() << std::endl;
 		num_rules++;
+    if (num_rules %   50000 == 0) { std::cerr << '.' << std::flush; fl = true; }
+    if (num_rules % 2000000 == 0) { std::cerr << " [" << num_rules << "]\n"; fl = false; }
 		BEGIN(INITIAL);
 		}
 
-<FEATS>[ \t]	{ ; }
+<FEATS>[ \t;]	{ ; }
 <FEATS>[^ \t=;]+=	{
 		scfglex_tmp_token.assign(yytext, yyleng - 1);
 		FD::Convert(scfglex_tmp_token);
+		scfglex_feat_ids[scfglex_num_feats] = FD::Convert(scfglex_tmp_token);
 		BEGIN(FEATVAL);
 		}
+<FEATS>\|\|\|	{
+		BEGIN(ALIGNS);
+		}
 <FEATVAL>{REAL}	{
-		double fval = strtod(yytext, NULL);
+		scfglex_feat_vals[scfglex_num_feats] = strtod(yytext, NULL);
+		++scfglex_num_feats;
 		BEGIN(FEATS);
 		}
 <FEATVAL>.	{
@@ -168,18 +201,47 @@ NT [A-Z_][A-Z+/=_0-9!:@]*
 		abort();
 		}
 <FEATS>{REAL} 	{ 
-		double fval = strtod(yytext, NULL);
+		scfglex_fname[4]='0' + scfglex_num_feats;
+		scfglex_feat_ids[scfglex_num_feats] = FD::Convert(scfglex_fname);
+		scfglex_feat_vals[scfglex_num_feats] = strtod(yytext, NULL);
+		++scfglex_num_feats;
 		}
 <FEATS>.	{
 		std::cerr << "Unexpected input in features: " << yytext << std::endl;
 		abort();
 		}
-
+<ALIGNS>[0-9]+-[0-9]+	{
+                int i = 0;
+		int a = 0;
+		int b = 0;
+		while (i < yyleng) {
+		  char c = yytext[i];
+		  if (c == '-') break;
+		  a *= 10;
+		  a += c - '0';
+		  ++i;
+		}
+		++i;
+		while (i < yyleng) {
+		  b *= 10;
+		  b += yytext[i] - '0';
+		  ++i;
+		}
+		// TODO store alignment points somewhere
+		}
+<ALIGNS>[ \t]	;
+<ALIGNS>.	{
+		std::cerr << "Unexpected input in alignment: " << yytext << std::endl;
+		abort();
+		}
 %%
 
-// int main() {
-//        yylex();
-//	printf("%d rules\n", num_rules);
-//}
+#include "filelib.h"
 
+void RuleLexer::ReadRules(std::istream* in, RuleLexer::RuleCallback func, void* extra) {
+  scfglex_stream = in;
+  rule_callback_extra = extra,
+  rule_callback = func;
+  yylex();
+}
 

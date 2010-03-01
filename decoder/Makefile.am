@@ -36,7 +36,7 @@ AM_CPPFLAGS = -W -Wall -Wno-sign-compare $(GTEST_CPPFLAGS)
 AM_LDFLAGS = -lz
 
 rule_lexer.cc: rule_lexer.l
-	$(LEX) -s -CF -8 -o $@ $<
+	$(LEX) -s -CF -8 -o$@ $<
 
 noinst_LIBRARIES = libcdec.a
 

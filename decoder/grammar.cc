@@ -4,6 +4,7 @@
 #include <utility>
 #include <map>
 
+#include "rule_lexer.h"
 #include "filelib.h"
 #include "tdict.h"
 
@@ -94,30 +95,13 @@ void TextGrammar::AddRule(const TRulePtr& rule) {
   }
 }
 
+static void AddRuleHelper(const TRulePtr& new_rule, void* extra) {
+  static_cast<TextGrammar*>(extra)->AddRule(new_rule);
+}
+
 void TextGrammar::ReadFromFile(const string& filename) {
   ReadFile in(filename);
-  istream& in_file = *in.stream();
-  assert(in_file);
-  long long int rule_count = 0;
-  bool fl = false;
-  string line;
-  while(in_file) {
-    getline(in_file, line);
-    if (line.empty()) continue;
-    ++rule_count;
-    if (rule_count %   50000 == 0) { cerr << '.' << flush; fl = true; }
-    if (rule_count % 2000000 == 0) { cerr << " [" << rule_count << "]\n"; fl = false; }
-    TRulePtr rule(TRule::CreateRuleSynchronous(line));
-    if (rule) {
-      AddRule(rule);
-    } else {
-      if (fl) { cerr << endl; }
-      cerr << "Skipping badly formatted rule in line " << rule_count << " of " << filename << endl;
-      fl = false;
-    }
-  }
-  if (fl) cerr << endl;
-  cerr << "  " << rule_count << " rules read.\n";
+  RuleLexer::ReadRules(in.stream(), &AddRuleHelper, this);
 }
 
 bool TextGrammar::HasRuleForSpan(int i, int j, int distance) const {

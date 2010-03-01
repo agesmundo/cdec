@@ -15,14 +15,20 @@
 
 using namespace std;
 
-struct LMClient {
+namespace NgramCache {
   struct Cache {
     map<WordID, Cache> tree;
     float prob;
     Cache() : prob() {}
   };
+  static Cache cache_;
+  void Clear() { cache_.tree.clear(); }
+}
+
+struct LMClient {
 
   LMClient(const char* host) : port(6666) {
+    strcpy(request_buffer, "prob ");
     s = const_cast<char*>(strchr(host, ':'));  // TODO fix const_cast
     if (s != NULL) {
       *s = '\0';
@@ -51,7 +57,7 @@ struct LMClient {
   }
 
   float wordProb(int word, int* context) {
-    Cache* cur = &cache;
+    NgramCache::Cache* cur = &NgramCache::cache_;
     int i = 0;
     while (context[i] > 0) {
       cur = &cur->tree[context[i++]];
@@ -60,14 +66,19 @@ struct LMClient {
     if (cur->prob) { return cur->prob; }
 
     i = 0;
-    ostringstream os;
-    os << "prob " << TD::Convert(word);
+    int pos = TD::AppendString(word, 5, 16000, request_buffer);
     while (context[i] > 0) {
-      os << ' ' << TD::Convert(context[i++]);
+      assert(pos < 15995);
+      request_buffer[pos] = ' ';
+      ++pos;
+      pos = TD::AppendString(context[i], pos, 16000, request_buffer);
+      ++i;
     }
-    os << endl;
-    string out = os.str();
-    write(sock, out.c_str(), out.size());
+    assert(pos < 15999);
+    request_buffer[pos] = '\n';
+    ++pos;
+    request_buffer[pos] = 0;
+    write(sock, request_buffer, pos);
     int r = read(sock, res, 6);
     int errors = 0;
     int cnt = 0;
@@ -87,17 +98,13 @@ struct LMClient {
     return cur->prob;
   }
 
-  void clear() {
-    cache.tree.clear();
-  }
-
  private:
-  Cache cache;
   int sock, port;
   char *s;
   struct hostent *hp;
   struct sockaddr_in server;
   char res[8];
+  char request_buffer[16000];
 };
 
 class LanguageModelImpl {

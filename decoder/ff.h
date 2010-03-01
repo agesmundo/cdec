@@ -104,6 +104,21 @@ class SourceWordPenalty : public FeatureFunction {
   const double value_;
 };
 
+class ArityPenalty : public FeatureFunction {
+ public:
+  ArityPenalty(const std::string& param);
+ protected:
+  virtual void TraversalFeaturesImpl(const SentenceMetadata& smeta,
+                                     const Hypergraph::Edge& edge,
+                                     const std::vector<const void*>& ant_contexts,
+                                     SparseVector<double>* features,
+                                     SparseVector<double>* estimated_features,
+                                     void* context) const;
+ private:
+  int fids_[10];
+  const double value_;
+};
+
 // this class is a set of FeatureFunctions that can be used to score, rescore,
 // etc. a (translation?) forest
 class ModelSet {

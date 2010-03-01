@@ -57,6 +57,28 @@ void SourceWordPenalty::TraversalFeaturesImpl(const SentenceMetadata& smeta,
   features->set_value(fid_, edge.rule_->FWords() * value_);
 }
 
+ArityPenalty::ArityPenalty(const std::string& param) :
+    value_(-1.0 / log(10)) {
+  string fname = "Arity_X";
+  for (int i = 0; i < 10; ++i) {
+    fname[6]=i + '0';
+    fids_[i] = FD::Convert(fname);
+  }
+}
+
+void ArityPenalty::TraversalFeaturesImpl(const SentenceMetadata& smeta,
+                                         const Hypergraph::Edge& edge,
+                                         const std::vector<const void*>& ant_states,
+                                         SparseVector<double>* features,
+                                         SparseVector<double>* estimated_features,
+                                         void* state) const {
+  (void) smeta;
+  (void) ant_states;
+  (void) state;
+  (void) estimated_features;
+  features->set_value(fids_[edge.Arity()], value_);
+}
+
 ModelSet::ModelSet(const vector<double>& w, const vector<const FeatureFunction*>& models) :
     models_(models),
     weights_(w),

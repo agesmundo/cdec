@@ -43,6 +43,7 @@ boost::shared_ptr<RandomNumberGenerator<boost::mt19937> > rng;
 static const double kMINUS_EPSILON = -1e-6;  // don't be too strict
 
 namespace Hack { void MaxTrans(const Hypergraph& in, int beam_size); }
+namespace NgramCache { void Clear(); }
 
 void ShowBanner() {
   cerr << "cdec v1.0 (c) 2009 by Chris Dyer\n";
@@ -337,6 +338,7 @@ int main(int argc, char** argv) {
   int sent_id = -1;         // line counter
 
   while(*in) {
+    NgramCache::Clear();   // clear ngram cache for remote LM (if used)
     Timer::Summarize();
     ++sent_id;
     string buf;

@@ -108,7 +108,7 @@ struct LexicalAlignImpl {
 LexicalAlign::LexicalAlign(const boost::program_options::variables_map& conf) :
   pimpl_(new LexicalAlignImpl(conf)) {}
 
-bool LexicalAlign::Translate(const string& input,
+bool LexicalAlign::TranslateImpl(const string& input,
                       SentenceMetadata* smeta,
                       const vector<double>& weights,
                       Hypergraph* forest) {

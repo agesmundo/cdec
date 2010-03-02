@@ -6,7 +6,7 @@
 struct TaggerImpl;
 struct Tagger : public Translator {
   Tagger(const boost::program_options::variables_map& conf);
-  bool Translate(const std::string& input,
+  bool TranslateImpl(const std::string& input,
                  SentenceMetadata* smeta,
                  const std::vector<double>& weights,
                  Hypergraph* forest);

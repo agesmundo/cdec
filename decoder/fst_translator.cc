@@ -81,7 +81,7 @@ struct FSTTranslatorImpl {
 FSTTranslator::FSTTranslator(const boost::program_options::variables_map& conf) :
   pimpl_(new FSTTranslatorImpl(conf)) {}
 
-bool FSTTranslator::Translate(const string& input,
+bool FSTTranslator::TranslateImpl(const string& input,
                               SentenceMetadata* smeta,
                               const vector<double>& weights,
                               Hypergraph* minus_lm_forest) {

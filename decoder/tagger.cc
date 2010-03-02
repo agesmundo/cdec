@@ -92,7 +92,7 @@ Tagger::Tagger(const boost::program_options::variables_map& conf) :
  pimpl_(new TaggerImpl(conf)) {}
 
 
-bool Tagger::Translate(const string& input,
+bool Tagger::TranslateImpl(const string& input,
                        SentenceMetadata* smeta,
                        const vector<double>& weights,
                        Hypergraph* forest) {

@@ -136,7 +136,7 @@ static void SplitUTF8String(const string& in, vector<string>* out) {
   out->resize(c);
 }
 
-bool CompoundSplit::Translate(const string& input,
+bool CompoundSplit::TranslateImpl(const string& input,
                       SentenceMetadata* smeta,
                       const vector<double>& weights,
                       Hypergraph* forest) {

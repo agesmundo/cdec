@@ -9,8 +9,6 @@
 
 using namespace std;
 
-Translator::~Translator() {}
-
 struct SCFGTranslatorImpl {
   SCFGTranslatorImpl(const boost::program_options::variables_map& conf) :
       max_span_limit(conf["scfg_max_span_limit"].as<int>()),
@@ -57,10 +55,21 @@ struct SCFGTranslatorImpl {
 SCFGTranslator::SCFGTranslator(const boost::program_options::variables_map& conf) :
   pimpl_(new SCFGTranslatorImpl(conf)) {}
 
-bool SCFGTranslator::Translate(const string& input,
+bool SCFGTranslator::TranslateImpl(const string& input,
                                SentenceMetadata* smeta,
                                const vector<double>& weights,
                                Hypergraph* minus_lm_forest) {
   return pimpl_->Translate(input, smeta, weights, minus_lm_forest);
+}
+
+void SCFGTranslator::ProcessMarkupHintsImpl(const map<string, string>& kv) {
+  map<string,string>::const_iterator it = kv.find("grammar");
+  if (it == kv.end()) return;
+  // TODO Implement loading it->second is filename
+  assert(!"not implemented");
+}
+
+void SCFGTranslator::SentenceCompleteImpl() {
+  // TODO Implement unloading grammar
 }
 

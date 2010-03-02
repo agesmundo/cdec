@@ -44,6 +44,7 @@ libcdec_a_SOURCES = \
   rule_lexer.cc \
   fst_translator.cc \
   csplit.cc \
+  translator.cc \
   scfg_translator.cc \
   hg.cc \
   hg_io.cc \

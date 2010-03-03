@@ -365,8 +365,12 @@ int main(int argc, char** argv) {
     SentenceMetadata smeta(sent_id, ref);
     const bool hadoop_counters = (write_gradient);
     Hypergraph forest;          // -LM forest
+    translator->ProcessMarkupHints(sgml);
     Timer t("Translation");
-    if (!translator->Translate(to_translate, &smeta, feature_weights, &forest)) {
+    const bool translation_successful =
+      translator->Translate(to_translate, &smeta, feature_weights, &forest);
+    translator->SentenceComplete();
+    if (!translation_successful) {
       cerr << "  NO PARSE FOUND.\n";
       if (hadoop_counters)
         cerr << "reporter:counter:UserCounters,FParseFailed,1" << endl;

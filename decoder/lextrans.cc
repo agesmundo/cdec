@@ -98,7 +98,7 @@ struct LexicalTransImpl {
 LexicalTrans::LexicalTrans(const boost::program_options::variables_map& conf) :
   pimpl_(new LexicalTransImpl(conf)) {}
 
-bool LexicalTrans::Translate(const string& input,
+bool LexicalTrans::TranslateImpl(const string& input,
                       SentenceMetadata* smeta,
                       const vector<double>& weights,
                       Hypergraph* forest) {

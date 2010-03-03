@@ -198,7 +198,7 @@ struct PhraseBasedTranslatorImpl {
 PhraseBasedTranslator::PhraseBasedTranslator(const boost::program_options::variables_map& conf) :
   pimpl_(new PhraseBasedTranslatorImpl(conf)) {}
 
-bool PhraseBasedTranslator::Translate(const std::string& input,
+bool PhraseBasedTranslator::TranslateImpl(const std::string& input,
                                       SentenceMetadata* smeta,
                                       const std::vector<double>& weights,
                                       Hypergraph* minus_lm_forest) {

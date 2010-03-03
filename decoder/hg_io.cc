@@ -466,7 +466,7 @@ void ReadPLFEdge(const std::string& in, int &c, int cur_node, Hypergraph* hg) {
   TRulePtr r(new TRule(ewords));
   r->ComputeArity();
   // cerr << "RULE: " << r->AsString() << endl;
-  if (get(in,c++) != ',') { assert(!"PCN/PLF parse error: expected , after string\n"); }
+  if (get(in,c++) != ',') { cerr << in << endl; assert(!"PCN/PLF parse error: expected , after string\n"); }
   size_t cnNext = 1;
   std::vector<float> probs;
   probs.push_back(getFloat(in,c));

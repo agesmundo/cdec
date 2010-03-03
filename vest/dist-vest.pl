@@ -24,6 +24,7 @@ die "Can't find $forestUnion" unless -x $forestUnion;
 my $cdec = "$bin_dir/../decoder/cdec";
 die "Can't find decoder in $cdec" unless -x $cdec;
 my $decoder = $cdec;
+my $DISCARD_FORESTS = 0;
 my $lines_per_mapper = 400;
 my $rand_directions = 15;
 my $iteration = 1;
@@ -259,15 +260,18 @@ while (1){
 	print LOGFILE "\nUNION FORESTS\n";
 	print LOGFILE `date`;
 	my $mergeLog="$logdir/prune-merge.log.$iteration";
-	`rm -rf $dir/hgs`;
-	`mv $dir/hgs-current $dir/hgs`;
-	#$cmd = "$forestUnion -r $dir/hgs -n $dir/hgs-current -s $devSize";
-	#print LOGFILE "COMMAND:\n$cmd\n";
-	#$result = system($cmd);
-	unless ($result == 0){
-		cleanup();
-		print LOGFILE "ERROR: merge command returned non-zero exit code $result\n";
-		die;
+	if ($DISCARD_FORESTS) {
+		`rm -rf $dir/hgs`;
+		`mv $dir/hgs-current $dir/hgs`;
+	} else {
+		$cmd = "$forestUnion -r $dir/hgs -n $dir/hgs-current -s $devSize";
+		print LOGFILE "COMMAND:\n$cmd\n";
+		$result = system($cmd);
+		unless ($result == 0){
+			cleanup();
+			print LOGFILE "ERROR: merge command returned non-zero exit code $result\n";
+			die;
+		}
 	}
 	`rm -f $dir/hgs-current/*.json.gz`; # clean up old HGs, they've been moved to the repository
         `mkdir -p $dir/hgs-current`;
@@ -402,11 +406,11 @@ while (1){
 			my $dd = $ori{$k} + $axi{$k} * $x;
                         $norm += $dd * $dd;
 		}
-                $norm = sqrt($norm);
-		for my $k (sort keys %ori) {
-			my $v = ($ori{$k} + $axi{$k} * $x) / $norm;
-			print W "$k $v\n";
-		}
+                #$norm = sqrt($norm);
+		#for my $k (sort keys %ori) {
+		#	my $v = ($ori{$k} + $axi{$k} * $x) / $norm;
+		#	print W "$k $v\n";
+		#}
 
 		`rm -rf $dir/splag.$im1`;
 		$inweights = $finalFile;

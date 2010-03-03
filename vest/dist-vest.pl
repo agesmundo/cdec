@@ -406,11 +406,12 @@ while (1){
 			my $dd = $ori{$k} + $axi{$k} * $x;
                         $norm += $dd * $dd;
 		}
-                #$norm = sqrt($norm);
-		#for my $k (sort keys %ori) {
-		#	my $v = ($ori{$k} + $axi{$k} * $x) / $norm;
-		#	print W "$k $v\n";
-		#}
+                $norm = sqrt($norm);
+		$norm = 1;
+		for my $k (sort keys %ori) {
+			my $v = ($ori{$k} + $axi{$k} * $x) / $norm;
+			print W "$k $v\n";
+		}
 
 		`rm -rf $dir/splag.$im1`;
 		$inweights = $finalFile;

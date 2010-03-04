@@ -26,6 +26,12 @@ AC_ARG_WITH(srilm,
 
 AM_CONDITIONAL([SRI_LM], false)
 
+AC_ARG_WITH(randlm,
+            [AC_HELP_STRING([--with-randlm=PATH], [(optional) path to RandLM toolkit])],
+            [with_randlm=$withval],
+            [with_randlm=no]
+           )
+
 if test "x$with_srilm" != 'xno'
 then
   SAVE_CPPFLAGS="$CPPFLAGS"
@@ -44,6 +50,23 @@ then
   LIBS="$LIBS $LIB_SRILM"
   FMTLIBS="$FMTLIBS liboolm.a libdstruct.a libmisc.a"
   AM_CONDITIONAL([SRI_LM], true)
+fi
+
+if test "x$with_randlm" != 'xno'
+then
+  SAVE_CPPFLAGS="$CPPFLAGS"
+  CPPFLAGS="$CPPFLAGS -I${with_randlm}/include"
+
+  AC_CHECK_HEADER(RandLM.h,
+                 [AC_DEFINE([HAVE_RANDLM], [], [flag for RandLM])],
+                 [AC_MSG_ERROR([Cannot find RandLM!])])
+
+
+  LIB_RANDLM="-lrandlm"
+  LDFLAGS="$LDFLAGS -L${with_randlm}/lib"
+  LIBS="$LIBS $LIB_RANDLM"
+  FMTLIBS="$FMTLIBS librandlm.a"
+  AM_CONDITIONAL([RAND_LM], true)
 fi
 
 AC_OUTPUT(Makefile decoder/Makefile training/Makefile vest/Makefile)

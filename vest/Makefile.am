@@ -1,4 +1,5 @@
 bin_PROGRAMS = \
+  mbr_kbest \
   mr_vest_map \
   mr_vest_reduce \
   mr_vest_generate_mapper_input \
@@ -10,6 +11,9 @@ noinst_PROGRAMS = \
   scorer_test \
   lo_test
 endif
+
+mbr_kbest_SOURCES = mbr_kbest.cc ter.cc comb_scorer.cc aer_scorer.cc scorer.cc viterbi_envelope.cc
+mbr_kbest_LDADD = $(top_srcdir)/decoder/libcdec.a -lz
 
 union_forests_SOURCES = union_forests.cc
 union_forests_LDADD = $(top_srcdir)/decoder/libcdec.a -lz

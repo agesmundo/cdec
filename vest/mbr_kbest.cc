@@ -56,15 +56,17 @@ bool ReadKBestList(istream* in, string* sent_id, vector<pair<vector<WordID>, pro
     if (p1 == string::npos) { cerr << "Bad format: " << line << endl; abort(); }
     size_t p2 = line.find(" ||| ", p1 + 4);
     if (p2 == string::npos) { cerr << "Bad format: " << line << endl; abort(); }
+    size_t p3 = line.rfind(" ||| ");
     cache_id = line.substr(0, p1);
     tstr = line.substr(p1 + 5, p2 - p1 - 5);
-    double val = strtod(line.substr(p2 + 5).c_str(), NULL);
+    double val = strtod(line.substr(p3 + 5).c_str(), NULL);
     TD::ConvertSentence(tstr, &cache_pair.first);
     cache_pair.second.logeq(val);
     if (cur_id.empty()) cur_id = cache_id;
     if (cur_id == cache_id) {
       list->push_back(cache_pair);
       *sent_id = cur_id;
+      cache_pair.first.clear();
     } else { break; }
   }
   return !list->empty();
@@ -77,6 +79,7 @@ int main(int argc, char** argv) {
   const bool output_list = conf.count("output_list") > 0;
   const string file = conf["input"].as<string>();
   const double mbr_scale = conf["scale"].as<double>();
+  cerr << "Posterior scaling factor (alpha) = " << mbr_scale << endl;
 
   ScoreType type = ScoreTypeFromString(metric);
   vector<pair<vector<WordID>, prob_t> > list;
@@ -84,11 +87,12 @@ int main(int argc, char** argv) {
   string sent_id;
   while(ReadKBestList(rf.stream(), &sent_id, &list)) {
     vector<prob_t> joints(list.size());
-    const prob_t max_score = list.front().second;
+    const prob_t max_score = pow(list.front().second, mbr_scale);
     prob_t marginal = prob_t::Zero();
     for (int i = 0 ; i < list.size(); ++i) {
-      const prob_t joint = max_score / pow(list[i].second, mbr_scale);
+      const prob_t joint = pow(list[i].second, mbr_scale) / max_score;
       joints[i] = joint;
+      // cerr << "list[" << i << "] joint=" << log(joint) << endl;
       marginal += joint;
     }
     int mbr_idx = -1;
@@ -126,7 +130,7 @@ int main(int argc, char** argv) {
       for (int i = 0; i < list.size(); ++i)
         cout << sent_id << " ||| "
              << TD::GetString(list[i].first) << " ||| "
-             << list[i].second << endl;
+             << log(list[i].second) << endl;
     } else {
       cout << TD::GetString(list[mbr_idx].first) << endl;
     }

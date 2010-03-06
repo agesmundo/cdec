@@ -116,7 +116,7 @@ struct LMClient {
 class LanguageModelImpl {
  public:
   explicit LanguageModelImpl(int order) :
-      ngram_(*TD::dict_), buffer_(), order_(order), state_size_(OrderToStateSize(order) - 1),
+      ngram_(*TD::dict_, order), buffer_(), order_(order), state_size_(OrderToStateSize(order) - 1),
       floor_(-100.0),
       client_(),
       kSTART(TD::Convert("<s>")),
@@ -126,7 +126,7 @@ class LanguageModelImpl {
       kSTAR(TD::Convert("<{STAR}>")) {}
 
   LanguageModelImpl(int order, const string& f) :
-      ngram_(*TD::dict_), buffer_(), order_(order), state_size_(OrderToStateSize(order) - 1),
+      ngram_(*TD::dict_, order), buffer_(), order_(order), state_size_(OrderToStateSize(order) - 1),
       floor_(-100.0),
       client_(NULL),
       kSTART(TD::Convert("<s>")),
@@ -163,8 +163,10 @@ class LanguageModelImpl {
   }
 
   inline double LookupProbForBufferContents(int i) {
+//    int k = i; cerr << "P("; while(buffer_[k] > 0) { std::cerr << TD::Convert(buffer_[k++]) << " "; }
     double p = WordProb(buffer_[i], &buffer_[i+1]);
     if (p < floor_) p = floor_;
+//    cerr << ")=" << p << endl;
     return p;
   }
 

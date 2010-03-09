@@ -28,7 +28,7 @@ class TRule {
     e_(e), f_(f), lhs_(lhs), prev_i(-1), prev_j(-1) {}
 
   // deprecated - this will be private soon
-  explicit TRule(const std::string& text, bool strict = false, bool mono = false) {
+  explicit TRule(const std::string& text, bool strict = false, bool mono = false) : prev_i(-1), prev_j(-1) {
     ReadFromString(text, strict, mono);
   }
 

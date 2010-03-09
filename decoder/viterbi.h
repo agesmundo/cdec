@@ -120,6 +120,18 @@ struct FTreeTraversal {
   }
 };
 
+struct ViterbiPathTraversal {
+  void operator()(const Hypergraph::Edge& edge,
+                  const std::vector<const std::vector<const Hypergraph::Edge*>* >& ants,
+                  std::vector<const Hypergraph::Edge*>* result) const {
+    result->clear();
+    for (int i = 0; i < ants.size(); ++i)
+      for (int j = 0; j < ants[i]->size(); ++j)
+        result->push_back((*ants[i])[j]);
+    result->push_back(&edge);
+  }
+};
+
 prob_t ViterbiESentence(const Hypergraph& hg, std::vector<WordID>* result);
 std::string ViterbiETree(const Hypergraph& hg);
 prob_t ViterbiFSentence(const Hypergraph& hg, std::vector<WordID>* result);

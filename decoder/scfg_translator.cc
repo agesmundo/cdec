@@ -39,7 +39,7 @@ struct SCFGTranslatorImpl {
                  const vector<double>& weights,
                  Hypergraph* forest) {
     vector<GrammarPtr> glist = grammars;
-    Lattice lattice;
+    Lattice& lattice = smeta->src_lattice_;
     LatticeTools::ConvertTextOrPLF(input, &lattice);
     smeta->SetSourceLength(lattice.size());
     if (add_pass_through_rules)

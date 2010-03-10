@@ -2,15 +2,12 @@
 
 #include "array2d.h"
 #include "hg.h"
+#include "sentence_metadata.h"
 #include "inside_outside.h"
+#include "viterbi.h"
 #include <set>
 
 using namespace std;
-
-struct EdgeCoverageInfo {
-  set<int> src_indices;
-  set<int> trg_indices;
-};
 
 static bool is_digit(char x) { return x >= '0' && x <= '9'; }
 
@@ -77,13 +74,16 @@ void AlignerTools::SerializePharaohFormat(const Array2D<bool>& alignment, ostrea
   (*out) << endl;
 }
 
-// compute the coverage vectors of each edge
-// prereq: all derivations yield the same string pair
-void ComputeCoverages(const Hypergraph& g,
-                      vector<EdgeCoverageInfo>* pcovs) {
+// used with lexical models since they may not fully generate the
+// source string
+void SourceEdgeCoveragesUsingParseIndices(const Hypergraph& g,
+                                          vector<set<int> >* src_cov) {
+  src_cov->clear();
+  src_cov->resize(g.edges_.size());
+  
   for (int i = 0; i < g.edges_.size(); ++i) {
     const Hypergraph::Edge& edge = g.edges_[i];
-    EdgeCoverageInfo& cov = (*pcovs)[i];
+    set<int>& cov = (*src_cov)[i];
     // no words
     if (edge.rule_->EWords() == 0 || edge.rule_->FWords() == 0)
       continue;
@@ -93,10 +93,8 @@ void ComputeCoverages(const Hypergraph& g,
     assert(edge.j_ >= 0);
     assert(edge.prev_j_ >= 0);
     if (edge.Arity() == 0) {
-      for (int k = edge.i_; k < edge.j_; ++k)
-        cov.trg_indices.insert(k);
       for (int k = edge.prev_i_; k < edge.prev_j_; ++k)
-        cov.src_indices.insert(k);
+        cov.insert(k);
     } else {
       // note: this code, which handles mixed NT and terminal
       // rules assumes that nodes uniquely define a src and trg
@@ -106,7 +104,7 @@ void ComputeCoverages(const Hypergraph& g,
       const vector<WordID>& f = edge.rule_->e();  // rules are inverted
       while (k < edge.prev_j_) {
         if (f[j] > 0) {
-          cov.src_indices.insert(k);
+          cov.insert(k);
           // cerr << "src: " << k << endl;
           ++k;
           ++j;
@@ -120,79 +118,173 @@ void ComputeCoverages(const Hypergraph& g,
           ++j;
         }
       }
-      int tc = 0;
-      const vector<WordID>& e = edge.rule_->f();  // rules are inverted
-      k = edge.i_;
-      j = 0;
-      // cerr << edge.rule_->AsString() << endl;
-      // cerr << "i=" << k << "  j=" << edge.j_ << endl;
-      while (k < edge.j_) {
-        //cerr << "  k=" << k << endl;
-        if (e[j] > 0) {
-          cov.trg_indices.insert(k);
-          // cerr << "trg: " << k << endl;
-          ++k;
-          ++j;
-        } else {
-          assert(tc < edge.tail_nodes_.size());
-          const Hypergraph::Node& tailnode = g.nodes_[edge.tail_nodes_[tc]];
-          assert(tailnode.in_edges_.size() > 0);
-          // any edge will do:
-          const Hypergraph::Edge& rep_edge = g.edges_[tailnode.in_edges_.front()];
-          // cerr << "t skip " << (rep_edge.j_ - rep_edge.i_) << endl;  // src span
-          k += (rep_edge.j_ - rep_edge.i_);  // src span
-          ++j;
-          ++tc;
-        }
-      }
-      //abort();
     }
   }
 }
 
-void AlignerTools::WriteAlignment(const Hypergraph& g,
+int SourceEdgeCoveragesUsingTree(const Hypergraph& g,
+                                 int node_id,
+                                 int span_start,
+                                 vector<int>* spans,
+                                 vector<set<int> >* src_cov) {
+  const Hypergraph::Node& node = g.nodes_[node_id];
+  int k = -1;
+  for (int i = 0; i < node.in_edges_.size(); ++i) {
+    const int edge_id = node.in_edges_[i];
+    const Hypergraph::Edge& edge = g.edges_[edge_id];
+    set<int>& cov = (*src_cov)[edge_id];
+    const vector<WordID>& f = edge.rule_->e();  // rules are inverted
+    int j = 0;
+    k = span_start;
+    while (j < f.size()) {
+      if (f[j] > 0) {
+        cov.insert(k);
+        ++k;
+        ++j;
+      } else {
+        const int tail_node_id = edge.tail_nodes_[-f[j]];
+        int &right_edge = (*spans)[tail_node_id];
+        if (right_edge < 0)
+          right_edge = SourceEdgeCoveragesUsingTree(g, tail_node_id, k, spans, src_cov);
+        k = right_edge;
+        ++j;
+      }
+    }
+  }
+  return k;
+}
+
+void SourceEdgeCoveragesUsingTree(const Hypergraph& g,
+                                  vector<set<int> >* src_cov) {
+  src_cov->clear();
+  src_cov->resize(g.edges_.size());
+  vector<int> span_sizes(g.nodes_.size(), -1);
+  SourceEdgeCoveragesUsingTree(g, g.nodes_.size() - 1, 0, &span_sizes, src_cov);
+}
+
+int TargetEdgeCoveragesUsingTree(const Hypergraph& g,
+                                 int node_id,
+                                 int span_start,
+                                 vector<int>* spans,
+                                 vector<set<int> >* trg_cov) {
+  const Hypergraph::Node& node = g.nodes_[node_id];
+  int k = -1;
+  for (int i = 0; i < node.in_edges_.size(); ++i) {
+    const int edge_id = node.in_edges_[i];
+    const Hypergraph::Edge& edge = g.edges_[edge_id];
+    set<int>& cov = (*trg_cov)[edge_id];
+    int ntc = 0;
+    const vector<WordID>& e = edge.rule_->f();  // rules are inverted
+    int j = 0;
+    k = span_start;
+    while (j < e.size()) {
+      if (e[j] > 0) {
+        cov.insert(k);
+        ++k;
+        ++j;
+      } else {
+        const int tail_node_id = edge.tail_nodes_[ntc];
+        ++ntc;
+        int &right_edge = (*spans)[tail_node_id];
+        if (right_edge < 0)
+          right_edge = TargetEdgeCoveragesUsingTree(g, tail_node_id, k, spans, trg_cov);
+        k = right_edge;
+        ++j;
+      }
+    }
+    // cerr << "node=" << node_id << ": k=" << k << endl;
+  }
+  return k;
+}
+
+void TargetEdgeCoveragesUsingTree(const Hypergraph& g,
+                                  vector<set<int> >* trg_cov) {
+  trg_cov->clear();
+  trg_cov->resize(g.edges_.size());
+  vector<int> span_sizes(g.nodes_.size(), -1);
+  TargetEdgeCoveragesUsingTree(g, g.nodes_.size() - 1, 0, &span_sizes, trg_cov);
+}
+
+// this code is rather complicated since it must deal with generating alignments
+// when lattices are specified as input as well as with models that do not generate
+// full sentence pairs (like lexical alignment models)
+void AlignerTools::WriteAlignment(const SentenceMetadata& smeta,
+                                  const Hypergraph& in_g,
                                   ostream* out,
                                   bool map_instead_of_viterbi,
                                   const vector<bool>* edges) {
+  bool fix_up_src_spans = false;
+  bool fix_up_trg_spans = false;
+  const Hypergraph* g = &in_g;
+  const Lattice& src_lattice = smeta.GetSourceLattice();
+  const Lattice& trg_lattice = smeta.GetReference();
+  if (!src_lattice.IsSentence() ||
+      !trg_lattice.IsSentence()) {
+    if (map_instead_of_viterbi) {
+      cerr << "  Lattice alignment: using Viterbi instead of MAP alignment\n";
+    }
+    map_instead_of_viterbi = false;
+    fix_up_src_spans = !smeta.GetSourceLattice().IsSentence();
+    fix_up_trg_spans = !smeta.GetReference().IsSentence();
+  }
+  vector<WordID> trg_sent;
+  vector<WordID> src_sent;
+  if (fix_up_src_spans) {
+    ViterbiESentence(*g, &src_sent);
+  } else {
+    src_sent.resize(src_lattice.size());
+    for (int i = 0; i < src_sent.size(); ++i)
+      src_sent[i] = src_lattice[i][0].label;
+  }
+
+  ViterbiFSentence(*g, &trg_sent);
+
   if (!map_instead_of_viterbi) {
     assert(!edges);
-    assert(!"not implemented");
+    g = in_g.CreateViterbiHypergraph();
   }
-  vector<prob_t> edge_posteriors(g.edges_.size(), prob_t::Zero());
+  vector<prob_t> edge_posteriors(g->edges_.size(), prob_t::Zero());
   if (edges) {
     for (int i = 0; i < edges->size(); ++i)
       if ((*edges)[i]) edge_posteriors[i] = prob_t::One();
   } else { 
     SparseVector<prob_t> posts;
-    InsideOutside<prob_t, EdgeProb, SparseVector<prob_t>, TransitionEventWeightFunction>(g, &posts);
+    InsideOutside<prob_t, EdgeProb, SparseVector<prob_t>, TransitionEventWeightFunction>(*g, &posts);
     for (int i = 0; i < edge_posteriors.size(); ++i)
       edge_posteriors[i] = posts[i];
   }
-  vector<EdgeCoverageInfo> edge2cov(g.edges_.size());
-  ComputeCoverages(g, &edge2cov);
+  vector<set<int> > src_cov(g->edges_.size());
+  vector<set<int> > trg_cov(g->edges_.size());
+  TargetEdgeCoveragesUsingTree(*g, &trg_cov);
+
+  if (fix_up_src_spans)
+    SourceEdgeCoveragesUsingTree(*g, &src_cov);
+  else
+    SourceEdgeCoveragesUsingParseIndices(*g, &src_cov);
+
 
   // figure out the src and reference size;
-  int src_size = 0;
-  int ref_size = 0;
-  for (int c = 0; c < g.edges_.size(); ++c) {
-    if (g.edges_[c].j_      > ref_size) ref_size = g.edges_[c].j_;
-    if (g.edges_[c].prev_j_ > src_size) src_size = g.edges_[c].prev_j_;
-  }
-  assert(src_size > 0);
-  assert(ref_size > 0);
-
+  int src_size = src_sent.size();
+  int ref_size = trg_sent.size();
   Array2D<prob_t> align(src_size, ref_size, prob_t::Zero());
-  for (int c = 0; c < g.edges_.size(); ++c) {
+  for (int c = 0; c < g->edges_.size(); ++c) {
     const prob_t& p = edge_posteriors[c];
-    const EdgeCoverageInfo& eci = edge2cov[c];
-    for (set<int>::const_iterator si = eci.src_indices.begin();
-         si != eci.src_indices.end(); ++si) {
-      for (set<int>::const_iterator ti = eci.trg_indices.begin();
-           ti != eci.trg_indices.end(); ++ti) {
+    const set<int>& srcs = src_cov[c];
+    const set<int>& trgs = trg_cov[c];
+    for (set<int>::const_iterator si = srcs.begin();
+         si != srcs.end(); ++si) {
+      for (set<int>::const_iterator ti = trgs.begin();
+           ti != trgs.end(); ++ti) {
         align(*si, *ti) += p;
       }
     }
   }
+  if (!map_instead_of_viterbi) {
+    delete edges;
+    edges = NULL;
+  }
+  if (g != &in_g) { delete g; g = NULL; }
+
   prob_t threshold(0.9);
   const bool use_soft_threshold = true; // TODO configure
 
@@ -212,6 +304,7 @@ void AlignerTools::WriteAlignment(const Hypergraph& g,
     cerr << align << endl;
     cerr << grid << endl;
   }
+  (*out) << TD::GetString(src_sent) << " ||| " << TD::GetString(trg_sent) << " ||| ";
   SerializePharaohFormat(grid, out);
 };
 

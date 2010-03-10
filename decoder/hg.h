@@ -137,6 +137,10 @@ class Hypergraph {
   // find the score of the very best path passing through each edge
   prob_t ComputeBestPathThroughEdges(std::vector<prob_t>* posts) const;
 
+  // create a new hypergraph consisting only of the nodes / edges
+  // in the Viterbi derivation of this hypergraph
+  Hypergraph* CreateViterbiHypergraph() const;
+
   // move weights as near to the source as possible, resulting in a
   // stochastic automaton.  ONLY FUNCTIONAL FOR *LATTICES*.
   // See M. Mohri and M. Riley. A Weight Pushing Algorithm for Large
@@ -191,6 +195,8 @@ class Hypergraph {
   void TopologicallySortNodesAndEdges(int goal_idx,
                                       const std::vector<bool>* prune_edges = NULL);
  private:
+  Hypergraph(int num_nodes, int num_edges, bool is_lc) : is_linear_chain_(is_lc), nodes_(num_nodes), edges_(num_edges) {}
+
   // returns total nodes reachable
   int MarkReachable(const Node& node,
                     std::vector<bool>* rmap,

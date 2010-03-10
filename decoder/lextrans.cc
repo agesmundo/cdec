@@ -102,8 +102,14 @@ bool LexicalTrans::TranslateImpl(const string& input,
                       SentenceMetadata* smeta,
                       const vector<double>& weights,
                       Hypergraph* forest) {
-  Lattice lattice;
-  LatticeTools::ConvertTextToLattice(input, &lattice);
+  Lattice& lattice = smeta->src_lattice_;
+  LatticeTools::ConvertTextOrPLF(input, &lattice);
+  if (!lattice.IsSentence()) {
+    // lexical models make independence assumptions
+    // that don't work with lattices or conf nets
+    cerr << "LexicalTrans: cannot deal with lattice source input!\n";
+    abort();
+  }
   smeta->SetSourceLength(lattice.size());
   pimpl_->BuildTrellis(lattice, *smeta, forest);
   forest->is_linear_chain_ = true;

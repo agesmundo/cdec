@@ -53,17 +53,24 @@ static bool FastLinearIntersect(const Lattice& target, Hypergraph* hg) {
   cerr << "  Fast linear-chain intersection...\n";
   vector<bool> prune(hg->edges_.size(), false);
   set<int> cov;
+  map<const TRule*, TRulePtr> inverted_rules;
   for (int i = 0; i < prune.size(); ++i) {
     Hypergraph::Edge& edge = hg->edges_[i];
     if (edge.Arity() == 0) {
       const int trg_index = edge.prev_i_;
       const WordID trg = target[trg_index][0].label;
       assert(edge.rule_->EWords() == 1);
+      TRulePtr& inv_rule = inverted_rules[edge.rule_.get()];
+      if (!inv_rule) {
+        inv_rule.reset(new TRule(*edge.rule_));
+        inv_rule->e_.swap(inv_rule->f_);
+      }
       prune[i] = (edge.rule_->e_[0] != trg);
       if (!prune[i]) {
         cov.insert(trg_index);
         swap(edge.prev_i_, edge.i_);
         swap(edge.prev_j_, edge.j_);
+        edge.rule_.swap(inv_rule);
       }
     }
   }

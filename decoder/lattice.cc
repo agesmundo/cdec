@@ -49,15 +49,14 @@ void LatticeTools::ConvertTextToLattice(const string& text, Lattice* pl) {
   l.resize(ids.size());
   for (int i = 0; i < l.size(); ++i)
     l[i].push_back(LatticeArc(ids[i], 0.0, 1));
+  l.is_sentence_ = true;
 }
 
 void LatticeTools::ConvertTextOrPLF(const string& text_or_plf, Lattice* pl) {
   if (LooksLikePLF(text_or_plf))
     HypergraphIO::PLFtoLattice(text_or_plf, pl);
-  else {
+  else
     ConvertTextToLattice(text_or_plf, pl);
-    pl->is_sentence_ = true;
-  }
   pl->ComputeDistances();
 }
 

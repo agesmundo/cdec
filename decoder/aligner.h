@@ -6,6 +6,7 @@
 #include "array2d.h"
 
 class Hypergraph;
+class SentenceMetadata;
 
 struct AlignerTools {
   static boost::shared_ptr<Array2D<bool> > ReadPharaohAlignmentGrid(const std::string& al);
@@ -14,7 +15,8 @@ struct AlignerTools {
   // assumption: g contains derivations of input/ref and
   // ONLY input/ref.
   // if edges is non-NULL, the alignment corresponding to the edge rules will be written
-  static void WriteAlignment(const Hypergraph& g,
+  static void WriteAlignment(const SentenceMetadata& smeta,
+                             const Hypergraph& g,
                              std::ostream* out,
                              bool map_instead_of_viterbi = true,
                              const std::vector<bool>* edges = NULL);

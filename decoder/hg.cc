@@ -529,3 +529,43 @@ void Hypergraph::SortInEdgesByEdgeWeights() {
   }
 }
 
+Hypergraph* Hypergraph::CreateViterbiHypergraph() const {
+  vector<const Edge*> vit_edges;
+  Viterbi<vector<const Edge*>, ViterbiPathTraversal, prob_t, EdgeProb>(*this, &vit_edges);
+  map<int, int> old2new_node;
+  int num_new_nodes = 0;
+  for (int i = 0; i < vit_edges.size(); ++i) {
+    const Edge& edge = *vit_edges[i];
+    for (int j = 0; j < edge.tail_nodes_.size(); ++j)
+      assert(old2new_node.count(edge.tail_nodes_[j]) > 0);
+    if (old2new_node.count(edge.head_node_) == 0) {
+      old2new_node[edge.head_node_] = num_new_nodes;
+      ++num_new_nodes;
+    }
+  }
+  Hypergraph* out = new Hypergraph(num_new_nodes, vit_edges.size(), is_linear_chain_);
+  for (map<int, int>::iterator it = old2new_node.begin();
+       it != old2new_node.end(); ++it) {
+    const Node& old_node = nodes_[it->first];
+    Node& new_node = out->nodes_[it->second];
+    new_node.cat_ = old_node.cat_;
+    new_node.id_ = it->second;
+  }
+
+  for (int i = 0; i < vit_edges.size(); ++i) {
+    const Edge& old_edge = *vit_edges[i];
+    Edge& new_edge = out->edges_[i];
+    new_edge = old_edge;
+    new_edge.id_ = i;
+    const int new_head_node = old2new_node[old_edge.head_node_];
+    new_edge.head_node_ = new_head_node;
+    out->nodes_[new_head_node].in_edges_.push_back(i);
+    for (int j = 0; j < old_edge.tail_nodes_.size(); ++j) {
+      const int new_tail_node = old2new_node[old_edge.tail_nodes_[j]];
+      new_edge.tail_nodes_[j] = new_tail_node;
+      out->nodes_[new_tail_node].out_edges_.push_back(i);
+    }
+  }
+  return out;
+}
+

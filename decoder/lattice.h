@@ -23,6 +23,7 @@ struct LatticeArc {
 
 class Lattice : public std::vector<std::vector<LatticeArc> > {
   friend void LatticeTools::ConvertTextOrPLF(const std::string& text_or_plf, Lattice* pl);
+  friend void LatticeTools::ConvertTextToLattice(const std::string& text, Lattice* pl);
  public:
   Lattice() : is_sentence_(false) {}
   explicit Lattice(size_t t, const std::vector<LatticeArc>& v = std::vector<LatticeArc>()) :

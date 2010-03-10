@@ -325,8 +325,13 @@ void SentenceScorer::ComputeErrorSurface(const ViterbiEnvelope& ve, ErrorSurface
       seg.CollectEdgesUsed(&edges);  // get the set of edges in the viterbi
                                      // alignment
       ostringstream os;
+#if 0
       AlignerTools::WriteAlignment(hg, &os, true, &edges);
-      TD::ConvertSentence(os.str(), &trans);
+#else
+      assert(!"AER scorer is currently broken -- need more info to generate alignments");
+#endif
+      string tstr = os.str();
+      TD::ConvertSentence(tstr.substr(tstr.rfind(" ||| ") + 5), &trans);
     } else {
       seg.ConstructTranslation(&trans);
     }

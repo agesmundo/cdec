@@ -67,7 +67,7 @@ class AERScore : public Score {
   int num_in_ref;
 };
 
-AERScorer::AERScorer(const vector<vector<WordID> >& refs) {
+AERScorer::AERScorer(const vector<vector<WordID> >& refs, const string& src) : src_(src) {
   if (refs.size() != 1) {
     cerr << "AERScorer can only take a single reference!\n";
     abort();
@@ -113,4 +113,6 @@ Score* AERScorer::ScoreFromString(const string& in) {
   res->num_in_ref    = *(const int *)&in[sizeof(int) * 2];
   return res;
 }
+
+const std::string* AERScorer::GetSource() const { return &src_; }
 

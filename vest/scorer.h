@@ -32,9 +32,11 @@ class SentenceScorer {
   virtual ~SentenceScorer();
   void ComputeErrorSurface(const ViterbiEnvelope& ve, ErrorSurface* es, const ScoreType type, const Hypergraph& hg) const;
   virtual Score* ScoreCandidate(const std::vector<WordID>& hyp) const = 0;
+  virtual const std::string* GetSource() const;
   static Score* CreateScoreFromString(const ScoreType type, const std::string& in);
   static SentenceScorer* CreateSentenceScorer(const ScoreType type,
-    const std::vector<std::vector<WordID> >& refs);
+    const std::vector<std::vector<WordID> >& refs,
+    const std::string& src = "");
 };
 
 class DocScorer {
@@ -42,7 +44,8 @@ class DocScorer {
   ~DocScorer();
   DocScorer(
     const ScoreType type,
-    const std::vector<std::string>& ref_files);
+    const std::vector<std::string>& ref_files,
+    const std::string& src_file = "");
   int size() const { return scorers_.size(); }
   const SentenceScorer* operator[](size_t i) const { return scorers_[i]; }
  private:

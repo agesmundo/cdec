@@ -319,7 +319,7 @@ while (1){
 			$mapoutput =~ s/mapinput/mapoutput/;
 			push @mapoutputs, "$dir/splag.$im1/$mapoutput";
 			$o2i{"$dir/splag.$im1/$mapoutput"} = "$dir/splag.$im1/$shard";
-			my $script = "$MAPPER -l $metric $refs_comma_sep < $dir/splag.$im1/$shard | sort -k1 > $dir/splag.$im1/$mapoutput";
+			my $script = "$MAPPER -s $srcFile -l $metric $refs_comma_sep < $dir/splag.$im1/$shard | sort -k1 > $dir/splag.$im1/$mapoutput";
 			if ($run_local) {
 				print LOGFILE "COMMAND:\n$script\n";
 				$result = system($script);

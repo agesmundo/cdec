@@ -529,9 +529,14 @@ void Hypergraph::SortInEdgesByEdgeWeights() {
   }
 }
 
-Hypergraph* Hypergraph::CreateViterbiHypergraph() const {
+Hypergraph* Hypergraph::CreateViterbiHypergraph(const vector<bool>* edges) const {
   vector<const Edge*> vit_edges;
-  Viterbi<vector<const Edge*>, ViterbiPathTraversal, prob_t, EdgeProb>(*this, &vit_edges);
+  if (edges) {
+    assert(edges->size() == edges_.size());
+    Viterbi<vector<const Edge*>, ViterbiPathTraversal, prob_t, EdgeSelectEdgeWeightFunction>(*this, &vit_edges, ViterbiPathTraversal(), EdgeSelectEdgeWeightFunction(*edges));
+  } else {
+    Viterbi<vector<const Edge*>, ViterbiPathTraversal, prob_t, EdgeProb>(*this, &vit_edges);
+  }
   map<int, int> old2new_node;
   int num_new_nodes = 0;
   for (int i = 0; i < vit_edges.size(); ++i) {

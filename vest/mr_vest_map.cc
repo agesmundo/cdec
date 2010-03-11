@@ -23,6 +23,7 @@ void InitCommandLine(int argc, char** argv, po::variables_map* conf) {
   po::options_description opts("Configuration options");
   opts.add_options()
         ("reference,r",po::value<vector<string> >(), "[REQD] Reference translation (tokenized text)")
+        ("source,s",po::value<string>(), "Source file (ignored, except for AER)")
         ("loss_function,l",po::value<string>()->default_value("ibm_bleu"), "Loss function being optimized")
         ("help,h", "Help");
   po::options_description dcmdline_options;
@@ -60,7 +61,7 @@ int main(int argc, char** argv) {
   InitCommandLine(argc, argv, &conf);
   const string loss_function = conf["loss_function"].as<string>();
   ScoreType type = ScoreTypeFromString(loss_function);
-  DocScorer ds(type, conf["reference"].as<vector<string> >());
+  DocScorer ds(type, conf["reference"].as<vector<string> >(), conf["source"].as<string>());
   cerr << "Loaded " << ds.size() << " references for scoring with " << loss_function << endl;
   Hypergraph hg;
   string last_file;

@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
   InitCommandLine(argc, argv, &conf);
   const string loss_function = conf["loss_function"].as<string>();
   ScoreType type = ScoreTypeFromString(loss_function);
-  DocScorer ds(type, conf["reference"].as<vector<string> >());
+  DocScorer ds(type, conf["reference"].as<vector<string> >(), "");
   cerr << "Loaded " << ds.size() << " references for scoring with " << loss_function << endl;
 
   ReadFile rf(conf["in_file"].as<string>());

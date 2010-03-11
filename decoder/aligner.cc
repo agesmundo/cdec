@@ -15,6 +15,8 @@ boost::shared_ptr<Array2D<bool> > AlignerTools::ReadPharaohAlignmentGrid(const s
   int max_x = 0;
   int max_y = 0;
   int i = 0;
+  size_t pos = al.rfind(" ||| ");
+  if (pos != string::npos) { i = pos + 5; }
   while (i < al.size()) {
     if (al[i] == '\n' || al[i] == '\r') break;
     int x = 0;
@@ -25,7 +27,10 @@ boost::shared_ptr<Array2D<bool> > AlignerTools::ReadPharaohAlignmentGrid(const s
     }
     if (x > max_x) max_x = x;
     assert(i < al.size());
-    assert(al[i] == '-');
+    if(al[i] != '-') {
+      cerr << "BAD ALIGNMENT: " << al << endl;
+      abort();
+    }
     ++i;
     int y = 0;
     while(i < al.size() && is_digit(al[i])) {
@@ -39,6 +44,7 @@ boost::shared_ptr<Array2D<bool> > AlignerTools::ReadPharaohAlignmentGrid(const s
 
   boost::shared_ptr<Array2D<bool> > grid(new Array2D<bool>(max_x + 1, max_y + 1));
   i = 0;
+  if (pos != string::npos) { i = pos + 5; }
   while (i < al.size()) {
     if (al[i] == '\n' || al[i] == '\r') break;
     int x = 0;
@@ -208,25 +214,30 @@ void TargetEdgeCoveragesUsingTree(const Hypergraph& g,
 // this code is rather complicated since it must deal with generating alignments
 // when lattices are specified as input as well as with models that do not generate
 // full sentence pairs (like lexical alignment models)
-void AlignerTools::WriteAlignment(const SentenceMetadata& smeta,
+void AlignerTools::WriteAlignment(const Lattice& src_lattice,
+                                  const Lattice& trg_lattice,
                                   const Hypergraph& in_g,
                                   ostream* out,
                                   bool map_instead_of_viterbi,
                                   const vector<bool>* edges) {
   bool fix_up_src_spans = false;
-  bool fix_up_trg_spans = false;
   const Hypergraph* g = &in_g;
-  const Lattice& src_lattice = smeta.GetSourceLattice();
-  const Lattice& trg_lattice = smeta.GetReference();
   if (!src_lattice.IsSentence() ||
       !trg_lattice.IsSentence()) {
     if (map_instead_of_viterbi) {
       cerr << "  Lattice alignment: using Viterbi instead of MAP alignment\n";
     }
     map_instead_of_viterbi = false;
-    fix_up_src_spans = !smeta.GetSourceLattice().IsSentence();
-    fix_up_trg_spans = !smeta.GetReference().IsSentence();
+    fix_up_src_spans = !src_lattice.IsSentence();
   }
+  if (!map_instead_of_viterbi || edges) {
+    Hypergraph* new_hg = in_g.CreateViterbiHypergraph(edges);
+    for (int i = 0; i < new_hg->edges_.size(); ++i)
+      new_hg->edges_[i].edge_prob_ = prob_t::One();
+    g = new_hg;
+  }
+
+  vector<prob_t> edge_posteriors(g->edges_.size(), prob_t::Zero());
   vector<WordID> trg_sent;
   vector<WordID> src_sent;
   if (fix_up_src_spans) {
@@ -239,14 +250,9 @@ void AlignerTools::WriteAlignment(const SentenceMetadata& smeta,
 
   ViterbiFSentence(*g, &trg_sent);
 
-  if (!map_instead_of_viterbi) {
-    assert(!edges);
-    g = in_g.CreateViterbiHypergraph();
-  }
-  vector<prob_t> edge_posteriors(g->edges_.size(), prob_t::Zero());
-  if (edges) {
+  if (edges || !map_instead_of_viterbi) {
     for (int i = 0; i < edges->size(); ++i)
-      if ((*edges)[i]) edge_posteriors[i] = prob_t::One();
+      edge_posteriors[i] = prob_t::One();
   } else { 
     SparseVector<prob_t> posts;
     InsideOutside<prob_t, EdgeProb, SparseVector<prob_t>, TransitionEventWeightFunction>(*g, &posts);
@@ -261,7 +267,6 @@ void AlignerTools::WriteAlignment(const SentenceMetadata& smeta,
     SourceEdgeCoveragesUsingTree(*g, &src_cov);
   else
     SourceEdgeCoveragesUsingParseIndices(*g, &src_cov);
-
 
   // figure out the src and reference size;
   int src_size = src_sent.size();
@@ -278,10 +283,6 @@ void AlignerTools::WriteAlignment(const SentenceMetadata& smeta,
         align(*si, *ti) += p;
       }
     }
-  }
-  if (!map_instead_of_viterbi) {
-    delete edges;
-    edges = NULL;
   }
   if (g != &in_g) { delete g; g = NULL; }
 
@@ -304,6 +305,7 @@ void AlignerTools::WriteAlignment(const SentenceMetadata& smeta,
     cerr << align << endl;
     cerr << grid << endl;
   }
+  SerializePharaohFormat(grid, &cerr);
   (*out) << TD::GetString(src_sent) << " ||| " << TD::GetString(trg_sent) << " ||| ";
   SerializePharaohFormat(grid, out);
 };

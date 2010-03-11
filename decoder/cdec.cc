@@ -479,7 +479,7 @@ int main(int argc, char** argv) {
           assert(succeeded);
         }
         if (aligner_mode && !output_training_vector)
-          AlignerTools::WriteAlignment(smeta, forest, &cout);
+          AlignerTools::WriteAlignment(smeta.GetSourceLattice(), smeta.GetReference(), forest, &cout);
         if (write_gradient) {
           log_ref_z = log(
             InsideOutside<prob_t, EdgeProb, SparseVector<double>, EdgeFeaturesWeightFunction>(forest, &ref_exp));

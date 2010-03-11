@@ -9,6 +9,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include "filelib.h"
 #include "aligner.h"
 #include "viterbi_envelope.h"
 #include "error_surface.h"
@@ -17,13 +18,14 @@
 #include "comb_scorer.h"
 #include "tdict.h"
 #include "stringlib.h"
+#include "lattice.h"
 
 using boost::shared_ptr;
 using namespace std;
 
 const bool minimize_segments = true;    // if adjacent segments have equal scores, merge them
 
-ScoreType ScoreTypeFromString(const std::string& st) {
+ScoreType ScoreTypeFromString(const string& st) {
   const string sl = LowercaseString(st);
   if (sl == "ser")
     return SER;
@@ -45,6 +47,7 @@ ScoreType ScoreTypeFromString(const std::string& st) {
 
 Score::~Score() {}
 SentenceScorer::~SentenceScorer() {}
+const std::string* SentenceScorer::GetSource() const { return NULL; }
 
 class SERScore : public Score {
   friend class SERScorer;
@@ -68,7 +71,7 @@ class SERScore : public Score {
     r->correct = correct - static_cast<const SERScore&>(rhs).correct;
     r->total = total - static_cast<const SERScore&>(rhs).total;
   }
-  void Encode(std::string* out) const {
+  void Encode(string* out) const {
     assert(!"not implemented");
   }
   bool IsAdditiveIdentity() const {
@@ -81,14 +84,14 @@ class SERScore : public Score {
 class SERScorer : public SentenceScorer {
  public:
   SERScorer(const vector<vector<WordID> >& references) : refs_(references) {}
-  Score* ScoreCandidate(const std::vector<WordID>& hyp) const {
+  Score* ScoreCandidate(const vector<WordID>& hyp) const {
     SERScore* res = new SERScore;
     res->total = 1;
     for (int i = 0; i < refs_.size(); ++i)
       if (refs_[i] == hyp) res->correct = 1;
     return res;
   }
-  static Score* ScoreFromString(const std::string& data) {
+  static Score* ScoreFromString(const string& data) {
     assert(!"Not implemented");
   }
  private:
@@ -106,7 +109,7 @@ class BLEUScore : public Score {
   void PlusEquals(const Score& delta);
   Score* GetZero() const;
   void Subtract(const Score& rhs, Score* res) const;
-  void Encode(std::string* out) const;
+  void Encode(string* out) const;
   bool IsAdditiveIdentity() const {
     if (fabs(ref_len) > 0.1f || hyp_len != 0) return false;
     for (int i = 0; i < correct_ngram_hit_counts.size(); ++i)
@@ -124,11 +127,11 @@ class BLEUScore : public Score {
 
 class BLEUScorerBase : public SentenceScorer {
  public:
-  BLEUScorerBase(const std::vector<std::vector<WordID> >& references,
+  BLEUScorerBase(const vector<vector<WordID> >& references,
              int n
              );
-  Score* ScoreCandidate(const std::vector<WordID>& hyp) const;
-  static Score* ScoreFromString(const std::string& in);
+  Score* ScoreCandidate(const vector<WordID>& hyp) const;
+  static Score* ScoreFromString(const string& in);
 
  protected:
   virtual float ComputeRefLength(const vector<WordID>& hyp) const = 0;
@@ -203,7 +206,7 @@ class BLEUScorerBase : public SentenceScorer {
   vector<int> lengths_;
 };
 
-Score* BLEUScorerBase::ScoreFromString(const std::string& in) {
+Score* BLEUScorerBase::ScoreFromString(const string& in) {
   istringstream is(in);
   int n;
   is >> n;
@@ -219,7 +222,7 @@ Score* BLEUScorerBase::ScoreFromString(const std::string& in) {
 
 class IBM_BLEUScorer : public BLEUScorerBase {
  public:
-    IBM_BLEUScorer(const std::vector<std::vector<WordID> >& references,
+    IBM_BLEUScorer(const vector<vector<WordID> >& references,
 		   int n=4) : BLEUScorerBase(references, n), lengths_(references.size()) {
    for (int i=0; i < references.size(); ++i)
      lengths_[i] = references[i].size();
@@ -245,7 +248,7 @@ class IBM_BLEUScorer : public BLEUScorerBase {
 
 class NIST_BLEUScorer : public BLEUScorerBase {
  public:
-    NIST_BLEUScorer(const std::vector<std::vector<WordID> >& references,
+    NIST_BLEUScorer(const vector<vector<WordID> >& references,
                     int n=4) : BLEUScorerBase(references, n),
 		    shortest_(references[0].size()) {
    for (int i=1; i < references.size(); ++i)
@@ -262,7 +265,7 @@ class NIST_BLEUScorer : public BLEUScorerBase {
 
 class Koehn_BLEUScorer : public BLEUScorerBase {
  public:
-    Koehn_BLEUScorer(const std::vector<std::vector<WordID> >& references,
+    Koehn_BLEUScorer(const vector<vector<WordID> >& references,
                      int n=4) : BLEUScorerBase(references, n),
                      avg_(0) {
    for (int i=0; i < references.size(); ++i)
@@ -278,12 +281,13 @@ class Koehn_BLEUScorer : public BLEUScorerBase {
 };
 
 SentenceScorer* SentenceScorer::CreateSentenceScorer(const ScoreType type,
-      const std::vector<std::vector<WordID> >& refs) {
+      const vector<vector<WordID> >& refs,
+      const string& src) {
   switch (type) {
     case IBM_BLEU: return new IBM_BLEUScorer(refs, 4);
     case NIST_BLEU: return new NIST_BLEUScorer(refs, 4);
     case Koehn_BLEU: return new Koehn_BLEUScorer(refs, 4);
-    case AER: return new AERScorer(refs);
+    case AER: return new AERScorer(refs, src);
     case TER: return new TERScorer(refs);
     case SER: return new SERScorer(refs);
     case BLEU_minus_TER_over_2: return new BLEUTERCombinationScorer(refs);
@@ -292,7 +296,7 @@ SentenceScorer* SentenceScorer::CreateSentenceScorer(const ScoreType type,
   }
 }
 
-Score* SentenceScorer::CreateScoreFromString(const ScoreType type, const std::string& in) {
+Score* SentenceScorer::CreateScoreFromString(const ScoreType type, const string& in) {
   switch (type) {
     case IBM_BLEU:
     case NIST_BLEU:
@@ -325,11 +329,21 @@ void SentenceScorer::ComputeErrorSurface(const ViterbiEnvelope& ve, ErrorSurface
       seg.CollectEdgesUsed(&edges);  // get the set of edges in the viterbi
                                      // alignment
       ostringstream os;
-#if 0
-      AlignerTools::WriteAlignment(hg, &os, true, &edges);
-#else
-      assert(!"AER scorer is currently broken -- need more info to generate alignments");
-#endif
+      const string* psrc = this->GetSource();
+      if (psrc == NULL) {
+        cerr << "AER scoring in VEST requires source, but it is missing!\n";
+        abort();
+      }
+      size_t pos = psrc->rfind(" ||| ");
+      if (pos == string::npos) {
+        cerr << "Malformed source for AER: expected |||\nINPUT: " << *psrc << endl;
+        abort();
+      }
+      Lattice src;
+      Lattice ref;
+      LatticeTools::ConvertTextOrPLF(psrc->substr(0, pos), &src);
+      LatticeTools::ConvertTextOrPLF(psrc->substr(pos + 5), &ref);
+      AlignerTools::WriteAlignment(src, ref, hg, &os, true, &edges);
       string tstr = os.str();
       TD::ConvertSentence(tstr.substr(tstr.rfind(" ||| ") + 5), &trans);
     } else {
@@ -373,7 +387,7 @@ void SentenceScorer::ComputeErrorSurface(const ViterbiEnvelope& ve, ErrorSurface
   env->resize(j);
 }
 
-void BLEUScore::ScoreDetails(std::string* details) const {
+void BLEUScore::ScoreDetails(string* details) const {
   char buf[2000];
   vector<float> precs(4);
   float bp;
@@ -434,7 +448,7 @@ Score* BLEUScore::GetZero() const {
   return new BLEUScore(hyp_ngram_counts.size());
 }
 
-void BLEUScore::Encode(std::string* out) const {
+void BLEUScore::Encode(string* out) const {
   ostringstream os;
   const int n = correct_ngram_hit_counts.size();
   os << n << ' ' << ref_len << ' ' << hyp_len;
@@ -443,7 +457,7 @@ void BLEUScore::Encode(std::string* out) const {
   *out = os.str();
 }
 
-BLEUScorerBase::BLEUScorerBase(const std::vector<std::vector<WordID> >& references,
+BLEUScorerBase::BLEUScorerBase(const vector<vector<WordID> >& references,
                        int n) : n_(n) {
   for (vector<vector<WordID> >::const_iterator ci = references.begin();
        ci != references.end(); ++ci) {
@@ -469,9 +483,15 @@ DocScorer::~DocScorer() {
 
 DocScorer::DocScorer(
       const ScoreType type,
-      const std::vector<std::string>& ref_files) {
+      const vector<string>& ref_files,
+      const string& src_file) {
   // TODO stop using valarray, start using ReadFile
   cerr << "Loading references (" << ref_files.size() << " files)\n";
+  shared_ptr<ReadFile> srcrf;
+  if (type == AER && src_file.size() > 0) {
+    cerr << "  (source=" << src_file << ")\n";
+    srcrf.reset(new ReadFile(src_file));
+  }
   valarray<ifstream> ifs(ref_files.size());
   for (int i=0; i < ref_files.size(); ++i) {
      ifs[i].open(ref_files[i].c_str());
@@ -499,7 +519,15 @@ DocScorer::DocScorer(
       }
       assert(!expect_eof);
     }
-    if (!expect_eof) scorers_.push_back(SentenceScorer::CreateSentenceScorer(type, refs));
+    if (!expect_eof) {
+      string src_line;
+      if (srcrf) {
+        getline(*srcrf->stream(), src_line);
+        map<string,string> dummy;
+        ProcessAndStripSGML(&src_line, &dummy);
+      }
+      scorers_.push_back(SentenceScorer::CreateSentenceScorer(type, refs, src_line));
+    }
   }
   cerr << "Loaded reference translations for " << scorers_.size() << " sentences.\n";
 }

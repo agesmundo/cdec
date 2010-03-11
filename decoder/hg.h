@@ -139,7 +139,8 @@ class Hypergraph {
 
   // create a new hypergraph consisting only of the nodes / edges
   // in the Viterbi derivation of this hypergraph
-  Hypergraph* CreateViterbiHypergraph() const;
+  // if edges is set, use the EdgeSelectEdgeWeightFunction
+  Hypergraph* CreateViterbiHypergraph(const std::vector<bool>* edges = NULL) const;
 
   // move weights as near to the source as possible, resulting in a
   // stochastic automaton.  ONLY FUNCTIONAL FOR *LATTICES*.
@@ -210,6 +211,16 @@ class Hypergraph {
 // for generic Viterbi/Inside algorithms
 struct EdgeProb {
   inline const prob_t& operator()(const Hypergraph::Edge& e) const { return e.edge_prob_; }
+};
+
+struct EdgeSelectEdgeWeightFunction {
+  EdgeSelectEdgeWeightFunction(const std::vector<bool>& v) : v_(v) {}
+  inline prob_t operator()(const Hypergraph::Edge& e) const {
+    if (v_[e.id_]) return prob_t::One();
+    else return prob_t::Zero();
+  }
+ private:
+  const std::vector<bool>& v_;
 };
 
 struct ScaledEdgeProb {

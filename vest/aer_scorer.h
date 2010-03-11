@@ -8,10 +8,14 @@
 
 class AERScorer : public SentenceScorer {
  public:
-  AERScorer(const std::vector<std::vector<WordID> >& refs);
+  // when constructing alignment strings from a hypergraph, the source
+  // is necessary.
+  AERScorer(const std::vector<std::vector<WordID> >& refs, const std::string& src = "");
   Score* ScoreCandidate(const std::vector<WordID>& hyp) const;
   static Score* ScoreFromString(const std::string& in);
+  const std::string* GetSource() const;
  private:
+  std::string src_;
   boost::shared_ptr<Array2D<bool> > ref_;
 };
 

@@ -3,8 +3,7 @@ bin_PROGRAMS = \
   mr_vest_map \
   mr_vest_reduce \
   mr_vest_generate_mapper_input \
-  fast_score \
-  union_forests
+  fast_score
 
 if HAVE_GTEST
 noinst_PROGRAMS = \
@@ -14,9 +13,6 @@ endif
 
 mbr_kbest_SOURCES = mbr_kbest.cc ter.cc comb_scorer.cc aer_scorer.cc scorer.cc viterbi_envelope.cc
 mbr_kbest_LDADD = $(top_srcdir)/decoder/libcdec.a -lz
-
-union_forests_SOURCES = union_forests.cc
-union_forests_LDADD = $(top_srcdir)/decoder/libcdec.a -lz
 
 fast_score_SOURCES = fast_score.cc ter.cc comb_scorer.cc aer_scorer.cc scorer.cc viterbi_envelope.cc
 fast_score_LDADD = $(top_srcdir)/decoder/libcdec.a -lz

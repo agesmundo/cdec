@@ -19,8 +19,6 @@ my $MAPPER = "$bin_dir/mr_vest_map";
 my $REDUCER = "$bin_dir/mr_vest_reduce";
 my $SCORER = $FAST_SCORE;
 die "Can't find $MAPPER" unless -x $MAPPER;
-my $forestUnion = "$bin_dir/union_forests";
-die "Can't find $forestUnion" unless -x $forestUnion;
 my $cdec = "$bin_dir/../decoder/cdec";
 die "Can't find decoder in $cdec" unless -x $cdec;
 my $decoder = $cdec;
@@ -178,7 +176,6 @@ if ($dryrun){
 	} else {
 		mkdir $dir;
 		mkdir "$dir/hgs";
-		mkdir "$dir/hgs-current";
 		unless (-e $initialWeights) {
 			print STDERR "Please specify an initial weights file with --initial-weights\n";
 			print_help();
@@ -231,7 +228,7 @@ while (1){
 	print LOGFILE `date`;
 	my $im1 = $iteration - 1;
 	my $weightsFile="$dir/weights.$im1";
-	my $decoder_cmd = "$decoder -c $iniFile -w $weightsFile -O $dir/hgs-current";
+	my $decoder_cmd = "$decoder -c $iniFile -w $weightsFile -O $dir/hgs";
 	my $pcmd = "cat $srcFile | $parallelize -p $pmem -e $logdir -n \"$decode_nodes\" -- ";
         if ($run_local) { $pcmd = "cat $srcFile |"; }
         my $cmd = $pcmd . "$decoder_cmd 2> $decoderLog 1> $runFile";
@@ -261,20 +258,8 @@ while (1){
 	print LOGFILE `date`;
 	my $mergeLog="$logdir/prune-merge.log.$iteration";
 	if ($DISCARD_FORESTS) {
-		`rm -rf $dir/hgs`;
-		`mv $dir/hgs-current $dir/hgs`;
-	} else {
-		$cmd = "$forestUnion -r $dir/hgs -n $dir/hgs-current -s $devSize";
-		print LOGFILE "COMMAND:\n$cmd\n";
-		$result = system($cmd);
-		unless ($result == 0){
-			cleanup();
-			print LOGFILE "ERROR: merge command returned non-zero exit code $result\n";
-			die;
-		}
+		`rm -f $dir/hgs/*gz`;
 	}
-	`rm -f $dir/hgs-current/*.json.gz`; # clean up old HGs, they've been moved to the repository
-        `mkdir -p $dir/hgs-current`;
 
 	my $score = 0;
 	my $icc = 0;

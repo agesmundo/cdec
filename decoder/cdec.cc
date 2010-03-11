@@ -426,8 +426,21 @@ int main(int argc, char** argv) {
 
     if (conf.count("forest_output") && !has_ref) {
       ForestWriter writer(conf["forest_output"].as<string>(), sent_id);
-      const bool succeeded = writer.Write(forest, minimal_forests);
-      assert(succeeded);
+      if (FileExists(writer.fname_)) {
+        cerr << "  Unioning...\n";
+        Hypergraph new_hg;
+        {
+          ReadFile rf(writer.fname_);
+          bool succeeded = HypergraphIO::ReadFromJSON(rf.stream(), &new_hg);
+          assert(succeeded);
+        }
+        new_hg.Union(forest);
+        bool succeeded = writer.Write(new_hg, minimal_forests);
+        assert(succeeded);
+      } else {
+        bool succeeded = writer.Write(forest, minimal_forests);
+        assert(succeeded);
+      }
     }
 
     if (sample_max_trans) {
@@ -475,8 +488,21 @@ int main(int argc, char** argv) {
         //DumpKBest(sent_id, forest, 1000);
         if (conf.count("forest_output")) {
           ForestWriter writer(conf["forest_output"].as<string>(), sent_id);
-          bool succeeded = writer.Write(forest, minimal_forests);
-          assert(succeeded);
+          if (FileExists(writer.fname_)) {
+            cerr << "  Unioning...\n";
+            Hypergraph new_hg;
+            {
+              ReadFile rf(writer.fname_);
+              bool succeeded = HypergraphIO::ReadFromJSON(rf.stream(), &new_hg);
+              assert(succeeded);
+            }
+            new_hg.Union(forest);
+            bool succeeded = writer.Write(new_hg, minimal_forests);
+            assert(succeeded);
+          } else {
+            bool succeeded = writer.Write(forest, minimal_forests);
+            assert(succeeded);
+          }
         }
         if (aligner_mode && !output_training_vector)
           AlignerTools::WriteAlignment(smeta.GetSourceLattice(), smeta.GetReference(), forest, &cout);

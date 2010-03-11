@@ -3,6 +3,7 @@
 
 #include <string>
 #include <iostream>
+#include <sstream>
 #include <cstring>
 #include <cassert>
 #include "tdict.h"
@@ -12,7 +13,7 @@
 std::istream* scfglex_stream = NULL;
 RuleLexer::RuleCallback rule_callback = NULL;
 void* rule_callback_extra = NULL;
-std::string scfglex_fname = "Phr_X";
+std::vector<int> scfglex_phrase_fnames;
 
 #undef YY_INPUT
 #define YY_INPUT(buf, result, max_size) (result = scfglex_stream->read(buf, max_size).gcount())
@@ -41,6 +42,9 @@ int scfglex_num_feats;
 #define MAX_ARITY 20
 int scfglex_nt_sanity[MAX_ARITY];
 int scfglex_src_nts[MAX_ARITY];
+float scfglex_nt_size_means[MAX_ARITY];
+float scfglex_nt_size_vars[MAX_ARITY];
+
 
 void sanity_check_trg_symbol(WordID nt, int index) {
   if (scfglex_src_nts[index-1] != nt) {
@@ -201,8 +205,7 @@ NT [A-Z_][A-Z+/=_0-9!:@]*
 		abort();
 		}
 <FEATS>{REAL} 	{ 
-		scfglex_fname[4]='0' + scfglex_num_feats;
-		scfglex_feat_ids[scfglex_num_feats] = FD::Convert(scfglex_fname);
+		scfglex_feat_ids[scfglex_num_feats] = scfglex_phrase_fnames[scfglex_num_feats];
 		scfglex_feat_vals[scfglex_num_feats] = strtod(yytext, NULL);
 		++scfglex_num_feats;
 		}
@@ -239,6 +242,14 @@ NT [A-Z_][A-Z+/=_0-9!:@]*
 #include "filelib.h"
 
 void RuleLexer::ReadRules(std::istream* in, RuleLexer::RuleCallback func, void* extra) {
+  if (scfglex_phrase_fnames.empty()) {
+    scfglex_phrase_fnames.resize(100);
+    for (int i = 0; i < scfglex_phrase_fnames.size(); ++i) {
+      std::ostringstream os;
+      os << "PhraseModel_" << i;
+      scfglex_phrase_fnames[i] = FD::Convert(os.str());
+    }
+  }
   scfglex_stream = in;
   rule_callback_extra = extra,
   rule_callback = func;

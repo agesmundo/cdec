@@ -11,7 +11,12 @@
 
 class TRule;
 typedef boost::shared_ptr<TRule> TRulePtr;
-struct SpanInfo;
+
+struct NTSizeSummaryStatistics {
+  NTSizeSummaryStatistics(int arity) : means(arity), vars(arity) {}
+  std::vector<float> means;
+  std::vector<float> vars;
+};
 
 // Translation rule
 class TRule {
@@ -121,12 +126,16 @@ class TRule {
   std::vector<WordID> f_;
   WordID lhs_;
   SparseVector<double> scores_;
+  
   char arity_;
   TRulePtr parent_rule_;  // usually NULL, except when doing constrained decoding
 
   // this is only used when doing synchronous parsing
   short int prev_i;
   short int prev_j;
+
+  // may be null
+  boost::shared_ptr<NTSizeSummaryStatistics> nt_size_summary_;
 
  private:
   TRule(const WordID& src, const WordID& trg) : e_(1, trg), f_(1, src), lhs_(), arity_(), prev_i(), prev_j() {}

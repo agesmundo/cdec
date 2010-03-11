@@ -251,7 +251,7 @@ void AlignerTools::WriteAlignment(const Lattice& src_lattice,
   ViterbiFSentence(*g, &trg_sent);
 
   if (edges || !map_instead_of_viterbi) {
-    for (int i = 0; i < edges->size(); ++i)
+    for (int i = 0; i < edge_posteriors.size(); ++i)
       edge_posteriors[i] = prob_t::One();
   } else { 
     SparseVector<prob_t> posts;
@@ -305,7 +305,6 @@ void AlignerTools::WriteAlignment(const Lattice& src_lattice,
     cerr << align << endl;
     cerr << grid << endl;
   }
-  SerializePharaohFormat(grid, &cerr);
   (*out) << TD::GetString(src_sent) << " ||| " << TD::GetString(trg_sent) << " ||| ";
   SerializePharaohFormat(grid, out);
 };

@@ -18,14 +18,14 @@ AC_CHECK_HEADER(boost/math/special_functions/digamma.hpp,
 AC_PROG_INSTALL
 GTEST_LIB_CHECK
 
+AM_CONDITIONAL([SRI_LM], false)
 AC_ARG_WITH(srilm,
             [AC_HELP_STRING([--with-srilm=PATH], [(optional) path to SRI's LM toolkit])],
             [with_srilm=$withval],
             [with_srilm=no]
            )
 
-AM_CONDITIONAL([SRI_LM], false)
-
+AM_CONDITIONAL([RAND_LM], false)
 AC_ARG_WITH(randlm,
             [AC_HELP_STRING([--with-randlm=PATH], [(optional) path to RandLM toolkit])],
             [with_randlm=$withval],

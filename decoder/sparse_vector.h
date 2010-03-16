@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <map>
+#include <tr1/unordered_map>
 #include <vector>
 #include <valarray>
 
@@ -14,27 +15,29 @@
 template <typename T>
 class SparseVector {
 public:
-    SparseVector() {}
+  typedef std::map<int, T> MapType;
+  typedef typename std::map<int, T>::const_iterator const_iterator;
+  SparseVector() {}
 
-    const T operator[](int index) const {
-      typename std::map<int, T>::const_iterator found = _values.find(index);
-      if (found == _values.end())
-        return T(0);
-      else
-        return found->second;
-    }
+  const T operator[](int index) const {
+    typename MapType::const_iterator found = values_.find(index);
+    if (found == values_.end())
+      return T(0);
+    else
+      return found->second;
+  }
 
-    void set_value(int index, const T &value) {
-        _values[index] = value;
-    }
+  void set_value(int index, const T &value) {
+    values_[index] = value;
+  }
 
     void add_value(int index, const T &value) {
-        _values[index] += value;
+        values_[index] += value;
     }
 
     T value(int index) const {
-        typename std::map<int, T>::const_iterator found = _values.find(index);
-        if (found != _values.end())
+        typename MapType::const_iterator found = values_.find(index);
+        if (found != values_.end())
             return found->second;
         else
             return T(0);
@@ -42,16 +45,16 @@ public:
 
     void store(std::valarray<T>* target) const {
       (*target) *= 0;
-      for (typename std::map<int, T>::const_iterator 
-              it = _values.begin(); it != _values.end(); ++it) {
+      for (typename MapType::const_iterator 
+              it = values_.begin(); it != values_.end(); ++it) {
         if (it->first >= target->size()) break;
         (*target)[it->first] = it->second;
       }
     }
 
     int max_index() const {
-        if (_values.empty()) return 0;
-        typename std::map<int, T>::const_iterator found =_values.end();
+        if (values_.empty()) return 0;
+        typename MapType::const_iterator found =values_.end();
         --found;
         return found->first;
     }
@@ -60,8 +63,8 @@ public:
     // as the sparse vector
     T dot() const {
         T sum = 0;
-        for (typename std::map<int, T>::const_iterator 
-                it = _values.begin(); it != _values.end(); ++it)
+        for (typename MapType::const_iterator 
+                it = values_.begin(); it != values_.end(); ++it)
             sum += it->second;
         return sum;
     }
@@ -69,12 +72,12 @@ public:
     template<typename S>
     S dot(const SparseVector<S> &vec) const {
         S sum = 0;
-        for (typename std::map<int, T>::const_iterator 
-                it = _values.begin(); it != _values.end(); ++it)
+        for (typename MapType::const_iterator 
+                it = values_.begin(); it != values_.end(); ++it)
         {
-            typename std::map<int, T>::const_iterator 
-                found = vec._values.find(it->first);
-            if (found != vec._values.end())
+            typename MapType::const_iterator 
+                found = vec.values_.find(it->first);
+            if (found != vec.values_.end())
                 sum += it->second * found->second;
         }
         return sum;
@@ -83,8 +86,8 @@ public:
     template<typename S>
     S dot(const std::vector<S> &vec) const {
         S sum = 0;
-        for (typename std::map<int, T>::const_iterator 
-                it = _values.begin(); it != _values.end(); ++it)
+        for (typename MapType::const_iterator 
+                it = values_.begin(); it != values_.end(); ++it)
         {
             if (it->first < static_cast<int>(vec.size()))
                 sum += it->second * vec[it->first];
@@ -96,8 +99,8 @@ public:
     S dot(const S *vec) const {
         // this is not range checked!
         S sum = 0;
-        for (typename std::map<int, T>::const_iterator 
-                it = _values.begin(); it != _values.end(); ++it)
+        for (typename MapType::const_iterator 
+                it = values_.begin(); it != values_.end(); ++it)
             sum += it->second * vec[it->first];
         std::cout << "dot(*vec) " << sum << std::endl;
         return sum;
@@ -105,66 +108,66 @@ public:
 
     T l1norm() const {
       T sum = 0;
-      for (typename std::map<int, T>::const_iterator 
-              it = _values.begin(); it != _values.end(); ++it)
+      for (typename MapType::const_iterator 
+              it = values_.begin(); it != values_.end(); ++it)
         sum += fabs(it->second);
       return sum;
     }
     
     T l2norm() const {
       T sum = 0;
-      for (typename std::map<int, T>::const_iterator 
-              it = _values.begin(); it != _values.end(); ++it)
+      for (typename MapType::const_iterator 
+              it = values_.begin(); it != values_.end(); ++it)
         sum += it->second * it->second;
       return sqrt(sum);
     }
     
     SparseVector<T> &operator+=(const SparseVector<T> &other) {
-        for (typename std::map<int, T>::const_iterator 
-                it = other._values.begin(); it != other._values.end(); ++it)
+        for (typename MapType::const_iterator 
+                it = other.values_.begin(); it != other.values_.end(); ++it)
         {
-            T v = (_values[it->first] += it->second);
+            T v = (values_[it->first] += it->second);
             if (v == 0)
-                _values.erase(it->first);
+                values_.erase(it->first);
         }
         return *this;
     }
 
     SparseVector<T> &operator-=(const SparseVector<T> &other) {
-        for (typename std::map<int, T>::const_iterator 
-                it = other._values.begin(); it != other._values.end(); ++it)
+        for (typename MapType::const_iterator 
+                it = other.values_.begin(); it != other.values_.end(); ++it)
         {
-            T v = (_values[it->first] -= it->second);
+            T v = (values_[it->first] -= it->second);
             if (v == 0)
-                _values.erase(it->first);
+                values_.erase(it->first);
         }
         return *this;
     }
 
     SparseVector<T> &operator-=(const double &x) {
-        for (typename std::map<int, T>::iterator 
-                it = _values.begin(); it != _values.end(); ++it)
+        for (typename MapType::iterator 
+                it = values_.begin(); it != values_.end(); ++it)
             it->second -= x;
         return *this;
     }
 
     SparseVector<T> &operator+=(const double &x) {
-        for (typename std::map<int, T>::iterator 
-                it = _values.begin(); it != _values.end(); ++it)
+        for (typename MapType::iterator 
+                it = values_.begin(); it != values_.end(); ++it)
             it->second += x;
         return *this;
     }
 
     SparseVector<T> &operator/=(const double &x) {
-        for (typename std::map<int, T>::iterator 
-                it = _values.begin(); it != _values.end(); ++it)
+        for (typename MapType::iterator 
+                it = values_.begin(); it != values_.end(); ++it)
             it->second /= x;
         return *this;
     }
 
     SparseVector<T> &operator*=(const T& x) {
-        for (typename std::map<int, T>::iterator 
-                it = _values.begin(); it != _values.end(); ++it)
+        for (typename MapType::iterator 
+                it = values_.begin(); it != values_.end(); ++it)
             it->second *= x;
         return *this;
     }
@@ -186,8 +189,8 @@ public:
 
     std::ostream &operator<<(std::ostream &out) const {
         bool first = true;
-        for (typename std::map<int, T>::const_iterator 
-                it = _values.begin(); it != _values.end(); ++it) {
+        for (typename MapType::const_iterator 
+                it = values_.begin(); it != values_.end(); ++it) {
           // by definition feature id 0 is a dummy value
           if (it->first == 0) continue;
           out << (first ? "" : ";")
@@ -198,39 +201,38 @@ public:
     }
 
     bool operator<(const SparseVector<T> &other) const {
-        typename std::map<int, T>::const_iterator it = _values.begin();
-        typename std::map<int, T>::const_iterator other_it = other._values.begin();
+        typename MapType::const_iterator it = values_.begin();
+        typename MapType::const_iterator other_it = other.values_.begin();
 
-        for (; it != _values.end() && other_it != other._values.end(); ++it, ++other_it)
+        for (; it != values_.end() && other_it != other.values_.end(); ++it, ++other_it)
         {
             if (it->first < other_it->first) return true;
             if (it->first > other_it->first) return false;
             if (it->second < other_it->second) return true;
             if (it->second > other_it->second) return false;
         }
-        return _values.size() < other._values.size();
+        return values_.size() < other.values_.size();
     }
 
-    int num_active() const { return _values.size(); }
-    bool empty() const { return _values.empty(); }
+    int num_active() const { return values_.size(); }
+    bool empty() const { return values_.empty(); }
 
-    typedef typename std::map<int, T>::const_iterator const_iterator;
-    const_iterator begin() const { return _values.begin(); }
-    const_iterator end() const { return _values.end(); }
+    const_iterator begin() const { return values_.begin(); }
+    const_iterator end() const { return values_.end(); }
 
     void clear() {
-        _values.clear();
+        values_.clear();
     }
     void clear_value(int index) {
-      _values.erase(index);
+      values_.erase(index);
     }
 
     void swap(SparseVector<T>& other) {
-      _values.swap(other._values);
+      values_.swap(other.values_);
     }
 
 private:
-    std::map<int, T> _values;
+  MapType values_;
 };
 
 template <typename T>

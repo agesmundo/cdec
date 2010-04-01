@@ -10,6 +10,11 @@
 #include "trule.h"
 #include "prob.h"
 
+// if you define this, edges_ will be sorted
+// (normally, just nodes_ are), but this can be quite
+// slow
+#undef HG_EDGES_TOPO_SORTED
+
 // class representing an acyclic hypergraph
 //  - edges have 1 head, 0..n tails
 class Hypergraph {

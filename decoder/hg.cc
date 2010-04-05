@@ -133,6 +133,7 @@ void Hypergraph::PruneEdges(const std::vector<bool>& prune_edge, bool run_inside
     // fix this!
     vector<double> reachable;
     bool goal_derivable = (0 < Inside<double, EdgeExistsWeightFunction>(*this, &reachable, wf));
+    assert(goal_derivable);
 
     assert(reachable.size() == nodes_.size());
     for (int i = 0; i < edges_.size(); ++i) {
@@ -351,8 +352,6 @@ struct IdCompare {
 void Hypergraph::TopologicallySortNodesAndEdges(int goal_index,
                                                 const vector<bool>* prune_edges) {
   // figure out which nodes are reachable from the goal
-  vector<bool> reachable(nodes_.size(), false);
-  int num_reachable = MarkReachable(nodes_[goal_index], &reachable, prune_edges);
   vector<int> reloc_node(nodes_.size(), -1);
   vector<int> reloc_edge(edges_.size(), -1);
   vector<ColorType> color(nodes_.size(), WHITE);
@@ -390,7 +389,15 @@ void Hypergraph::TopologicallySortNodesAndEdges(int goal_index,
       } else if (tail_color == BLACK) {
         ++tail_i;
       } else if (tail_color == GRAY) {
-        cerr << "Found cycle in HG!\n";
+        // this can happen if, e.g., it is possible to rederive
+        // a single cell in the CKY chart via a cycle.
+        cerr << "Detected forbidden cycle in HG:\n";
+        cerr << "  " << cur_edge.rule_->AsString() << endl;
+        while(!stack.empty()) {
+          const DFSContext& p = stack.back();
+          cerr << "  " << edges_[nodes_[p.node].in_edges_[p.edge_iter]].rule_->AsString() << endl;
+          stack.pop_back();
+        }
         abort();
       }
     }
@@ -434,7 +441,6 @@ void Hypergraph::TopologicallySortNodesAndEdges(int goal_index,
   for (int i = 0; i < reloc_node.size(); ++i) {
     Node& node = nodes_[i];
     node.id_ = reloc_node[i];
-    bool purge = false;
     int c = 0;
     for (int j = 0; j < node.in_edges_.size(); ++j) {
       const int new_index = reloc_edge[node.in_edges_[j]];

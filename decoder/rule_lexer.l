@@ -177,6 +177,10 @@ NT [\-#$A-Z_:=.",\\][\-#$".A-Z+/=_0-9!:@\\]*
 <TRG>[ \t]+	{ ; }
 
 <TRG,FEATS,ALIGNS>\n	{
+                if (scfglex_src_arity != scfglex_trg_arity) {
+                  std::cerr << "Line " << lex_line << ": LHS and RHS arity mismatch!\n";
+                  abort();
+                }
 		TRulePtr rp(new TRule(scfglex_lhs, scfglex_src_rhs, scfglex_src_rhs_size, scfglex_trg_rhs, scfglex_trg_rhs_size, scfglex_feat_ids, scfglex_feat_vals, scfglex_num_feats, scfglex_src_arity));
 		rule_callback(rp, rule_callback_extra);
 		// std::cerr << rp->AsString() << std::endl;

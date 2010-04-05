@@ -98,8 +98,13 @@ bool HG::Intersect(const Lattice& target, Hypergraph* hg) {
   vector<int> cats(nnodes);
   // each node in the translation forest becomes a "non-terminal" in the new
   // grammar, create the labels here
-  for (int i = 0; i < nnodes; ++i)
-    cats[i] = TD::Convert("CAT_" + lexical_cast<string>(i)) * -1;
+  const string kSEP = "_";
+  for (int i = 0; i < nnodes; ++i) {
+    const char* pstr = "CAT";
+    if (hg->nodes_[i].cat_ < 0)
+      pstr = TD::Convert(-hg->nodes_[i].cat_);
+    cats[i] = TD::Convert(pstr + kSEP + lexical_cast<string>(i)) * -1;
+  }
 
   // construct the grammar
   for (int i = 0; i < nedges; ++i) {

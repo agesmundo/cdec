@@ -203,6 +203,11 @@ class Hypergraph {
  private:
   Hypergraph(int num_nodes, int num_edges, bool is_lc) : is_linear_chain_(is_lc), nodes_(num_nodes), edges_(num_edges) {}
 
+  // returns total nodes reachable
+  int MarkReachable(const Node& node,
+                    std::vector<bool>* rmap,
+                    const std::vector<bool>* prune_edges) const;
+
   static TRulePtr kEPSRule;
   static TRulePtr kUnaryRule;
 };

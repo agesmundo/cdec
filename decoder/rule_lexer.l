@@ -10,6 +10,7 @@
 #include "fdict.h"
 #include "trule.h"
 
+int lex_line = 0;
 std::istream* scfglex_stream = NULL;
 RuleLexer::RuleCallback rule_callback = NULL;
 void* rule_callback_extra = NULL;
@@ -79,7 +80,7 @@ void scfglex_reset() {
 %}
 
 REAL [\-+]?[0-9]+(\.[0-9]*([eE][-+]*[0-9]+)?)?|inf|[\-+]inf
-NT [A-Z_][A-Z+/=_0-9!:@]*
+NT [\-#$A-Z_:=.",\\][\-#$".A-Z+/=_0-9!:@\\]*
 
 %x LHS_END SRC TRG FEATS FEATVAL ALIGNS
 %%
@@ -150,7 +151,7 @@ NT [A-Z_][A-Z+/=_0-9!:@]*
 		BEGIN(SRC);
 		}
 <INITIAL,LHS_END>.	{
-		std::cerr << "Unexpected input in LHS: " << yytext << std::endl;
+		std::cerr << "Line " << lex_line << ": unexpected input in LHS: " << yytext << std::endl;
 		abort();
 		}
 
@@ -180,8 +181,9 @@ NT [A-Z_][A-Z+/=_0-9!:@]*
 		rule_callback(rp, rule_callback_extra);
 		// std::cerr << rp->AsString() << std::endl;
 		num_rules++;
-    if (num_rules %   50000 == 0) { std::cerr << '.' << std::flush; fl = true; }
-    if (num_rules % 2000000 == 0) { std::cerr << " [" << num_rules << "]\n"; fl = false; }
+                lex_line++;
+                if (num_rules %   50000 == 0) { std::cerr << '.' << std::flush; fl = true; }
+                if (num_rules % 2000000 == 0) { std::cerr << " [" << num_rules << "]\n"; fl = false; }
 		BEGIN(INITIAL);
 		}
 
@@ -201,7 +203,7 @@ NT [A-Z_][A-Z+/=_0-9!:@]*
 		BEGIN(FEATS);
 		}
 <FEATVAL>.	{
-		std::cerr << "Unexpected input in feature value: " << yytext << std::endl;
+		std::cerr << "Line " << lex_line << ": unexpected input in feature value: " << yytext << std::endl;
 		abort();
 		}
 <FEATS>{REAL} 	{ 
@@ -210,7 +212,7 @@ NT [A-Z_][A-Z+/=_0-9!:@]*
 		++scfglex_num_feats;
 		}
 <FEATS>.	{
-		std::cerr << "Unexpected input in features: " << yytext << std::endl;
+		std::cerr << "Line " << lex_line << " unexpected input in features: " << yytext << std::endl;
 		abort();
 		}
 <ALIGNS>[0-9]+-[0-9]+	{
@@ -234,7 +236,7 @@ NT [A-Z_][A-Z+/=_0-9!:@]*
 		}
 <ALIGNS>[ \t]	;
 <ALIGNS>.	{
-		std::cerr << "Unexpected input in alignment: " << yytext << std::endl;
+		std::cerr << "Line " << lex_line << ": unexpected input in alignment: " << yytext << std::endl;
 		abort();
 		}
 %%
@@ -250,6 +252,7 @@ void RuleLexer::ReadRules(std::istream* in, RuleLexer::RuleCallback func, void* 
       scfglex_phrase_fnames[i] = FD::Convert(os.str());
     }
   }
+  lex_line = 1;
   scfglex_stream = in;
   rule_callback_extra = extra,
   rule_callback = func;

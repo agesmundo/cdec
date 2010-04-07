@@ -211,6 +211,14 @@ void TargetEdgeCoveragesUsingTree(const Hypergraph& g,
   TargetEdgeCoveragesUsingTree(g, g.nodes_.size() - 1, 0, &span_sizes, trg_cov);
 }
 
+struct TransitionEventWeightFunction {
+  inline SparseVector<prob_t> operator()(const Hypergraph::Edge& e) const {
+    SparseVector<prob_t> result;
+    result.set_value(e.id_, e.edge_prob_);
+    return result;
+  }
+};
+
 // this code is rather complicated since it must deal with generating alignments
 // when lattices are specified as input as well as with models that do not generate
 // full sentence pairs (like lexical alignment models)
@@ -255,9 +263,9 @@ void AlignerTools::WriteAlignment(const Lattice& src_lattice,
       edge_posteriors[i] = prob_t::One();
   } else { 
     SparseVector<prob_t> posts;
-    InsideOutside<prob_t, EdgeProb, SparseVector<prob_t>, TransitionEventWeightFunction>(*g, &posts);
+    const prob_t z = InsideOutside<prob_t, EdgeProb, SparseVector<prob_t>, TransitionEventWeightFunction>(*g, &posts);
     for (int i = 0; i < edge_posteriors.size(); ++i)
-      edge_posteriors[i] = posts[i];
+      edge_posteriors[i] = posts[i] / z;
   }
   vector<set<int> > src_cov(g->edges_.size());
   vector<set<int> > trg_cov(g->edges_.size());

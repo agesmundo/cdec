@@ -17,13 +17,24 @@ double Hypergraph::NumberOfPaths() const {
   return Inside<double, TransitionCountWeightFunction>(*this);
 }
 
+struct ScaledTransitionEventWeightFunction {
+  ScaledTransitionEventWeightFunction(double alpha) : scale_(alpha) {}
+  inline SparseVector<prob_t> operator()(const Hypergraph::Edge& e) const {
+    SparseVector<prob_t> result;
+    result.set_value(e.id_, e.edge_prob_.pow(scale_));
+    return result;
+  }
+  const double scale_;
+};
+
 prob_t Hypergraph::ComputeEdgePosteriors(double scale, vector<prob_t>* posts) const {
   const ScaledEdgeProb weight(scale);
-  SparseVector<double> pv;
+  const ScaledTransitionEventWeightFunction w2(scale);
+  SparseVector<prob_t> pv;
   const double inside = InsideOutside<prob_t,
                   ScaledEdgeProb,
-                  SparseVector<double>,
-                  EdgeFeaturesWeightFunction>(*this, &pv, weight);
+                  SparseVector<prob_t>,
+                  ScaledTransitionEventWeightFunction>(*this, &pv, weight, w2);
   posts->resize(edges_.size());
   for (int i = 0; i < edges_.size(); ++i)
     (*posts)[i] = prob_t(pv.value(i));

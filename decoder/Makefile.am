@@ -7,6 +7,7 @@ noinst_PROGRAMS = \
   trule_test \
   hg_test \
   ff_test \
+  logval_test \
   parser_test \
   grammar_test \
   small_vector_test
@@ -29,6 +30,8 @@ trule_test_SOURCES = trule_test.cc
 trule_test_LDADD = $(GTEST_LDFLAGS) $(GTEST_LIBS) libcdec.a
 weights_test_SOURCES = weights_test.cc
 weights_test_LDADD = $(GTEST_LDFLAGS) $(GTEST_LIBS) libcdec.a
+logval_test_SOURCES = logval_test.cc
+logval_test_LDADD = $(GTEST_LDFLAGS) $(GTEST_LIBS)
 
 LDADD = libcdec.a
 

@@ -127,7 +127,7 @@ public:
                 it = other.values_.begin(); it != other.values_.end(); ++it)
         {
             T v = (values_[it->first] += it->second);
-            if (v == 0)
+            if (v == T(0))
                 values_.erase(it->first);
         }
         return *this;
@@ -138,7 +138,7 @@ public:
                 it = other.values_.begin(); it != other.values_.end(); ++it)
         {
             T v = (values_[it->first] -= it->second);
-            if (v == 0)
+            if (v == T(0))
                 values_.erase(it->first);
         }
         return *this;
@@ -158,7 +158,7 @@ public:
         return *this;
     }
 
-    SparseVector<T> &operator/=(const double &x) {
+    SparseVector<T> &operator/=(const T &x) {
         for (typename MapType::iterator 
                 it = values_.begin(); it != values_.end(); ++it)
             it->second /= x;

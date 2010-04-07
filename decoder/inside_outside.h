@@ -75,37 +75,36 @@ void Outside(const Hypergraph& hg,
   }
 }
 
-// this is the Inside-Outside optimization described in Li et al. (EMNLP 2009)
+// this is the Inside-Outside optimization described in Li and Eisner (EMNLP 2009)
 // for computing the inside algorithm over expensive semirings
-// (such as expectations over features).  See Figure 4.  It is slightly different
-// in that x/k is returned not (k,x)
-// NOTE: RType * PType must be valid (and yield RType)
-template<typename PType, typename WeightFunction, typename RType, typename WeightFunction2>
-PType InsideOutside(const Hypergraph& hg,
-                    RType* result_x,
-                    const WeightFunction& weight1 = WeightFunction(),
-                    const WeightFunction2& weight2 = WeightFunction2()) {
+// (such as expectations over features).  See Figure 4.
+// NOTE: XType * KType must be valid (and yield XType)
+// NOTE: This may do things slightly differently than you are used to, please
+// read the description in Li and Eisner (2009) carefully!
+template<typename KType, typename KWeightFunction, typename XType, typename XWeightFunction>
+KType InsideOutside(const Hypergraph& hg,
+                    XType* result_x,
+                    const KWeightFunction& kwf = KWeightFunction(),
+                    const XWeightFunction& xwf = XWeightFunction()) {
   const int num_nodes = hg.nodes_.size();
-  std::vector<PType> inside, outside;
-  const PType z = Inside<PType,WeightFunction>(hg, &inside, weight1);
-  Outside<PType,WeightFunction>(hg, inside, &outside, weight1);
-  RType& x = *result_x;
-  x = RType();
+  std::vector<KType> inside, outside;
+  const KType k = Inside<KType,KWeightFunction>(hg, &inside, kwf);
+  Outside<KType,KWeightFunction>(hg, inside, &outside, kwf);
+  XType& x = *result_x;
+  x = XType();      // default constructor is semiring 0
   for (int i = 0; i < num_nodes; ++i) {
     const Hypergraph::Node& cur_node = hg.nodes_[i];
     const int num_in_edges = cur_node.in_edges_.size();
     for (int j = 0; j < num_in_edges; ++j) {
       const Hypergraph::Edge& edge = hg.edges_[cur_node.in_edges_[j]];
-      PType prob = outside[i];
-      prob *= weight1(edge);
+      KType kbar_e = outside[i];
       const int num_tail_nodes = edge.tail_nodes_.size();
       for (int k = 0; k < num_tail_nodes; ++k)
-        prob *= inside[edge.tail_nodes_[k]];
-      prob /= z;
-      x += weight2(edge) * prob;
+        kbar_e *= inside[edge.tail_nodes_[k]];
+      x += xwf(edge) * kbar_e;
     }
   }
-  return z;
+  return k;
 }
 
 #endif

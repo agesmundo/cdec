@@ -304,23 +304,6 @@ void Hypergraph::Union(const Hypergraph& other) {
   TopologicallySortNodesAndEdges(cgoal);
 }
 
-int Hypergraph::MarkReachable(const Node& node,
-                              vector<bool>* rmap,
-                              const vector<bool>* prune_edges) const {
-  int total = 0;
-  if (!(*rmap)[node.id_]) {
-    total = 1;
-    (*rmap)[node.id_] = true;
-    for (int i = 0; i < node.in_edges_.size(); ++i) {
-      if (!(prune_edges && (*prune_edges)[node.in_edges_[i]])) {
-        for (int j = 0; j < edges_[node.in_edges_[i]].tail_nodes_.size(); ++j)
-         total += MarkReachable(nodes_[edges_[node.in_edges_[i]].tail_nodes_[j]], rmap, prune_edges);
-      }
-    }
-  }
-  return total;
-}
-
 void Hypergraph::PruneUnreachable(int goal_node_id) {
   TopologicallySortNodesAndEdges(goal_node_id, NULL);
 }

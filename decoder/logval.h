@@ -137,12 +137,16 @@ LogVal<T> pow(const LogVal<T>& b, const T& e) {
   return b.pow(e);
 }
 
-#if 0
 template <typename T>
 bool operator<(const LogVal<T>& lhs, const LogVal<T>& rhs) {
-  return (lhs.v_ < rhs.v_);
+  if (lhs.s_ == rhs.s_) {
+    return (lhs.v_ < rhs.v_);
+  } else {
+    return lhs.s_ > rhs.s_;
+  }
 }
 
+#if 0
 template <typename T>
 bool operator<=(const LogVal<T>& lhs, const LogVal<T>& rhs) {
   return (lhs.v_ <= rhs.v_);
@@ -161,12 +165,12 @@ bool operator>=(const LogVal<T>& lhs, const LogVal<T>& rhs) {
 
 template <typename T>
 bool operator==(const LogVal<T>& lhs, const LogVal<T>& rhs) {
-  return (lhs.v_ == rhs.v_);
+  return (lhs.v_ == rhs.v_) && (lhs.s_ == rhs.s_);
 }
 
 template <typename T>
 bool operator!=(const LogVal<T>& lhs, const LogVal<T>& rhs) {
-  return (lhs.v_ != rhs.v_);
+  return !(lhs == rhs);
 }
 
 #endif

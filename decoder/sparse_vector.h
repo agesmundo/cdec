@@ -127,7 +127,7 @@ public:
                 it = other.values_.begin(); it != other.values_.end(); ++it)
         {
             T v = (values_[it->first] += it->second);
-            if (v == T(0))
+            if (v == T())
                 values_.erase(it->first);
         }
         return *this;

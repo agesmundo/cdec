@@ -27,6 +27,41 @@ struct ScaledTransitionEventWeightFunction {
   const double scale_;
 };
 
+struct TropicalValue {
+  TropicalValue() : v_() {}
+  explicit TropicalValue(int v) {
+    if (v == 0) v_ = prob_t::Zero();
+    else if (v == 1) v_ = prob_t::One();
+    else { cerr << "Bad value in TropicalValue(int).\n"; abort(); }
+  }
+  explicit TropicalValue(const prob_t& v) : v_(v) {}
+  inline TropicalValue& operator+=(const TropicalValue& o) {
+    if (v_ < o.v_) v_ = o.v_;
+    return *this;
+  }
+  inline TropicalValue& operator*=(const TropicalValue& o) {
+    v_ *= o.v_;
+    return *this;
+  }
+  inline bool operator==(const TropicalValue& o) const { return v_ == o.v_; }
+  prob_t v_;
+};
+
+struct ViterbiWeightFunction {
+  inline TropicalValue operator()(const Hypergraph::Edge& e) const {
+    return TropicalValue(e.edge_prob_);
+  }
+};
+
+struct ViterbiTransitionEventWeightFunction {
+  inline SparseVector<TropicalValue> operator()(const Hypergraph::Edge& e) const {
+    SparseVector<TropicalValue> result;
+    result.set_value(e.id_, TropicalValue(e.edge_prob_));
+    return result;
+  }
+};
+
+
 prob_t Hypergraph::ComputeEdgePosteriors(double scale, vector<prob_t>* posts) const {
   const ScaledEdgeProb weight(scale);
   const ScaledTransitionEventWeightFunction w2(scale);
@@ -42,57 +77,15 @@ prob_t Hypergraph::ComputeEdgePosteriors(double scale, vector<prob_t>* posts) co
 }
 
 prob_t Hypergraph::ComputeBestPathThroughEdges(vector<prob_t>* post) const {
-  vector<prob_t> in(edges_.size());
-  vector<prob_t> out(edges_.size());
+  SparseVector<TropicalValue> pv;
+  const TropicalValue viterbi_weight = InsideOutside<TropicalValue,
+                  ViterbiWeightFunction,
+                  SparseVector<TropicalValue>,
+                  ViterbiTransitionEventWeightFunction>(*this, &pv);
   post->resize(edges_.size());
-
-  vector<prob_t> ins_node_best(nodes_.size());
-  for (int i = 0; i < nodes_.size(); ++i) {
-    const Node& node = nodes_[i];
-    prob_t& node_ins_best = ins_node_best[i];
-    if (node.in_edges_.empty()) node_ins_best = prob_t::One();
-    for (int j = 0; j < node.in_edges_.size(); ++j) {
-      const Edge& edge = edges_[node.in_edges_[j]];
-      prob_t& in_edge_sco = in[node.in_edges_[j]];
-      in_edge_sco = edge.edge_prob_;
-      for (int k = 0; k < edge.tail_nodes_.size(); ++k)
-        in_edge_sco *= ins_node_best[edge.tail_nodes_[k]];
-      if (in_edge_sco > node_ins_best) node_ins_best = in_edge_sco;
-    }
-  }
-  const prob_t ins_sco = ins_node_best[nodes_.size() - 1];
-
-  // sanity check
-  int tots = 0;
-  for (int i = 0; i < nodes_.size(); ++i) { if (nodes_[i].out_edges_.empty()) tots++; }
-  assert(tots == 1);
-
-  // compute outside scores, potentially using inside scores
-  vector<prob_t> out_node_best(nodes_.size());
-  for (int i = nodes_.size() - 1; i >= 0; --i) {
-    const Node& node = nodes_[i];
-    prob_t& node_out_best = out_node_best[node.id_];
-    if (node.out_edges_.empty()) node_out_best = prob_t::One();
-    for (int j = 0; j < node.out_edges_.size(); ++j) {
-      const Edge& edge = edges_[node.out_edges_[j]];
-      prob_t sco = edge.edge_prob_ * out_node_best[edge.head_node_];
-      for (int k = 0; k < edge.tail_nodes_.size(); ++k) {
-        if (edge.tail_nodes_[k] != i)
-          sco *= ins_node_best[edge.tail_nodes_[k]];
-      }
-      if (sco > node_out_best) node_out_best = sco;
-    }
-    for (int j = 0; j < node.in_edges_.size(); ++j) {
-      out[node.in_edges_[j]] = node_out_best;
-    }
-  }
-
-  for (int i = 0; i < in.size(); ++i)
-    (*post)[i] = in[i] * out[i];
-  // for (int i = 0; i < in.size(); ++i)
-  //   cerr << "edge " << i << ": " << log((*post)[i]) << endl;
-
-  return ins_sco;
+  for (int i = 0; i < edges_.size(); ++i)
+    (*post)[i] = pv.value(i).v_;
+  return viterbi_weight.v_;
 }
 
 void Hypergraph::PushWeightsToSource(double scale) {

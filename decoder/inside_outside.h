@@ -8,7 +8,7 @@
 // run the inside algorithm and return the inside score
 // if result is non-NULL, result will contain the inside
 // score for each node
-// NOTE: WeightType(0) must construct the semiring's additive identity
+// NOTE: WeightType()  must construct the semiring's additive identity
 //       WeightType(1) must construct the semiring's multiplicative identity
 template<typename WeightType, typename WeightFunction>
 WeightType Inside(const Hypergraph& hg,
@@ -50,7 +50,7 @@ void Outside(const Hypergraph& hg,
   assert(inside_score.size() == num_nodes);
   std::vector<WeightType>& outside_score = *result;
   outside_score.resize(num_nodes);
-  std::fill(outside_score.begin(), outside_score.end(), WeightType(0));
+  std::fill(outside_score.begin(), outside_score.end(), WeightType());
   outside_score.back() = WeightType(1);
   for (int i = num_nodes - 1; i >= 0; --i) {
     const Hypergraph::Node& cur_node = hg.nodes_[i];
@@ -58,7 +58,8 @@ void Outside(const Hypergraph& hg,
     const int num_in_edges = cur_node.in_edges_.size();
     for (int j = 0; j < num_in_edges; ++j) {
       const Hypergraph::Edge& edge = hg.edges_[cur_node.in_edges_[j]];
-      const WeightType head_and_edge_weight = weight(edge) * head_node_outside_score;
+      WeightType head_and_edge_weight = weight(edge);
+      head_and_edge_weight *= head_node_outside_score;
       const int num_tail_nodes = edge.tail_nodes_.size();
       for (int k = 0; k < num_tail_nodes; ++k) {
         const int update_tail_node_index = edge.tail_nodes_[k];
@@ -69,7 +70,8 @@ void Outside(const Hypergraph& hg,
           if (update_tail_node_index != other_tail_node_index)
             inside_contribution *= inside_score[other_tail_node_index];
         }
-        *tail_outside_score += head_and_edge_weight * inside_contribution;
+        inside_contribution *= head_and_edge_weight;
+        *tail_outside_score += inside_contribution;
       }
     }
   }

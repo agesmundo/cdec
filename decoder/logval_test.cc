@@ -11,6 +11,21 @@ class LogValTest : public testing::Test {
 
 using namespace std;
 
+TEST_F(LogValTest,Order) {
+  LogVal<double> a(-0.3);
+  LogVal<double> b(0.3);
+  LogVal<double> c(2.4);
+  EXPECT_LT(a,b);
+  EXPECT_LT(b,c);
+  EXPECT_LT(a,c);
+  EXPECT_FALSE(b < a);
+  EXPECT_FALSE(c < a);
+  EXPECT_FALSE(c < b);
+  EXPECT_FALSE(c < c);
+  EXPECT_FALSE(b < b);
+  EXPECT_FALSE(a < a);
+}
+
 TEST_F(LogValTest,Invert) {
   LogVal<double> x(-2.4);
   LogVal<double> y(2.4);

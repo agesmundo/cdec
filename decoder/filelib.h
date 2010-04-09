@@ -7,6 +7,9 @@
 #include <cstdlib>
 #include "gzstream.h"
 
+bool FileExists(const std::string& file_name);
+bool DirectoryExists(const std::string& dir_name);
+
 // reads from standard in if filename is -
 // uncompresses if file ends with .gz
 // otherwise, reads from a normal file
@@ -18,6 +21,10 @@ class ReadFile {
       (EndsWith(filename, ".gz") ?
         static_cast<std::istream*>(new igzstream(filename.c_str())) :
         static_cast<std::istream*>(new std::ifstream(filename.c_str())))) {
+    if (!no_delete_on_exit_ && !FileExists(filename)) {
+      std::cerr << "File does not exist: " << filename << std::endl;
+      abort();
+    }
     if (!*in_) {
       std::cerr << "Failed to open " << filename << std::endl;
       abort();
@@ -59,8 +66,5 @@ class WriteFile {
   const bool no_delete_on_exit_;
   std::ostream* const out_;
 };
-
-bool FileExists(const std::string& file_name);
-bool DirectoryExists(const std::string& dir_name);
 
 #endif

@@ -41,11 +41,6 @@ class LogVal {
     return *this;
   }
 
-  LogVal& operator*=(const T& a) {
-    v_ += log(a);
-    return *this;
-  }
-
   LogVal& operator/=(const LogVal& a) {
     s_ = (s_ != a.s_);
     v_ -= a.v_;
@@ -95,20 +90,6 @@ template<typename T>
 LogVal<T> operator*(const LogVal<T>& o1, const LogVal<T>& o2) {
   LogVal<T> res(o1);
   res *= o2;
-  return res;
-}
-
-template<typename T>
-LogVal<T> operator*(const LogVal<T>& o1, const T& o2) {
-  LogVal<T> res(o1);
-  res *= o2;
-  return res;
-}
-
-template<typename T>
-LogVal<T> operator*(const T& o1, const LogVal<T>& o2) {
-  LogVal<T> res(o2);
-  res *= o1;
   return res;
 }
 

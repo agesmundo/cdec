@@ -47,8 +47,6 @@ TEST_F(LogValTest,Minus) {
 TEST_F(LogValTest,TestOps) {
   LogVal<double> x(-12.12);
   LogVal<double> y(x);
-  cerr << sizeof(LogVal<double>) << endl;
-  cerr << sizeof(LogVal<float>) << endl;
   cerr << x << endl;
   cerr << (x*y) << endl;
   cerr << (x*y + x) << endl;
@@ -60,6 +58,12 @@ TEST_F(LogValTest,TestOps) {
   cerr << (bb + aa) << endl;
   EXPECT_FLOAT_EQ((aa + bb), (bb + aa));
   EXPECT_FLOAT_EQ((aa + bb), -0.1);
+}
+
+TEST_F(LogValTest,TestSizes) {
+  cerr << sizeof(LogVal<double>) << endl;
+  cerr << sizeof(LogVal<float>) << endl;
+  cerr << sizeof(void*) << endl;
 }
 
 int main(int argc, char** argv) {

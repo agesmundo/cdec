@@ -88,7 +88,8 @@ void InitCommandLine(int argc, char** argv, po::variables_map* conf) {
         ("max_translation_beam,x", po::value<int>(), "Beam approximation to get max translation from the chart")
         ("max_translation_sample,X", po::value<int>(), "Sample the max translation from the chart")
         ("pb_max_distortion,D", po::value<int>()->default_value(4), "Phrase-based decoder: maximum distortion")
-        ("gradient,G","Compute d log p(e|f) / d lambda_i and write to STDOUT (src & ref required)")
+        ("cll_gradient,G","Compute conditional log-likelihood gradient and write to STDOUT (src & ref required)")
+        ("crf_uniform_empirical", "If there are multple references use (i.e., lattice) a uniform distribution rather than posterior weighting a la EM")
         ("feature_expectations","Write feature expectations for all features in chart (**OBJ** will be the partition)")
         ("vector_format",po::value<string>()->default_value("b64"), "Sparse vector serialization format for feature expectations or gradients, includes (text or b64)")
         ("combine_size,C",po::value<int>()->default_value(1), "When option -G is used, process this many sentence pairs before writing the gradient (1=emit after every sentence pair)")
@@ -235,7 +236,7 @@ int main(int argc, char** argv) {
   ShowBanner();
   po::variables_map conf;
   InitCommandLine(argc, argv, &conf);
-  const bool write_gradient = conf.count("gradient");
+  const bool write_gradient = conf.count("cll_gradient");
   const bool feature_expectations = conf.count("feature_expectations");
   if (write_gradient && feature_expectations) {
     cerr << "You can only specify --gradient or --feature_expectations, not both!\n";
@@ -325,6 +326,7 @@ int main(int argc, char** argv) {
   const bool encode_b64 = conf["vector_format"].as<string>() == "b64";
   const bool kbest = conf.count("k_best");
   const bool unique_kbest = conf.count("unique_k_best");
+  const bool crf_uniform_empirical = conf.count("crf_uniform_empirical");
   shared_ptr<WriteFile> extract_file;
   if (conf.count("extract_rules"))
     extract_file.reset(new WriteFile(conf["extract_rules"].as<string>()));
@@ -483,8 +485,14 @@ int main(int argc, char** argv) {
       if (HG::Intersect(ref, &forest)) {
         cerr << "  Constr. forest (nodes/edges): " << forest.nodes_.size() << '/' << forest.edges_.size() << endl;
         cerr << "  Constr. forest       (paths): " << forest.NumberOfPaths() << endl;
-        forest.Reweight(feature_weights);
-        cerr << "  Constr. VitTree: " << ViterbiFTree(forest) << endl;
+        if (crf_uniform_empirical) {
+          cerr << "  USING UNIFORM WEIGHTS\n";
+          for (int i = 0; i < forest.edges_.size(); ++i)
+            forest.edges_[i].edge_prob_=prob_t::One();
+        } else {
+          forest.Reweight(feature_weights);
+          cerr << "  Constr. VitTree: " << ViterbiFTree(forest) << endl;
+        }
 	if (hadoop_counters)
           cerr << "reporter:counter:UserCounters,SentencePairsParsed,1" << endl;
         if (conf.count("show_partition")) {
@@ -514,14 +522,19 @@ int main(int argc, char** argv) {
           AlignerTools::WriteAlignment(smeta.GetSourceLattice(), smeta.GetReference(), forest, &cout);
         if (write_gradient) {
           const prob_t ref_z = InsideOutside<prob_t, EdgeProb, SparseVector<prob_t>, EdgeFeaturesAndProbWeightFunction>(forest, &ref_exp);
-          log_ref_z = log(ref_z);
           ref_exp /= ref_z;
+          if (crf_uniform_empirical) {
+            log_ref_z = ref_exp.dot(feature_weights);
+          } else {
+            log_ref_z = log(ref_z);
+          }
+          //cerr << "      MODEL LOG Z: " << log_z << endl;
+          //cerr << "  EMPIRICAL LOG Z: " << log_ref_z << endl;
           if ((log_z - log_ref_z) < kMINUS_EPSILON) {
             cerr << "DIFF. ERR! log_z < log_ref_z: " << log_z << " " << log_ref_z << endl;
             exit(1);
           }
-          //cerr << "FULL: " << full_exp << endl;
-          //cerr << " REF: " << ref_exp << endl;
+          assert(!isnan(log_ref_z));
           ref_exp -= full_exp;
           acc_vec += ref_exp;
           acc_obj += (log_z - log_ref_z);

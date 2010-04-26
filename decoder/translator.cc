@@ -12,6 +12,7 @@ void Translator::ProcessMarkupHints(const map<string, string>& kv) {
     cerr << "Translator::ProcessMarkupHints in wrong state: " << state_ << endl;
     abort();
   }
+ cerr << "In Translator Process\n";
   ProcessMarkupHintsImpl(kv);
   state_ = kReadyToTranslate;
 }
@@ -42,6 +43,7 @@ void Translator::SentenceComplete() {
 // metadata
 void Translator::ProcessMarkupHintsImpl(const map<string, string>& kv) {
   int unprocessed = kv.size() - kv.count("id");
+	cerr << "Inside translator process hints\n";
   if (unprocessed > 0) {
     cerr << "Sentence markup contains unprocessed data:\n";
     for (map<string, string>::const_iterator it = kv.begin(); it != kv.end(); ++it) {

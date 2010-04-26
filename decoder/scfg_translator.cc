@@ -15,17 +15,29 @@ struct SCFGTranslatorImpl {
       add_pass_through_rules(conf.count("add_pass_through_rules")),
       goal(conf["goal"].as<string>()),
       default_nt(conf["scfg_default_nt"].as<string>()) {
-    vector<string> gfiles = conf["grammar"].as<vector<string> >();
+    /* vector<string> gfiles = conf["garmmar"].as<vector<string> >();
     for (int i = 0; i < gfiles.size(); ++i) {
       cerr << "Reading SCFG grammar from " << gfiles[i] << endl;
       TextGrammar* g = new TextGrammar(gfiles[i]);
       g->SetMaxSpan(max_span_limit);
-      grammars.push_back(GrammarPtr(g));
-    }
+      g->SetGrammarName(gfiles[i]);
+      //grammars.push_back(GrammarPtr(g));
+      cerr << "Adding main grammar from file"<< endl;
+      }*/
     if (!conf.count("scfg_no_hiero_glue_grammar"))
-      grammars.push_back(GrammarPtr(new GlueGrammar(goal, default_nt)));
+      { 
+	GlueGrammar* g = new GlueGrammar(goal, default_nt);
+	g->SetGrammarName("GlueGrammar");
+	grammars.push_back(GrammarPtr(g));
+	cerr << "Adding glue grammar" << endl;
+      }
     if (conf.count("scfg_extra_glue_grammar"))
-      grammars.push_back(GrammarPtr(new GlueGrammar(conf["scfg_extra_glue_grammar"].as<string>())));
+      {
+	GlueGrammar* g = new GlueGrammar(conf["scfg_extra_glue_grammar"].as<string>());
+	g->SetGrammarName("ExtraGlueGrammar");		
+	grammars.push_back(GrammarPtr(g));
+	cerr << "Adding extra glue grammar" << endl;
+      }
   }
 
   const int max_span_limit;
@@ -42,8 +54,30 @@ struct SCFGTranslatorImpl {
     Lattice& lattice = smeta->src_lattice_;
     LatticeTools::ConvertTextOrPLF(input, &lattice);
     smeta->SetSourceLength(lattice.size());
-    if (add_pass_through_rules)
-      glist.push_back(GrammarPtr(new PassThroughGrammar(lattice, default_nt)));
+    if (add_pass_through_rules){
+      PassThroughGrammar* g = new PassThroughGrammar(lattice, default_nt);
+      g->SetGrammarName("PassThrough");
+      glist.push_back(GrammarPtr(g));
+      cerr << "Adding pass through grammar" << endl;
+    }
+
+
+  //Iterate trough grammars we have
+  // vector<GrammarPtr>::iterator g_it;
+    //   const vector<GrammarPtr>& g_it,
+
+     //   g_it=glist.begin();
+
+     //while (g_it != glist.end() )
+     for (int gi = 0; gi < glist.size(); ++gi) 
+       {
+	 cerr << "Using grammar::" << 	 glist[gi]->GetGrammarName() << endl;
+	 //      ++g_it;
+       }
+
+
+
+
     ExhaustiveBottomUpParser parser(goal, glist);
     if (!parser.Parse(lattice, forest))
       return false;
@@ -52,24 +86,45 @@ struct SCFGTranslatorImpl {
   }
 };
 
+/*
+Called once from cdec to setup the initial SCFG translation structure backend
+*/
 SCFGTranslator::SCFGTranslator(const boost::program_options::variables_map& conf) :
   pimpl_(new SCFGTranslatorImpl(conf)) {}
 
+/*
+Called for each sentence to perform translation using the SCFG backend
+*/
 bool SCFGTranslator::TranslateImpl(const string& input,
                                SentenceMetadata* smeta,
                                const vector<double>& weights,
                                Hypergraph* minus_lm_forest) {
+  cerr << "Calling translate impl " << endl;
   return pimpl_->Translate(input, smeta, weights, minus_lm_forest);
 }
 
+/*
+Check for grammar pointer in the sentnce markup, for use with sentence specific grammars
+ */
 void SCFGTranslator::ProcessMarkupHintsImpl(const map<string, string>& kv) {
   map<string,string>::const_iterator it = kv.find("grammar");
+ 
+  
   if (it == kv.end()) return;
-  // TODO Implement loading it->second is filename
-  assert(!"not implemented");
+  //Create sentence specific grammar from specified file name and load grammar into list of grammars
+  cerr << "Loading sentence grammar from" << it->second <<  endl;
+ 
+  TextGrammar* sentGrammar = new TextGrammar(it->second);
+  sentGrammar->SetMaxSpan(pimpl_->max_span_limit);
+  sentGrammar->SetGrammarName(it->second);
+  pimpl_->grammars.push_back(GrammarPtr(sentGrammar));
+
 }
 
 void SCFGTranslator::SentenceCompleteImpl() {
-  // TODO Implement unloading grammar
+  //Drop the last sentence grammar from the list of grammars
+  cerr << "Clearing grammar" << endl;
+  // pimpl_->grammars.clear();
+   pimpl_->grammars.pop_back();
 }
 

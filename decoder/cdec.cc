@@ -181,7 +181,8 @@ void MaxTranslationSample(Hypergraph* hg, const int samples, const int k) {
 
 // TODO decoder output should probably be moved to another file
 void DumpKBest(const int sent_id, const Hypergraph& forest, const int k, const bool unique) {
-  if (unique) {
+cerr << "In kbest\n"; 
+ if (unique) {
     KBest::KBestDerivations<vector<WordID>, ESentenceTraversal, KBest::FilterUnique> kbest(forest, k);
     for (int i = 0; i < k; ++i) {
       const KBest::KBestDerivations<vector<WordID>, ESentenceTraversal, KBest::FilterUnique>::Derivation* d =

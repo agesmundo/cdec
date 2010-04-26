@@ -5,6 +5,7 @@
 #include <map>
 #include <set>
 #include <boost/shared_ptr.hpp>
+#include <string>
 
 #include "lattice.h"
 #include "trule.h"
@@ -29,7 +30,8 @@ struct Grammar {
   virtual ~Grammar();
   virtual const GrammarIter* GetRoot() const = 0;
   virtual bool HasRuleForSpan(int i, int j, int distance) const;
-
+  const std::string GetGrammarName(){return grammar_name_;}
+  void SetGrammarName(std::string n) {grammar_name_ = n; }
   // cat is the category to be rewritten
   inline const std::vector<TRulePtr>& GetAllUnaryRules() const {
     return unaries_;
@@ -47,6 +49,7 @@ struct Grammar {
  protected:
   Cat2Rules rhs2unaries_;     // these must be filled in by subclasses!
   std::vector<TRulePtr> unaries_;
+  std::string grammar_name_; 
 };
 
 typedef boost::shared_ptr<Grammar> GrammarPtr;
@@ -56,14 +59,17 @@ struct TextGrammar : public Grammar {
   TextGrammar();
   TextGrammar(const std::string& file);
   void SetMaxSpan(int m) { max_span_ = m; }
+  
   virtual const GrammarIter* GetRoot() const;
   void AddRule(const TRulePtr& rule);
   void ReadFromFile(const std::string& filename);
   virtual bool HasRuleForSpan(int i, int j, int distance) const;
   const std::vector<TRulePtr>& GetUnaryRules(const WordID& cat) const;
+  
  private:
   int max_span_;
   boost::shared_ptr<TGImpl> pimpl_;
+  
 };
 
 struct GlueGrammar : public TextGrammar {

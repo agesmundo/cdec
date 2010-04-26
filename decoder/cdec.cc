@@ -46,7 +46,12 @@ namespace Hack { void MaxTrans(const Hypergraph& in, int beam_size); }
 namespace NgramCache { void Clear(); }
 
 void ShowBanner() {
-  cerr << "cdec v1.0 (c) 2009 by Chris Dyer\n";
+  cerr << "cdec v1.0 (c) 2009-2010 by Chris Dyer\n";
+}
+
+void ConvertSV(const SparseVector<prob_t>& src, SparseVector<double>* trg) {
+  for (SparseVector<prob_t>::const_iterator it = src.begin(); it != src.end(); ++it)
+    trg->set_value(it->first, it->second);
 }
 
 void InitCommandLine(int argc, char** argv, po::variables_map* conf) {
@@ -83,7 +88,8 @@ void InitCommandLine(int argc, char** argv, po::variables_map* conf) {
         ("max_translation_beam,x", po::value<int>(), "Beam approximation to get max translation from the chart")
         ("max_translation_sample,X", po::value<int>(), "Sample the max translation from the chart")
         ("pb_max_distortion,D", po::value<int>()->default_value(4), "Phrase-based decoder: maximum distortion")
-        ("gradient,G","Compute d log p(e|f) / d lambda_i and write to STDOUT (src & ref required)")
+        ("cll_gradient,G","Compute conditional log-likelihood gradient and write to STDOUT (src & ref required)")
+        ("crf_uniform_empirical", "If there are multple references use (i.e., lattice) a uniform distribution rather than posterior weighting a la EM")
         ("feature_expectations","Write feature expectations for all features in chart (**OBJ** will be the partition)")
         ("vector_format",po::value<string>()->default_value("b64"), "Sparse vector serialization format for feature expectations or gradients, includes (text or b64)")
         ("combine_size,C",po::value<int>()->default_value(1), "When option -G is used, process this many sentence pairs before writing the gradient (1=emit after every sentence pair)")
@@ -231,7 +237,7 @@ int main(int argc, char** argv) {
   ShowBanner();
   po::variables_map conf;
   InitCommandLine(argc, argv, &conf);
-  const bool write_gradient = conf.count("gradient");
+  const bool write_gradient = conf.count("cll_gradient");
   const bool feature_expectations = conf.count("feature_expectations");
   if (write_gradient && feature_expectations) {
     cerr << "You can only specify --gradient or --feature_expectations, not both!\n";
@@ -321,6 +327,7 @@ int main(int argc, char** argv) {
   const bool encode_b64 = conf["vector_format"].as<string>() == "b64";
   const bool kbest = conf.count("k_best");
   const bool unique_kbest = conf.count("unique_k_best");
+  const bool crf_uniform_empirical = conf.count("crf_uniform_empirical");
   shared_ptr<WriteFile> extract_file;
   if (conf.count("extract_rules"))
     extract_file.reset(new WriteFile(conf["extract_rules"].as<string>()));
@@ -333,7 +340,7 @@ int main(int argc, char** argv) {
   istream *in = in_read.stream();
   assert(*in);
 
-  SparseVector<double> acc_vec;  // accumulate gradient
+  SparseVector<prob_t> acc_vec;  // accumulate gradient
   double acc_obj = 0; // accumulate objective
   int g_count = 0;    // number of gradient pieces computed
   int sent_id = -1;         // line counter
@@ -468,18 +475,25 @@ int main(int argc, char** argv) {
     if (graphviz && !has_ref) forest.PrintGraphviz();
 
     // the following are only used if write_gradient is true!
-    SparseVector<double> full_exp, ref_exp, gradient;
+    SparseVector<prob_t> full_exp, ref_exp, gradient;
     double log_z = 0, log_ref_z = 0;
-    if (write_gradient)
-      log_z = log(
-        InsideOutside<prob_t, EdgeProb, SparseVector<double>, EdgeFeaturesWeightFunction>(forest, &full_exp));
-
+    if (write_gradient) {
+      const prob_t z = InsideOutside<prob_t, EdgeProb, SparseVector<prob_t>, EdgeFeaturesAndProbWeightFunction>(forest, &full_exp);
+      log_z = log(z);
+      full_exp /= z;
+    }
     if (has_ref) {
       if (HG::Intersect(ref, &forest)) {
         cerr << "  Constr. forest (nodes/edges): " << forest.nodes_.size() << '/' << forest.edges_.size() << endl;
         cerr << "  Constr. forest       (paths): " << forest.NumberOfPaths() << endl;
-        forest.Reweight(feature_weights);
-        cerr << "  Constr. VitTree: " << ViterbiFTree(forest) << endl;
+        if (crf_uniform_empirical) {
+          cerr << "  USING UNIFORM WEIGHTS\n";
+          for (int i = 0; i < forest.edges_.size(); ++i)
+            forest.edges_[i].edge_prob_=prob_t::One();
+        } else {
+          forest.Reweight(feature_weights);
+          cerr << "  Constr. VitTree: " << ViterbiFTree(forest) << endl;
+        }
 	if (hadoop_counters)
           cerr << "reporter:counter:UserCounters,SentencePairsParsed,1" << endl;
         if (conf.count("show_partition")) {
@@ -508,21 +522,29 @@ int main(int argc, char** argv) {
         if (aligner_mode && !output_training_vector)
           AlignerTools::WriteAlignment(smeta.GetSourceLattice(), smeta.GetReference(), forest, &cout);
         if (write_gradient) {
-          log_ref_z = log(
-            InsideOutside<prob_t, EdgeProb, SparseVector<double>, EdgeFeaturesWeightFunction>(forest, &ref_exp));
+          const prob_t ref_z = InsideOutside<prob_t, EdgeProb, SparseVector<prob_t>, EdgeFeaturesAndProbWeightFunction>(forest, &ref_exp);
+          ref_exp /= ref_z;
+          if (crf_uniform_empirical) {
+            log_ref_z = ref_exp.dot(feature_weights);
+          } else {
+            log_ref_z = log(ref_z);
+          }
+          //cerr << "      MODEL LOG Z: " << log_z << endl;
+          //cerr << "  EMPIRICAL LOG Z: " << log_ref_z << endl;
           if ((log_z - log_ref_z) < kMINUS_EPSILON) {
             cerr << "DIFF. ERR! log_z < log_ref_z: " << log_z << " " << log_ref_z << endl;
             exit(1);
           }
-          //cerr << "FULL: " << full_exp << endl;
-          //cerr << " REF: " << ref_exp << endl;
+          assert(!isnan(log_ref_z));
           ref_exp -= full_exp;
           acc_vec += ref_exp;
           acc_obj += (log_z - log_ref_z);
         }
         if (feature_expectations) {
-          acc_obj += log(
-            InsideOutside<prob_t, EdgeProb, SparseVector<double>, EdgeFeaturesWeightFunction>(forest, &ref_exp));
+          const prob_t z = 
+            InsideOutside<prob_t, EdgeProb, SparseVector<prob_t>, EdgeFeaturesAndProbWeightFunction>(forest, &ref_exp);
+          ref_exp /= z;
+          acc_obj += log(z);
           acc_vec += ref_exp;
         }
 
@@ -532,7 +554,8 @@ int main(int argc, char** argv) {
           if (g_count % combine_size == 0) {
             if (encode_b64) {
               cout << "0\t";
-              B64::Encode(acc_obj, acc_vec, &cout);
+              SparseVector<double> dav; ConvertSV(acc_vec, &dav);
+              B64::Encode(acc_obj, dav, &cout);
               cout << endl << flush;
             } else {
               cout << "0\t**OBJ**=" << acc_obj << ';' <<  acc_vec << endl << flush;
@@ -555,7 +578,8 @@ int main(int argc, char** argv) {
   if (output_training_vector && !acc_vec.empty()) {
     if (encode_b64) {
       cout << "0\t";
-      B64::Encode(acc_obj, acc_vec, &cout);
+      SparseVector<double> dav; ConvertSV(acc_vec, &dav);
+      B64::Encode(acc_obj, dav, &cout);
       cout << endl << flush;
     } else {
       cout << "0\t**OBJ**=" << acc_obj << ';' << acc_vec << endl << flush;

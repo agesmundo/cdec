@@ -10,6 +10,11 @@
 #include "trule.h"
 #include "prob.h"
 
+// if you define this, edges_ will be sorted
+// (normally, just nodes_ are), but this can be quite
+// slow
+#undef HG_EDGES_TOPO_SORTED
+
 // class representing an acyclic hypergraph
 //  - edges have 1 head, 0..n tails
 class Hypergraph {
@@ -198,11 +203,6 @@ class Hypergraph {
  private:
   Hypergraph(int num_nodes, int num_edges, bool is_lc) : is_linear_chain_(is_lc), nodes_(num_nodes), edges_(num_edges) {}
 
-  // returns total nodes reachable
-  int MarkReachable(const Node& node,
-                    std::vector<bool>* rmap,
-                    const std::vector<bool>* prune_edges) const;
-
   static TRulePtr kEPSRule;
   static TRulePtr kUnaryRule;
 };
@@ -229,15 +229,14 @@ struct ScaledEdgeProb {
   const double alpha_;
 };
 
-struct EdgeFeaturesWeightFunction {
-  inline const SparseVector<double>& operator()(const Hypergraph::Edge& e) const { return e.feature_values_; }
-};
-
-struct TransitionEventWeightFunction {
-  inline SparseVector<prob_t> operator()(const Hypergraph::Edge& e) const {
-    SparseVector<prob_t> result;
-    result.set_value(e.id_, prob_t::One());
-    return result;
+// see Li (2010), Section 3.2.2-- this is 'x_e = p_e*r_e'
+struct EdgeFeaturesAndProbWeightFunction {
+  inline const SparseVector<prob_t> operator()(const Hypergraph::Edge& e) const {
+    SparseVector<prob_t> res;
+    for (SparseVector<double>::const_iterator it = e.feature_values_.begin();
+         it != e.feature_values_.end(); ++it)
+      res.set_value(it->first, prob_t(it->second) * e.edge_prob_);
+    return res;
   }
 };
 

@@ -1,2 +1,2 @@
-../../src/training/cluster-ptrain.pl --run_locally cdec-train.ini dev.in-ref weights.ptinit --gaussian_prior --sigma_squared 2 &> training.log
+../../training/cluster-ptrain.pl cdec-train.ini dev.in-ref weights.ptinit --gaussian_prior --sigma_squared 1 &> training.log &
 

@@ -1,5 +1,6 @@
 #include "hg.h"
 
+#include <algorithm>
 #include <cassert>
 #include <numeric>
 #include <set>
@@ -16,13 +17,59 @@ double Hypergraph::NumberOfPaths() const {
   return Inside<double, TransitionCountWeightFunction>(*this);
 }
 
+struct ScaledTransitionEventWeightFunction {
+  ScaledTransitionEventWeightFunction(double alpha) : scale_(alpha) {}
+  inline SparseVector<prob_t> operator()(const Hypergraph::Edge& e) const {
+    SparseVector<prob_t> result;
+    result.set_value(e.id_, e.edge_prob_.pow(scale_));
+    return result;
+  }
+  const double scale_;
+};
+
+struct TropicalValue {
+  TropicalValue() : v_() {}
+  explicit TropicalValue(int v) {
+    if (v == 0) v_ = prob_t::Zero();
+    else if (v == 1) v_ = prob_t::One();
+    else { cerr << "Bad value in TropicalValue(int).\n"; abort(); }
+  }
+  explicit TropicalValue(const prob_t& v) : v_(v) {}
+  inline TropicalValue& operator+=(const TropicalValue& o) {
+    if (v_ < o.v_) v_ = o.v_;
+    return *this;
+  }
+  inline TropicalValue& operator*=(const TropicalValue& o) {
+    v_ *= o.v_;
+    return *this;
+  }
+  inline bool operator==(const TropicalValue& o) const { return v_ == o.v_; }
+  prob_t v_;
+};
+
+struct ViterbiWeightFunction {
+  inline TropicalValue operator()(const Hypergraph::Edge& e) const {
+    return TropicalValue(e.edge_prob_);
+  }
+};
+
+struct ViterbiTransitionEventWeightFunction {
+  inline SparseVector<TropicalValue> operator()(const Hypergraph::Edge& e) const {
+    SparseVector<TropicalValue> result;
+    result.set_value(e.id_, TropicalValue(e.edge_prob_));
+    return result;
+  }
+};
+
+
 prob_t Hypergraph::ComputeEdgePosteriors(double scale, vector<prob_t>* posts) const {
   const ScaledEdgeProb weight(scale);
-  SparseVector<double> pv;
+  const ScaledTransitionEventWeightFunction w2(scale);
+  SparseVector<prob_t> pv;
   const double inside = InsideOutside<prob_t,
                   ScaledEdgeProb,
-                  SparseVector<double>,
-                  EdgeFeaturesWeightFunction>(*this, &pv, weight);
+                  SparseVector<prob_t>,
+                  ScaledTransitionEventWeightFunction>(*this, &pv, weight, w2);
   posts->resize(edges_.size());
   for (int i = 0; i < edges_.size(); ++i)
     (*posts)[i] = prob_t(pv.value(i));
@@ -30,57 +77,15 @@ prob_t Hypergraph::ComputeEdgePosteriors(double scale, vector<prob_t>* posts) co
 }
 
 prob_t Hypergraph::ComputeBestPathThroughEdges(vector<prob_t>* post) const {
-  vector<prob_t> in(edges_.size());
-  vector<prob_t> out(edges_.size());
+  SparseVector<TropicalValue> pv;
+  const TropicalValue viterbi_weight = InsideOutside<TropicalValue,
+                  ViterbiWeightFunction,
+                  SparseVector<TropicalValue>,
+                  ViterbiTransitionEventWeightFunction>(*this, &pv);
   post->resize(edges_.size());
-
-  vector<prob_t> ins_node_best(nodes_.size());
-  for (int i = 0; i < nodes_.size(); ++i) {
-    const Node& node = nodes_[i];
-    prob_t& node_ins_best = ins_node_best[i];
-    if (node.in_edges_.empty()) node_ins_best = prob_t::One();
-    for (int j = 0; j < node.in_edges_.size(); ++j) {
-      const Edge& edge = edges_[node.in_edges_[j]];
-      prob_t& in_edge_sco = in[node.in_edges_[j]];
-      in_edge_sco = edge.edge_prob_;
-      for (int k = 0; k < edge.tail_nodes_.size(); ++k)
-        in_edge_sco *= ins_node_best[edge.tail_nodes_[k]];
-      if (in_edge_sco > node_ins_best) node_ins_best = in_edge_sco;
-    }
-  }
-  const prob_t ins_sco = ins_node_best[nodes_.size() - 1];
-
-  // sanity check
-  int tots = 0;
-  for (int i = 0; i < nodes_.size(); ++i) { if (nodes_[i].out_edges_.empty()) tots++; }
-  assert(tots == 1);
-
-  // compute outside scores, potentially using inside scores
-  vector<prob_t> out_node_best(nodes_.size());
-  for (int i = nodes_.size() - 1; i >= 0; --i) {
-    const Node& node = nodes_[i];
-    prob_t& node_out_best = out_node_best[node.id_];
-    if (node.out_edges_.empty()) node_out_best = prob_t::One();
-    for (int j = 0; j < node.out_edges_.size(); ++j) {
-      const Edge& edge = edges_[node.out_edges_[j]];
-      prob_t sco = edge.edge_prob_ * out_node_best[edge.head_node_];
-      for (int k = 0; k < edge.tail_nodes_.size(); ++k) {
-        if (edge.tail_nodes_[k] != i)
-          sco *= ins_node_best[edge.tail_nodes_[k]];
-      }
-      if (sco > node_out_best) node_out_best = sco;
-    }
-    for (int j = 0; j < node.in_edges_.size(); ++j) {
-      out[node.in_edges_[j]] = node_out_best;
-    }
-  }
-
-  for (int i = 0; i < in.size(); ++i)
-    (*post)[i] = in[i] * out[i];
-  // for (int i = 0; i < in.size(); ++i)
-  //   cerr << "edge " << i << ": " << log((*post)[i]) << endl;
-
-  return ins_sco;
+  for (int i = 0; i < edges_.size(); ++i)
+    (*post)[i] = pv.value(i).v_;
+  return viterbi_weight.v_;
 }
 
 void Hypergraph::PushWeightsToSource(double scale) {
@@ -132,6 +137,7 @@ void Hypergraph::PruneEdges(const std::vector<bool>& prune_edge, bool run_inside
     // fix this!
     vector<double> reachable;
     bool goal_derivable = (0 < Inside<double, EdgeExistsWeightFunction>(*this, &reachable, wf));
+    assert(goal_derivable);
 
     assert(reachable.size() == nodes_.size());
     for (int i = 0; i < edges_.size(); ++i) {
@@ -298,23 +304,6 @@ void Hypergraph::Union(const Hypergraph& other) {
   TopologicallySortNodesAndEdges(cgoal);
 }
 
-int Hypergraph::MarkReachable(const Node& node,
-                              vector<bool>* rmap,
-                              const vector<bool>* prune_edges) const {
-  int total = 0;
-  if (!(*rmap)[node.id_]) {
-    total = 1;
-    (*rmap)[node.id_] = true;
-    for (int i = 0; i < node.in_edges_.size(); ++i) {
-      if (!(prune_edges && (*prune_edges)[node.in_edges_[i]])) {
-        for (int j = 0; j < edges_[node.in_edges_[i]].tail_nodes_.size(); ++j)
-         total += MarkReachable(nodes_[edges_[node.in_edges_[i]].tail_nodes_[j]], rmap, prune_edges);
-      }
-    }
-  }
-  return total;
-}
-
 void Hypergraph::PruneUnreachable(int goal_node_id) {
   TopologicallySortNodesAndEdges(goal_node_id, NULL);
 }
@@ -328,127 +317,145 @@ void Hypergraph::RemoveNoncoaccessibleStates(int goal_node_id) {
   abort();
 }
 
+struct DFSContext {
+  int node;
+  int edge_iter;
+  int tail_iter;
+  DFSContext(int n, int e, int t) : node(n), edge_iter(e), tail_iter(t) {}
+};
+
+enum ColorType { WHITE, GRAY, BLACK };
+
+template <class T>
+struct BadId {
+  bool operator()(const T& obj) const { return obj.id_ == -1; }
+};
+
+template <class T>
+struct IdCompare {
+  bool operator()(const T& a, const T& b) { return a.id_ < b.id_; }
+};
+
 void Hypergraph::TopologicallySortNodesAndEdges(int goal_index,
                                                 const vector<bool>* prune_edges) {
-  vector<Edge> sedges(edges_.size());
   // figure out which nodes are reachable from the goal
-  vector<bool> reachable(nodes_.size(), false);
-  int num_reachable = MarkReachable(nodes_[goal_index], &reachable, prune_edges);
-  vector<Node> snodes(num_reachable); snodes.clear();
-
-  // enumerate all reachable nodes in topologically sorted order
-  vector<int> old_node_to_new_id(nodes_.size(), -1);
-  vector<int> node_to_incount(nodes_.size(), -1);
-  vector<bool> node_processed(nodes_.size(), false);
-  typedef map<int, set<int> > PQueue;
-  PQueue pri_q;
-  for (int i = 0; i < nodes_.size(); ++i) {
-    if (!reachable[i])
-      continue;
-    const int inedges = nodes_[i].in_edges_.size();
-    int incount = inedges;
-    for (int j = 0; j < inedges; ++j)
-      if (edges_[nodes_[i].in_edges_[j]].tail_nodes_.size() == 0 ||
-          (prune_edges && (*prune_edges)[nodes_[i].in_edges_[j]]))
-        --incount;
-    // cerr << &nodes_[i] <<" : incount=" << incount << "\tout=" << nodes_[i].out_edges_.size() << "\t(in-edges=" << inedges << ")\n";
-    assert(node_to_incount[i] == -1);
-    node_to_incount[i] = incount;
-    pri_q[incount].insert(i);
-  }
-
+  vector<int> reloc_node(nodes_.size(), -1);
+  vector<int> reloc_edge(edges_.size(), -1);
+  vector<ColorType> color(nodes_.size(), WHITE);
+  vector<DFSContext> stack;
+  stack.reserve(nodes_.size());
+  stack.push_back(DFSContext(goal_index, 0, 0));
+  int node_count = 0;
   int edge_count = 0;
-  while (!pri_q.empty()) {
-    PQueue::iterator iter = pri_q.find(0);
-    assert(iter != pri_q.end());
-    assert(!iter->second.empty());
-
-    // get first node with incount = 0
-    const int cur_index = *iter->second.begin();
-    const Node& node = nodes_[cur_index];
-    assert(reachable[cur_index]);
-    //cerr << "node: " << node << endl;
-    const int new_node_index = snodes.size();
-    old_node_to_new_id[cur_index] = new_node_index;
-    snodes.push_back(node);
-    Node& new_node = snodes.back();
-    new_node.id_ = new_node_index;
-    new_node.out_edges_.clear();
-
-    // fix up edges - we can now process the in edges and
-    // the out edges of their tails
-    int oi = 0;
-    for (int i = 0; i < node.in_edges_.size(); ++i, ++oi) {
-      if (prune_edges && (*prune_edges)[node.in_edges_[i]]) {
-        --oi;
+  while(!stack.empty()) {
+    const DFSContext& p = stack.back();
+    int cur_ni = p.node;
+    int edge_i = p.edge_iter;
+    int tail_i = p.tail_iter;
+    stack.pop_back();
+    const Node* cur_node = &nodes_[cur_ni];
+    int edge_end = cur_node->in_edges_.size();
+    while (edge_i != edge_end) {
+      const Edge& cur_edge = edges_[cur_node->in_edges_[edge_i]];
+      const int tail_end = cur_edge.tail_nodes_.size();
+      if ((tail_end == tail_i) || (prune_edges && (*prune_edges)[cur_edge.id_])) {
+        ++edge_i;
+        tail_i = 0;
         continue;
       }
-      new_node.in_edges_[oi] = edge_count;
-      Edge& edge = sedges[edge_count];
-      edge.id_ = edge_count;
-      ++edge_count;
-      const Edge& old_edge = edges_[node.in_edges_[i]];
-      edge.rule_ = old_edge.rule_;
-      edge.feature_values_ = old_edge.feature_values_;
-      edge.head_node_ = new_node_index;
-      edge.tail_nodes_.resize(old_edge.tail_nodes_.size());
-      edge.edge_prob_ = old_edge.edge_prob_;
-      edge.i_ = old_edge.i_;
-      edge.j_ = old_edge.j_;
-      edge.prev_i_ = old_edge.prev_i_;
-      edge.prev_j_ = old_edge.prev_j_;
-      for (int j = 0; j < old_edge.tail_nodes_.size(); ++j) {
-        const Node& old_tail_node = nodes_[old_edge.tail_nodes_[j]];
-        edge.tail_nodes_[j] = old_node_to_new_id[old_tail_node.id_];
-        snodes[edge.tail_nodes_[j]].out_edges_.push_back(edge_count-1);
-        assert(edge.tail_nodes_[j] != new_node_index);
-      }
-    }
-    assert(oi <= new_node.in_edges_.size());
-    new_node.in_edges_.resize(oi);
-
-    for (int i = 0; i < node.out_edges_.size(); ++i) {
-      const Edge& edge = edges_[node.out_edges_[i]];
-      const int next_index = edge.head_node_;
-      assert(cur_index != next_index);
-      if (!reachable[next_index]) continue;
-      if (prune_edges && (*prune_edges)[edge.id_]) continue;
-
-      bool dontReduce = false;
-      for (int j = 0; j < edge.tail_nodes_.size() && !dontReduce; ++j) {
-        int tail_index = edge.tail_nodes_[j];
-        dontReduce = (tail_index != cur_index) && !node_processed[tail_index];
-      }
-      if (dontReduce)
-        continue;
-
-      const int incount = node_to_incount[next_index];
-      if (incount <= 0) {
-        cerr << "incount = " << incount << ", should be > 0!\n";
-        cerr << "do you have a cycle in your hypergraph?\n";
+      const int tail_ni = cur_edge.tail_nodes_[tail_i];
+      const int tail_color = color[tail_ni];
+      if (tail_color == WHITE) {
+        stack.push_back(DFSContext(cur_ni, edge_i, ++tail_i));
+        cur_ni = tail_ni;
+        cur_node = &nodes_[cur_ni];
+        color[cur_ni] = GRAY;
+        edge_i = 0;
+        edge_end = cur_node->in_edges_.size();
+        tail_i = 0;
+      } else if (tail_color == BLACK) {
+        ++tail_i;
+      } else if (tail_color == GRAY) {
+        // this can happen if, e.g., it is possible to rederive
+        // a single cell in the CKY chart via a cycle.
+        cerr << "Detected forbidden cycle in HG:\n";
+        cerr << "  " << cur_edge.rule_->AsString() << endl;
+        while(!stack.empty()) {
+          const DFSContext& p = stack.back();
+          cerr << "  " << edges_[nodes_[p.node].in_edges_[p.edge_iter]].rule_->AsString() << endl;
+          stack.pop_back();
+        }
         abort();
       }
-      PQueue::iterator it = pri_q.find(incount);
-      assert(it != pri_q.end());
-      it->second.erase(next_index);
-      if (it->second.empty()) pri_q.erase(it);
-
-      // reinsert node with reduced incount
-      pri_q[incount-1].insert(next_index);
-      --node_to_incount[next_index];
     }
-
-    // remove node from set
-    iter->second.erase(cur_index);
-    if (iter->second.empty())
-      pri_q.erase(iter);
-    node_processed[cur_index] = true;
+    color[cur_ni] = BLACK;
+    reloc_node[cur_ni] = node_count++;
+    if (prune_edges) {
+      for (int i = 0; i < edge_end; ++i) {
+        int ei = cur_node->in_edges_[i];
+        if (!(*prune_edges)[ei])
+          reloc_edge[cur_node->in_edges_[i]] = edge_count++;
+      }
+    } else {
+      for (int i = 0; i < edge_end; ++i)
+        reloc_edge[cur_node->in_edges_[i]] = edge_count++;
+    }
   }
+#ifndef HG_EDGES_TOPO_SORTED
+  int ec = 0;
+  for (int i = 0; i < reloc_edge.size(); ++i) {
+    int& cp = reloc_edge[i];
+    if (cp >= 0) { cp = ec++; }
+  }
+#endif
 
-  sedges.resize(edge_count);
-  nodes_.swap(snodes);
-  edges_.swap(sedges);
-  assert(nodes_.back().out_edges_.size() == 0);
+#if 0
+  cerr << "TOPO:";
+  for (int i = 0; i < reloc_node.size(); ++i)
+    cerr << " " << reloc_node[i];
+  cerr << endl;
+  cerr << "EDGE:";
+  for (int i = 0; i < reloc_edge.size(); ++i)
+    cerr << " " << reloc_edge[i];
+  cerr << endl;
+#endif
+  bool no_op = true;
+  for (int i = 0; i < reloc_node.size() && no_op; ++i)
+    if (reloc_node[i] != i) no_op = false;
+  for (int i = 0; i < reloc_edge.size() && no_op; ++i)
+    if (reloc_edge[i] != i) no_op = false;
+  if (no_op) return;
+  for (int i = 0; i < reloc_node.size(); ++i) {
+    Node& node = nodes_[i];
+    node.id_ = reloc_node[i];
+    int c = 0;
+    for (int j = 0; j < node.in_edges_.size(); ++j) {
+      const int new_index = reloc_edge[node.in_edges_[j]];
+      if (new_index >= 0)
+        node.in_edges_[c++] = new_index;
+    }
+    node.in_edges_.resize(c);
+    c = 0;
+    for (int j = 0; j < node.out_edges_.size(); ++j) {
+      const int new_index = reloc_edge[node.out_edges_[j]];
+      if (new_index >= 0)
+        node.out_edges_[c++] = new_index;
+    }
+    node.out_edges_.resize(c);
+  }
+  for (int i = 0; i < reloc_edge.size(); ++i) {
+    Edge& edge = edges_[i];
+    edge.id_ = reloc_edge[i];
+    edge.head_node_ = reloc_node[edge.head_node_];
+    for (int j = 0; j < edge.tail_nodes_.size(); ++j)
+      edge.tail_nodes_[j] = reloc_node[edge.tail_nodes_[j]];
+  }
+  edges_.erase(remove_if(edges_.begin(), edges_.end(), BadId<Edge>()), edges_.end());
+  nodes_.erase(remove_if(nodes_.begin(), nodes_.end(), BadId<Node>()), nodes_.end());
+  sort(nodes_.begin(), nodes_.end(), IdCompare<Node>());
+#ifndef HG_EDGES_TOPO_SORTED
+  sort(edges_.begin(), edges_.end(), IdCompare<Edge>());
+#endif
 }
 
 TRulePtr Hypergraph::kEPSRule;

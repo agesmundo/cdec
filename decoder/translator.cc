@@ -12,7 +12,6 @@ void Translator::ProcessMarkupHints(const map<string, string>& kv) {
     cerr << "Translator::ProcessMarkupHints in wrong state: " << state_ << endl;
     abort();
   }
- cerr << "In Translator Process\n";
   ProcessMarkupHintsImpl(kv);
   state_ = kReadyToTranslate;
 }

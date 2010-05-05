@@ -69,5 +69,5 @@ then
   AM_CONDITIONAL([RAND_LM], true)
 fi
 
-AC_OUTPUT(Makefile decoder/Makefile training/Makefile vest/Makefile)
+AC_OUTPUT(Makefile extools/Makefile decoder/Makefile training/Makefile vest/Makefile)
 

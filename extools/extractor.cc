@@ -66,7 +66,7 @@ struct AnnotatedParallelSentence {
     aligned.resize(f.size(), e.size(), false);
     f_aligned.resize(f.size(), 0);
     e_aligned.resize(e.size(), 0);
-    span_types.resize(f.size(), f.size()+1);
+    span_types.resize(e.size(), e.size()+1);
     f_len = f.size();
     e_len = e.size();
   }
@@ -84,6 +84,9 @@ void InitCommandLine(int argc, char** argv, po::variables_map* conf) {
         ("phrase_context,C", "Write base phrase contexts")
         ("phrase_context_size,S", po::value<int>()->default_value(2), "Use this many words of context on left and write when writing base phrase contexts")
         ("max_base_phrase_size,L", po::value<int>()->default_value(10), "Maximum starting phrase size")
+        ("max_syms,l", po::value<int>()->default_value(5), "Maximum number of symbols in final phrase size")
+        ("max_vars,v", po::value<int>()->default_value(2), "Maximum number of nonterminal variables in final phrase size")
+        ("permit_adjacent_nonterminals,A", "Permit adjacent nonterminals in source side of rules")
         ("help,h", "Print this help message and exit");
   po::options_description clo("Command line options");
   po::options_description dcmdline_options;
@@ -331,7 +334,8 @@ ostream& operator<<(ostream& os, const Rule& r) {
 void ExtractAndWriteRules(const AnnotatedParallelSentence& sentence,
                           const vector<ParallelSpan>& phrases,
                           const int max_vars,
-                          const int max_syms) {
+                          const int max_syms,
+                          const bool permit_adjacent_nonterminals) {
   unordered_map<pair<short, short>, vector<ParallelSpan>, boost::hash<pair<int, int> > > fspans;
   int max_len = -1;  // remove?
   set<int> starts;
@@ -345,7 +349,6 @@ void ExtractAndWriteRules(const AnnotatedParallelSentence& sentence,
     spans_by_start[phrases[i].i1].push_back(phrases[i]);
   }
   // cerr << "MAX PHRASE: " << max_len << endl;
-  bool adjacent_vars_permitted = false;
   vector<pair<int,int> > next_e(sentence.e_len);
   while(!q.empty()) {
     const Rule& rule = q.front();
@@ -361,7 +364,7 @@ void ExtractAndWriteRules(const AnnotatedParallelSentence& sentence,
       // with variables
       if (rule.vars < max_vars &&
           !spans_by_start[rule.j].empty() &&
-          ((!rule.RuleFEndsInVariable()) || adjacent_vars_permitted)) {
+          ((!rule.RuleFEndsInVariable()) || permit_adjacent_nonterminals)) {
         const vector<ParallelSpan>& sub_phrases = spans_by_start[rule.j];
         for (int it = 0; it < sub_phrases.size(); ++it) {
           if (sub_phrases[it].i2 - sub_phrases[it].i1 + rule.j - rule.i <= max_len) {
@@ -471,10 +474,17 @@ int main(int argc, char** argv) {
   const bool write_phrase_contexts = conf.count("phrase_context") > 0;
   const bool write_base_phrases = conf.count("base_phrase") > 0;
   const bool loose_phrases = conf.count("loose") > 0;
+  const int max_syms = conf["max_syms"].as<int>();
+  const int max_vars = conf["max_vars"].as<int>();
   const int ctx_size = conf["phrase_context_size"].as<int>();
+  const bool permit_adjacent_nonterminals = conf.count("permit_adjacent_nonterminals") > 0;
+  int line = 0;
   while(in) {
+    ++line;
     in.getline(buf, MAX_LINE_LENGTH);
     if (buf[0] == 0) continue;
+    if (line % 200 == 0) cerr << '.';
+    if (line % 8000 == 0) cerr << " [" << line << "]\n" << flush;
     sentence.ParseInputLine(buf);
     phrases.clear();
     ExtractBasePhrases(max_base_phrase_size, sentence, &phrases);
@@ -493,10 +503,9 @@ int main(int argc, char** argv) {
       continue;
     }
     AnnotatePhrasesWithCategoryTypes(default_cat, sentence.span_types, &phrases);
-    int max_vars = 2;
-    int max_syms = 5;
-    ExtractAndWriteRules(sentence, phrases, max_vars, max_syms);
+    ExtractAndWriteRules(sentence, phrases, max_vars, max_syms, permit_adjacent_nonterminals);
   }
+  cerr << endl;
   return 0;
 }
 

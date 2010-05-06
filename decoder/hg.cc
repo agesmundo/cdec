@@ -137,7 +137,12 @@ void Hypergraph::PruneEdges(const std::vector<bool>& prune_edge, bool run_inside
     // fix this!
     vector<double> reachable;
     bool goal_derivable = (0 < Inside<double, EdgeExistsWeightFunction>(*this, &reachable, wf));
-    assert(goal_derivable);
+    if (!goal_derivable) {
+      edges_.clear();
+      nodes_.clear();
+      nodes_.push_back(Node());
+      return;
+    }
 
     assert(reachable.size() == nodes_.size());
     for (int i = 0; i < edges_.size(); ++i) {

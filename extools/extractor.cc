@@ -1,47 +1,22 @@
-#include <queue>
 #include <iostream>
 #include <vector>
 #include <utility>
-#include <tr1/unordered_map>
-#include <set>
 
-#include <boost/functional/hash.hpp>
 #include <boost/program_options.hpp>
 #include <boost/program_options/variables_map.hpp>
 
 #include "sentence_pair.h"
+#include "extract.h"
 #include "tdict.h"
 #include "wordid.h"
 #include "array2d.h"
 #include "filelib.h"
 
 using namespace std;
-using namespace std::tr1;
 namespace po = boost::program_options;
 
 static const size_t MAX_LINE_LENGTH = 100000;
-WordID kBOS;
-WordID kEOS;
-WordID kDIVIDER;
-
-struct ParallelSpan {
-  // i1 = i of f side
-  // i2 = j of f side
-  // j1 = i of e side
-  // j2 = j of e side
-  short i1,i2,j1,j2;
-  // cat is set by AnnotatePhrasesWithCategoryTypes, otherwise it's 0
-  WordID cat;  // category type of span (also overloaded by Rule class)
-  ParallelSpan() : i1(-1), i2(-1), j1(-1), j2(-1), cat() {}
-  // used by Rule class to represent a terminal symbol:
-  explicit ParallelSpan(WordID w) : i1(-1), i2(-1), j1(-1), j2(-1), cat(w) {}
-  ParallelSpan(int pi1, int pi2, int pj1, int pj2) : i1(pi1), i2(pi2), j1(pj1), j2(pj2), cat() {}
-  ParallelSpan(int pi1, int pi2, int pj1, int pj2, WordID c) : i1(pi1), i2(pi2), j1(pj1), j2(pj2), cat(c) {}
-
-  // ParallelSpan is used in the Rule class where it is
-  // overloaded to also represent terminal symbols
-  bool IsVariable() const { return i1 != -1; }
-};
+WordID kBOS, kEOS, kDIVIDER;
 
 void InitCommandLine(int argc, char** argv, po::variables_map* conf) {
   po::options_description opts("Configuration options");
@@ -51,6 +26,7 @@ void InitCommandLine(int argc, char** argv, po::variables_map* conf) {
         ("loose", "Use loose phrase extraction heuristic for base phrases")
         ("invert,I", "Invert the outputs")
         ("base_phrase,B", "Write base phrases")
+        ("silent", "Write nothing to stderr except errors")
         ("phrase_context,C", "Write base phrase contexts")
         ("phrase_context_size,S", po::value<int>()->default_value(2), "Use this many words of context on left and write when writing base phrase contexts")
         ("max_base_phrase_size,L", po::value<int>()->default_value(10), "Maximum starting phrase size")
@@ -69,59 +45,6 @@ void InitCommandLine(int argc, char** argv, po::variables_map* conf) {
     cerr << "\nUsage: extractor [-options]\n";
     cerr << dcmdline_options << endl;
     exit(1);
-  }
-}
-
-void LoosenPhraseBounds(const AnnotatedParallelSentence& sentence,
-                        vector<ParallelSpan>* phrases) {
-  assert(!"not implemented - TODO");
-  (void) sentence;
-  (void) phrases;
-}
-
-void ExtractBasePhrases(const int max_base_phrase_size,
-                        const AnnotatedParallelSentence& sentence,
-                        vector<ParallelSpan>* phrases) {
-  phrases->clear();
-
-  vector<pair<int,int> > f_spans(sentence.f_len, pair<int,int>(sentence.e_len, 0));
-  vector<pair<int,int> > e_spans(sentence.e_len, pair<int,int>(sentence.f_len, 0));
-  // for each alignment point in e, precompute the minimal consistent phrases in f
-  // for each alignment point in f, precompute the minimal consistent phrases in e
-  for (int i = 0; i < sentence.f_len; ++i) {
-    for (int j = 0; j < sentence.e_len; ++j) {
-      if (sentence.aligned(i,j)) {
-        if (j < f_spans[i].first) f_spans[i].first = j;
-        f_spans[i].second = j+1;
-        if (i < e_spans[j].first) e_spans[j].first = i;
-        e_spans[j].second = i+1;
-      }
-    }
-  }
-
-  for (int i1 = 0; i1 < sentence.f_len; ++i1) {
-    if (sentence.f_aligned[i1] == 0) continue;
-    int j1 = sentence.e_len;
-    int j2 = 0;
-    const int i_limit = min(sentence.f_len, i1 + max_base_phrase_size);
-    for (int i2 = i1 + 1; i2 <= i_limit; ++i2) {
-      if (sentence.f_aligned[i2-1] == 0) continue;
-      // cerr << "F has aligned span " << i1 << " to " << i2 << endl;
-      j1 = min(j1, f_spans[i2-1].first);
-      j2 = max(j2, f_spans[i2-1].second);
-      if (j1 >= j2) continue;
-      if (j2 - j1 > max_base_phrase_size) continue;
-      int condition = 0;
-      for (int j = j1; j < j2; ++j) {
-        if (e_spans[j].first < i1) { condition = 1; break; }
-        if (e_spans[j].second > i2) { condition = 2; break; }
-      }
-      if (condition == 1) break;
-      if (condition == 2) continue;
-      // category types added later!
-      phrases->push_back(ParallelSpan(i1, i2, j1, j2));
-      // cerr << i1 << " " << i2 << " : " << j1 << " " << j2 << endl;
-    }
   }
 }
 
@@ -161,164 +84,35 @@ void WritePhraseContexts(const AnnotatedParallelSentence& sentence,
   }
 }
 
-struct Rule {
-  vector<ParallelSpan> f;
-  int i,j,syms,vars;
-  explicit Rule(int pi) : i(pi), j(pi), syms(), vars() {}
-  void Extend(const WordID& fword) {
-    f.push_back(ParallelSpan(fword));
-    ++j;
-    ++syms;
-  }
-  void Extend(const ParallelSpan& subphrase) {
-    f.push_back(subphrase);
-    j += subphrase.i2 - subphrase.i1;
-    ++vars;
-    ++syms;
-  }
-  bool RuleFEndsInVariable() const {
-    if (f.size() > 0) {
-      return f.back().IsVariable();
-    } else { return false; }
+struct SimpleRuleWriter : public Extract::RuleObserver {
+  virtual void CountRule(WordID lhs,
+                         const vector<WordID>& rhs_f,
+                         const vector<WordID>& rhs_e,
+                         const vector<pair<int, int> >& fe_terminal_alignments) {
+    cout << "[" << TD::Convert(-lhs) << "] |||";
+    for (int i = 0; i < rhs_f.size(); ++i) {
+      if (rhs_f[i] < 0) cout << " [" << TD::Convert(-rhs_f[i]) << ']';
+      else cout << ' ' << TD::Convert(rhs_f[i]);
+    }
+    cout << " |||";
+    for (int i = 0; i < rhs_e.size(); ++i) {
+      if (rhs_e[i] <= 0) cout << " [" << (1-rhs_e[i]) << ']';
+      else cout << ' ' << TD::Convert(rhs_e[i]);
+    }
+    cout << endl;
   }
 };
-
-ostream& operator<<(ostream& os, const Rule& r) {
-  os << "(" << r.i << "," << r.j << ") ";
-  for (int i = 0; i < r.f.size(); ++i) {
-    const ParallelSpan& x = r.f[i];
-    if (x.IsVariable()) { os << "[" << TD::Convert(-x.cat) << "] "; } else
-      os << TD::Convert(x.cat) << ' ';
-  }
-  return os;
-}
-
-void ExtractAndWriteRules(const AnnotatedParallelSentence& sentence,
-                          const vector<ParallelSpan>& phrases,
-                          const int max_vars,
-                          const int max_syms,
-                          const bool permit_adjacent_nonterminals) {
-  unordered_map<pair<short, short>, vector<ParallelSpan>, boost::hash<pair<int, int> > > fspans;
-  int max_len = -1;  // remove?
-  set<int> starts;
-  queue<Rule> q;
-  vector<vector<ParallelSpan> > spans_by_start(sentence.f_len);
-  for (int i = 0; i < phrases.size(); ++i) {
-    fspans[make_pair(phrases[i].i1,phrases[i].i2)].push_back(phrases[i]);
-    max_len = max(max_len, phrases[i].i2 - phrases[i].i1);
-    if (starts.insert(phrases[i].i1).second)
-      q.push(Rule(phrases[i].i1));
-    spans_by_start[phrases[i].i1].push_back(phrases[i]);
-  }
-  // cerr << "MAX PHRASE: " << max_len << endl;
-  vector<pair<int,int> > next_e(sentence.e_len);
-  while(!q.empty()) {
-    const Rule& rule = q.front();
-
-    // extend the partial rule
-    if (rule.j < sentence.f_len && (rule.j - rule.i) < max_len && rule.syms < max_syms) {
-      Rule ew = rule;
-
-      // extend with a word
-      ew.Extend(sentence.f[ew.j]);
-      q.push(ew);
-
-      // with variables
-      if (rule.vars < max_vars &&
-          !spans_by_start[rule.j].empty() &&
-          ((!rule.RuleFEndsInVariable()) || permit_adjacent_nonterminals)) {
-        const vector<ParallelSpan>& sub_phrases = spans_by_start[rule.j];
-        for (int it = 0; it < sub_phrases.size(); ++it) {
-          if (sub_phrases[it].i2 - sub_phrases[it].i1 + rule.j - rule.i <= max_len) {
-            Rule ev = rule;
-            ev.Extend(sub_phrases[it]);
-            q.push(ev);
-            assert(ev.j <= sentence.f_len);
-          }
-        }
-      }
-    }
-    // determine if rule is consistent
-    if (rule.syms > 0 &&
-        fspans.count(make_pair(rule.i,rule.j)) &&
-        (!rule.RuleFEndsInVariable() || rule.syms > 1)) {
-      const vector<ParallelSpan>& orig_spans = fspans[make_pair(rule.i,rule.j)];
-      for (int s = 0; s < orig_spans.size(); ++s) {
-        const ParallelSpan& orig_span = orig_spans[s];
-        const WordID lhs = orig_span.cat;
-        for (int j = orig_span.j1; j < orig_span.j2; ++j) next_e[j].first = -1;
-        int nt_index_e = 0;
-        for (int i = 0; i < rule.f.size(); ++i) {
-          const ParallelSpan& cur = rule.f[i];
-          if (cur.IsVariable())
-            next_e[cur.j1] = pair<int,int>(cur.j2, ++nt_index_e);
-        }
-        cout << '[' << TD::Convert(-lhs) << "] |||";
-        int nt_index_f = 0;
-        for (int i = 0; i < rule.f.size(); ++i) {
-          const ParallelSpan& cur = rule.f[i];
-          if (cur.IsVariable()) {
-            ++nt_index_f;
-            cout << " [" << TD::Convert(-cur.cat) << ',' << nt_index_f << ']';
-          } else {
-            cout << ' ' << TD::Convert(cur.cat);
-          }
-        }
-        cout << " |||";
-        for (int j = orig_span.j1; j < orig_span.j2; ++j) {
-          if (next_e[j].first < 0) {
-            cout << ' ' << TD::Convert(sentence.e[j]);
-          } else {
-            cout << " [" << next_e[j].second << ']';
-            j = next_e[j].first - 1;
-          }
-        }
-        cout << endl;
-      }
-    }
-    q.pop();
-  }
-}
-
-// this uses the TARGET span (i,j) to annotate phrases, will copy
-// phrases if there is more than one annotation.
-// TODO: support source annotation
-void AnnotatePhrasesWithCategoryTypes(const WordID default_cat,
-                                      const Array2D<vector<WordID> >& types,
-                                      vector<ParallelSpan>* phrases) {
-  const int num_phrases = phrases->size();
-  // have to use num_phrases since we may grow the size of phrases
-  for (int i = 0; i < num_phrases; ++i) {
-    ParallelSpan& phrase = (*phrases)[i];
-    const vector<WordID>* pcats = &types(phrase.j1, phrase.j2);
-    if (pcats->empty() && default_cat != 0) {
-      static vector<WordID> s_default(1, default_cat);
-      pcats = &s_default;
-    }
-    if (pcats->empty()) {
-      cerr << "ERROR span " << phrase.i1 << "," << phrase.i2 << "-"
-           << phrase.j1 << "," << phrase.j2 << " has no type. "
-              "Did you forget --default_category?\n";
-    }
-    const vector<WordID>& cats = *pcats;
-    phrase.cat = cats[0];
-    for (int ci = 1; ci < cats.size(); ++ci) {
-      ParallelSpan new_phrase = phrase;
-      new_phrase.cat = cats[ci];
-      phrases->push_back(new_phrase);
-    }
-  }
-}
 
 int main(int argc, char** argv) {
   po::variables_map conf;
   InitCommandLine(argc, argv, &conf);
-  WordID default_cat = 0;  // 0 means no default- extraction will
-                           // fail if a phrase is extracted without a
-                           // category
   kBOS = TD::Convert("<s>");
   kEOS = TD::Convert("</s>");
   kDIVIDER = TD::Convert("|||");
+
+  WordID default_cat = 0;  // 0 means no default- extraction will
+                           // fail if a phrase is extracted without a
+                           // category
   if (conf.count("default_category")) {
     string sdefault_cat = conf["default_category"].as<string>();
     default_cat = -TD::Convert(sdefault_cat);
@@ -336,22 +130,26 @@ int main(int argc, char** argv) {
   const bool write_phrase_contexts = conf.count("phrase_context") > 0;
   const bool write_base_phrases = conf.count("base_phrase") > 0;
   const bool loose_phrases = conf.count("loose") > 0;
+  const bool silent = conf.count("silent") > 0;
   const int max_syms = conf["max_syms"].as<int>();
   const int max_vars = conf["max_vars"].as<int>();
   const int ctx_size = conf["phrase_context_size"].as<int>();
   const bool permit_adjacent_nonterminals = conf.count("permit_adjacent_nonterminals") > 0;
   int line = 0;
+  SimpleRuleWriter o;
   while(in) {
     ++line;
     in.getline(buf, MAX_LINE_LENGTH);
     if (buf[0] == 0) continue;
-    if (line % 200 == 0) cerr << '.';
-    if (line % 8000 == 0) cerr << " [" << line << "]\n" << flush;
+    if (!silent) {
+      if (line % 200 == 0) cerr << '.';
+      if (line % 8000 == 0) cerr << " [" << line << "]\n" << flush;
+    }
     sentence.ParseInputLine(buf);
     phrases.clear();
-    ExtractBasePhrases(max_base_phrase_size, sentence, &phrases);
+    Extract::ExtractBasePhrases(max_base_phrase_size, sentence, &phrases);
     if (loose_phrases)
-      LoosenPhraseBounds(sentence, &phrases);
+      Extract::LoosenPhraseBounds(sentence, &phrases);
     if (phrases.empty()) {
       cerr << "WARNING no phrases extracted\n";
       continue;
@@ -364,10 +162,10 @@ int main(int argc, char** argv) {
       WriteBasePhrases(sentence, phrases);
       continue;
     }
-    AnnotatePhrasesWithCategoryTypes(default_cat, sentence.span_types, &phrases);
-    ExtractAndWriteRules(sentence, phrases, max_vars, max_syms, permit_adjacent_nonterminals);
+    Extract::AnnotatePhrasesWithCategoryTypes(default_cat, sentence.span_types, &phrases);
+    Extract::ExtractConsistentRules(sentence, phrases, max_vars, max_syms, permit_adjacent_nonterminals, &o);
   }
-  cerr << endl;
+  if (!silent) cerr << endl;
   return 0;
 }
 

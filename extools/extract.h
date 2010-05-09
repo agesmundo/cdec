@@ -10,6 +10,8 @@ struct AnnotatedParallelSentence;
 
 // usually represents a consistent phrase, which may
 // be annotated with a type (cat)
+// inside the rule extractor, this class is also used to represent a word
+// in a partial rule.
 struct ParallelSpan {
   // i1 = i of f side
   // i2 = j of f side
@@ -30,17 +32,39 @@ struct ParallelSpan {
   inline bool IsVariable() const { return i1 != -1; }
 };
 
+// rule extraction logic lives here. this has no data, it's just got
+// static member functions.
 struct Extract {
+  // RuleObserver's CountRule is called for each rule extracted
+  // implement CountRuleImpl to do things like count the rules,
+  // write them to a file, etc.
   struct RuleObserver {
+    RuleObserver() : count() {}
     virtual void CountRule(WordID lhs,
                            const std::vector<WordID>& rhs_f,
                            const std::vector<WordID>& rhs_e,
-                           const std::vector<std::pair<int, int> >& fe_terminal_alignments) = 0;
+                           const std::vector<std::pair<short, short> >& fe_terminal_alignments) {
+      ++count;
+      CountRuleImpl(lhs, rhs_f, rhs_e, fe_terminal_alignments);
+    }
+    virtual ~RuleObserver();
+
+   protected:
+    virtual void CountRuleImpl(WordID lhs,
+                           const std::vector<WordID>& rhs_f,
+                           const std::vector<WordID>& rhs_e,
+                           const std::vector<std::pair<short, short> >& fe_terminal_alignments) = 0;
+   private:
+    int count;
   };
 
+  // given a set of "tight" phrases and the aligned sentence they were
+  // extracted from, "loosen" them
   static void LoosenPhraseBounds(const AnnotatedParallelSentence& sentence,
                                  std::vector<ParallelSpan>* phrases);
 
+  // extract all consistent phrase pairs, up to size max_base_phrase_size
+  // (on the source side). these phrases will be "tight".
   static void ExtractBasePhrases(const int max_base_phrase_size,
                         const AnnotatedParallelSentence& sentence,
                         std::vector<ParallelSpan>* phrases);
@@ -52,6 +76,8 @@ struct Extract {
                                       const Array2D<std::vector<WordID> >& types,
                                       std::vector<ParallelSpan>* phrases);
 
+  // use the Chiang (2007) extraction logic to extract consistent subphrases
+  // observer->CountRule is called once for each rule extracted
   static void ExtractConsistentRules(const AnnotatedParallelSentence& sentence,
                           const std::vector<ParallelSpan>& phrases,
                           const int max_vars,

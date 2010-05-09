@@ -26,6 +26,7 @@ void AnnotatedParallelSentence::Reset() {
   e.clear();
   e_aligned.clear();
   f_aligned.clear();
+  aligns_by_fword.clear();
   aligned.clear();
   span_types.clear();
 }
@@ -36,6 +37,7 @@ void AnnotatedParallelSentence::AllocateForAlignment() {
   aligned.resize(f_len, e_len, false);
   f_aligned.resize(f_len, 0);
   e_aligned.resize(e_len, 0);
+  aligns_by_fword.resize(f_len);
   span_types.resize(e_len, e_len+1);
 }
 
@@ -46,8 +48,8 @@ int AnnotatedParallelSentence::ReadAlignmentPoint(const char* buf,
                                                   const int start,
                                                   const int end,
                                                   const bool permit_col,
-                                                  int* a,
-                                                  int* b) {
+                                                  short* a,
+                                                  short* b) {
   if (end - start < 3) {
     cerr << "Alignment point badly formed: " << string(buf, start, end-start) << endl; abort();
   }
@@ -80,18 +82,19 @@ int AnnotatedParallelSentence::ReadAlignmentPoint(const char* buf,
 }
 
 void AnnotatedParallelSentence::ParseAlignmentPoint(const char* buf, int start, int end) {
-  int a, b;
+  short a, b;
   ReadAlignmentPoint(buf, start, end, false, &a, &b);
   assert(a < f_len);
   assert(b < e_len);
   aligned(a,b) = true;
   ++f_aligned[a];
   ++e_aligned[b];
+  aligns_by_fword[a].push_back(make_pair(a,b));
   // cerr << a << " " << b << endl;
 }
 
 void AnnotatedParallelSentence::ParseSpanLabel(const char* buf, int start, int end) {
-  int a,b;
+  short a,b;
   int c = ReadAlignmentPoint(buf, start, end, true, &a, &b) + 1;
   if (buf[c-1] != ':' || c >= end) {
     cerr << "Span badly formed: " << string(buf, start, end-start) << endl; abort();

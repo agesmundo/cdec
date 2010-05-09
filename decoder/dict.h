@@ -33,6 +33,7 @@ class Dict {
     assert(id <= words_.size());
     return words_[id-1];
   }
+  void clear() { words_.clear(); d_.clear(); }
  private:
   const std::string b0_;
   std::vector<std::string> words_;

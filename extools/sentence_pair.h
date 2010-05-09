@@ -1,6 +1,7 @@
 #ifndef _SENTENCE_PAIR_H_
 #define _SENTENCE_PAIR_H_
 
+#include <utility>
 #include <vector>
 #include "wordid.h"
 #include "array2d.h"
@@ -18,6 +19,7 @@ struct AnnotatedParallelSentence {
   // word alignment information
   std::vector<int> e_aligned, f_aligned; // counts the number of times column/row x is aligned
   Array2D<bool> aligned;
+  std::vector<std::vector<std::pair<short, short> > > aligns_by_fword;
 
   // span type information
   Array2D<std::vector<WordID> > span_types;  // span_types(i,j) is the list of category
@@ -25,12 +27,13 @@ struct AnnotatedParallelSentence {
 
   int f_len, e_len;
 
+  static int ReadAlignmentPoint(const char* buf, int start, int end, bool permit_col, short* a, short* b);
+
  private:
   void Reset();
   void AllocateForAlignment();
   void ParseAlignmentPoint(const char* buf, int start, int end);
   void ParseSpanLabel(const char* buf, int start, int end);
-  static int ReadAlignmentPoint(const char* buf, int start, int end, bool permit_col, int* a, int* b);
 };
 
 #endif

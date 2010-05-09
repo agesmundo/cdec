@@ -16,6 +16,10 @@
 using namespace std;
 using namespace std::tr1;
 
+Extract::RuleObserver::~RuleObserver() {
+  cerr << "Rules extracted: " << count << endl;
+}
+
 void Extract::ExtractBasePhrases(const int max_base_phrase_size,
                         const AnnotatedParallelSentence& sentence,
                         vector<ParallelSpan>* phrases) {
@@ -145,7 +149,8 @@ void Extract::ExtractConsistentRules(const AnnotatedParallelSentence& sentence,
   starts.clear();
   vector<pair<int,int> > next_e(sentence.e_len);
   vector<WordID> cur_rhs_f, cur_rhs_e;
-  vector<pair<int, int> > cur_terminal_align;
+  vector<pair<short, short> > cur_terminal_align;
+  vector<int> cur_es, cur_fs;
   while(!q.empty()) {
     const RuleItem& rule = q.front();
 
@@ -190,20 +195,35 @@ void Extract::ExtractConsistentRules(const AnnotatedParallelSentence& sentence,
         cur_rhs_f.clear();
         cur_rhs_e.clear();
         cur_terminal_align.clear();
+        cur_fs.clear();
+        cur_es.clear();
 
+        int fbias = rule.i;
         for (int i = 0; i < rule.f.size(); ++i) {
           const ParallelSpan& cur = rule.f[i];
           cur_rhs_f.push_back(cur.cat);
+          if (cur.cat > 0) {
+            cur_fs.push_back(fbias + i);
+          } else {
+            cur_fs.push_back(-1);
+            fbias += cur.i2 - cur.i1 - 1;
+          }
         }
         for (int j = orig_span.j1; j < orig_span.j2; ++j) {
           if (next_e[j].first < 0) {
             cur_rhs_e.push_back(sentence.e[j]);
+            cur_es.push_back(j);
           } else {
             cur_rhs_e.push_back(1 - next_e[j].second);  // next_e[j].second is NT gap index
+            cur_es.push_back(-1);
             j = next_e[j].first - 1;
           }
         }
-        // TODO set cur_terminal_align
+        for (short i = 0; i < cur_fs.size(); ++i)
+          if (cur_fs[i] >= 0)
+            for (short j = 0; j < cur_es.size(); ++j)
+              if (cur_es[j] >= 0 && sentence.aligned(cur_fs[i],cur_es[j]))
+                cur_terminal_align.push_back(make_pair(i,j));
         observer->CountRule(lhs, cur_rhs_f, cur_rhs_e, cur_terminal_align);
       }
     }

@@ -1,9 +1,12 @@
 #include <iostream>
 #include <vector>
 #include <utility>
+#include <tr1/unordered_map>
 
+#include <boost/functional/hash.hpp>
 #include <boost/program_options.hpp>
 #include <boost/program_options/variables_map.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include "sentence_pair.h"
 #include "extract.h"
@@ -13,6 +16,7 @@
 #include "filelib.h"
 
 using namespace std;
+using namespace std::tr1;
 namespace po = boost::program_options;
 
 static const size_t MAX_LINE_LENGTH = 100000;
@@ -24,8 +28,8 @@ void InitCommandLine(int argc, char** argv, po::variables_map* conf) {
         ("input,i", po::value<string>()->default_value("-"), "Input file")
         ("default_category,d", po::value<string>(), "Default span type (use X for 'Hiero')")
         ("loose", "Use loose phrase extraction heuristic for base phrases")
-        ("invert,I", "Invert the outputs")
         ("base_phrase,B", "Write base phrases")
+        ("combiner_size,c", po::value<size_t>()->default_value(800000), "Number of unique items to store in cache before writing rule counts. Set to 0 to disable cache.")
         ("silent", "Write nothing to stderr except errors")
         ("phrase_context,C", "Write base phrase contexts")
         ("phrase_context_size,S", po::value<int>()->default_value(2), "Use this many words of context on left and write when writing base phrase contexts")
@@ -85,10 +89,11 @@ void WritePhraseContexts(const AnnotatedParallelSentence& sentence,
 }
 
 struct SimpleRuleWriter : public Extract::RuleObserver {
-  virtual void CountRule(WordID lhs,
-                         const vector<WordID>& rhs_f,
-                         const vector<WordID>& rhs_e,
-                         const vector<pair<int, int> >& fe_terminal_alignments) {
+ protected:
+  virtual void CountRuleImpl(WordID lhs,
+                             const vector<WordID>& rhs_f,
+                             const vector<WordID>& rhs_e,
+                             const vector<pair<short,short> >& fe_terminal_alignments) {
     cout << "[" << TD::Convert(-lhs) << "] |||";
     for (int i = 0; i < rhs_f.size(); ++i) {
       if (rhs_f[i] < 0) cout << " [" << TD::Convert(-rhs_f[i]) << ']';
@@ -99,8 +104,133 @@ struct SimpleRuleWriter : public Extract::RuleObserver {
       if (rhs_e[i] <= 0) cout << " [" << (1-rhs_e[i]) << ']';
       else cout << ' ' << TD::Convert(rhs_e[i]);
     }
+    cout << " |||";
+    for (int i = 0; i < fe_terminal_alignments.size(); ++i) {
+      cout << ' ' << fe_terminal_alignments[i].first << '-' << fe_terminal_alignments[i].second;
+    }
     cout << endl;
   }
+};
+
+struct HadoopStreamingRuleObserver : public Extract::RuleObserver {
+  HadoopStreamingRuleObserver(size_t csize) :
+     kF(TD::Convert("F")),
+     kE(TD::Convert("E")),
+     kDIVIDER(TD::Convert("|||")),
+     kLB("["), kRB("]"),
+     combiner_size(csize),
+     kEMPTY() {
+   for (int i=1; i < 50; ++i)
+     index2sym[1-i] = TD::Convert(kLB + boost::lexical_cast<string>(i) + kRB);
+   fmajor_key.resize(10, kF);
+   emajor_key.resize(10, kE);
+   fmajor_key[2] = emajor_key[2] = kDIVIDER;
+ }
+
+  ~HadoopStreamingRuleObserver() {
+    if (!cache.empty()) WriteAndClearCache();
+  }
+
+ protected:
+  virtual void CountRuleImpl(WordID lhs,
+                             const vector<WordID>& rhs_f,
+                             const vector<WordID>& rhs_e,
+                             const vector<pair<short,short> >& fe_terminal_alignments) {
+    fmajor_key.resize(3 + rhs_f.size());
+    emajor_key.resize(3 + rhs_e.size());
+    fmajor_val.resize(rhs_e.size());
+    emajor_val.resize(rhs_f.size());
+    emajor_key[1] = fmajor_key[1] = MapSym(lhs);
+    int nt = 1;
+    for (int i = 0; i < rhs_f.size(); ++i) {
+      const WordID id = rhs_f[i];
+      if (id < 0) {
+        fmajor_key[3 + i] = MapSym(id, nt);
+        emajor_val[i] = MapSym(id, nt);
+        ++nt;
+      } else {
+        fmajor_key[3 + i] = id;
+        emajor_val[i] = id;
+      }
+    }
+    for (int i = 0; i < rhs_e.size(); ++i) {
+      WordID id = rhs_e[i];
+      if (id <= 0) {
+        fmajor_val[i] = index2sym[id];
+        emajor_key[3 + i] = index2sym[id];
+      } else {
+        fmajor_val[i] = id;
+        emajor_key[3 + i] = id;
+      }
+    }
+    CombineCount(fmajor_key, fmajor_val, fe_terminal_alignments);
+    CombineCount(emajor_key, emajor_val, kEMPTY);
+  }
+
+ private:
+  void CombineCount(const vector<WordID>& key,
+                    const vector<WordID>& val,
+                    const vector<pair<short,short> >& aligns) {
+    if (combiner_size > 0) {
+      PhraseCount& v = cache[key][val];
+      v.first += 1.0;
+      if (v.first < 7 && aligns.size() > v.second.size())
+        v.second = aligns;
+      if (cache.size() > combiner_size) WriteAndClearCache();
+    } else {
+      cout << TD::GetString(key) << '\t' << TD::GetString(val) << " ||| ";
+      SerializeCountAndAlignment(1.0, aligns);
+      cout << endl;
+    }
+  }
+
+  static void SerializeCountAndAlignment(const double& count,
+                                         const vector<pair<short,short> >& aligns) {
+    cout << count;
+    if (aligns.size() > 0) {
+      cout << " |";
+      for (int i = 0; i < aligns.size(); ++i)
+        cout << ' ' << aligns[i].first << '-' << aligns[i].second;
+    }
+  }
+
+  void WriteAndClearCache() {
+    for (unordered_map<vector<WordID>, Vec2PhraseCount, boost::hash<vector<WordID> > >::iterator it = cache.begin();
+         it != cache.end(); ++it) {
+      cout << TD::GetString(it->first) << '\t';
+      const Vec2PhraseCount& vals = it->second;
+      bool needdiv = false;
+      for (Vec2PhraseCount::const_iterator vi = vals.begin(); vi != vals.end(); ++vi) {
+        if (needdiv) cout << " ||| "; else needdiv = true;
+        cout << TD::GetString(vi->first) << " ||| ";
+        SerializeCountAndAlignment(vi->second.first, vi->second.second);
+      }
+      cout << endl;
+    }
+    cache.clear();
+  }
+
+  WordID MapSym(WordID sym, int ind = 0) {
+    WordID& r = cat2ind2sym[sym][ind];
+    if (!r) {
+      if (ind == 0)
+        r = TD::Convert(kLB + TD::Convert(-sym) + kRB);
+      else
+        r = TD::Convert(kLB + TD::Convert(-sym) + "," + boost::lexical_cast<string>(ind) + kRB);
+    }
+    return r;
+  }
+
+  const WordID kF, kE, kDIVIDER;
+  const string kLB, kRB;
+  const size_t combiner_size;
+  const vector<pair<short,short> > kEMPTY;
+  map<WordID, map<int, WordID> > cat2ind2sym;
+  map<int, WordID> index2sym;
+  typedef pair<double, vector<pair<short,short> > > PhraseCount;
+  typedef unordered_map<vector<WordID>, PhraseCount, boost::hash<vector<WordID> > > Vec2PhraseCount;
+  unordered_map<vector<WordID>, Vec2PhraseCount, boost::hash<vector<WordID> > > cache;
+  vector<WordID> emajor_key, emajor_val, fmajor_key, fmajor_val;
 };
 
 int main(int argc, char** argv) {
@@ -136,7 +266,8 @@ int main(int argc, char** argv) {
   const int ctx_size = conf["phrase_context_size"].as<int>();
   const bool permit_adjacent_nonterminals = conf.count("permit_adjacent_nonterminals") > 0;
   int line = 0;
-  SimpleRuleWriter o;
+  HadoopStreamingRuleObserver o(conf["combiner_size"].as<size_t>());;
+  //SimpleRuleWriter o;
   while(in) {
     ++line;
     in.getline(buf, MAX_LINE_LENGTH);

@@ -1,10 +1,12 @@
 #ifndef _EXTRACT_H_
 #define _EXTRACT_H_
 
+#include <iostream>
 #include <utility>
 #include <vector>
 #include "array2d.h"
 #include "wordid.h"
+#include "sparse_vector.h"
 
 struct AnnotatedParallelSentence;
 
@@ -85,5 +87,22 @@ struct Extract {
                           const bool permit_adjacent_nonterminals,
                           RuleObserver* observer);
 };
+
+// represents statistics / information about a rule pair
+struct RuleStatistics {
+  SparseVector<float> counts;
+  std::vector<std::pair<short,short> > aligns;
+  RuleStatistics() {}
+  RuleStatistics(int name, float val, const std::vector<std::pair<short,short> >& al) :
+      aligns(al) {
+    counts.set_value(name, val);
+  }
+  void ParseRuleStatistics(const char* buf, int start, int end);
+  RuleStatistics& operator+=(const RuleStatistics& rhs) {
+    counts += rhs.counts;
+    return *this;
+  }
+};
+std::ostream& operator<<(std::ostream& os, const RuleStatistics& s);
 
 #endif

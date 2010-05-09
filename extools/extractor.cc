@@ -8,9 +8,11 @@
 #include <boost/program_options/variables_map.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include "sparse_vector.h"
 #include "sentence_pair.h"
 #include "extract.h"
 #include "tdict.h"
+#include "fdict.h"
 #include "wordid.h"
 #include "array2d.h"
 #include "filelib.h"
@@ -119,7 +121,8 @@ struct HadoopStreamingRuleObserver : public Extract::RuleObserver {
      kDIVIDER(TD::Convert("|||")),
      kLB("["), kRB("]"),
      combiner_size(csize),
-     kEMPTY() {
+     kEMPTY(),
+     kCFE(FD::Convert("CFE")) {
    for (int i=1; i < 50; ++i)
      index2sym[1-i] = TD::Convert(kLB + boost::lexical_cast<string>(i) + kRB);
    fmajor_key.resize(10, kF);
@@ -172,25 +175,14 @@ struct HadoopStreamingRuleObserver : public Extract::RuleObserver {
                     const vector<WordID>& val,
                     const vector<pair<short,short> >& aligns) {
     if (combiner_size > 0) {
-      PhraseCount& v = cache[key][val];
-      v.first += 1.0;
-      if (v.first < 7 && aligns.size() > v.second.size())
-        v.second = aligns;
+      RuleStatistics& v = cache[key][val];
+      float cfe = v.counts.add_value(kCFE, 1.0f);
+      if (cfe < 7.0f && aligns.size() > v.aligns.size())
+        v.aligns = aligns;
       if (cache.size() > combiner_size) WriteAndClearCache();
     } else {
       cout << TD::GetString(key) << '\t' << TD::GetString(val) << " ||| ";
-      SerializeCountAndAlignment(1.0, aligns);
-      cout << endl;
-    }
-  }
-
-  static void SerializeCountAndAlignment(const double& count,
-                                         const vector<pair<short,short> >& aligns) {
-    cout << count;
-    if (aligns.size() > 0) {
-      cout << " |";
-      for (int i = 0; i < aligns.size(); ++i)
-        cout << ' ' << aligns[i].first << '-' << aligns[i].second;
+      cout << RuleStatistics(kCFE, 1.0f, aligns) << endl;
     }
   }
 
@@ -202,8 +194,7 @@ struct HadoopStreamingRuleObserver : public Extract::RuleObserver {
       bool needdiv = false;
       for (Vec2PhraseCount::const_iterator vi = vals.begin(); vi != vals.end(); ++vi) {
         if (needdiv) cout << " ||| "; else needdiv = true;
-        cout << TD::GetString(vi->first) << " ||| ";
-        SerializeCountAndAlignment(vi->second.first, vi->second.second);
+        cout << TD::GetString(vi->first) << " ||| " << vi->second;
       }
       cout << endl;
     }
@@ -225,10 +216,10 @@ struct HadoopStreamingRuleObserver : public Extract::RuleObserver {
   const string kLB, kRB;
   const size_t combiner_size;
   const vector<pair<short,short> > kEMPTY;
+  const int kCFE;
   map<WordID, map<int, WordID> > cat2ind2sym;
   map<int, WordID> index2sym;
-  typedef pair<double, vector<pair<short,short> > > PhraseCount;
-  typedef unordered_map<vector<WordID>, PhraseCount, boost::hash<vector<WordID> > > Vec2PhraseCount;
+  typedef unordered_map<vector<WordID>, RuleStatistics, boost::hash<vector<WordID> > > Vec2PhraseCount;
   unordered_map<vector<WordID>, Vec2PhraseCount, boost::hash<vector<WordID> > > cache;
   vector<WordID> emajor_key, emajor_val, fmajor_key, fmajor_val;
 };

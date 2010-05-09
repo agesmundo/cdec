@@ -2,22 +2,34 @@
 #include <vector>
 #include <utility>
 #include <cstdlib>
+#include <tr1/unordered_map>
 
+#include <boost/functional/hash.hpp>
 #include <boost/program_options.hpp>
 #include <boost/program_options/variables_map.hpp>
 
+#include "tdict.h"
 #include "sentence_pair.h"
 #include "fdict.h"
+#include "extract.h"
 
 using namespace std;
+using namespace std::tr1;
 namespace po = boost::program_options;
 
 static const size_t MAX_LINE_LENGTH = 64000000;
 
+namespace {
+  inline bool IsWhitespace(char c) { return c == ' ' || c == '\t'; }
+
+  inline void SkipWhitespace(const char* buf, int* ptr) {
+    while (buf[*ptr] && IsWhitespace(buf[*ptr])) { ++(*ptr); }
+  }
+}
 void InitCommandLine(int argc, char** argv, po::variables_map* conf) {
   po::options_description opts("Configuration options");
   opts.add_options()
-        ("normalize,n", "Normalize counts and write log relative frequencies")
+        ("phrase_marginals,p", "Compute phrase marginals (invert E rules in output)")
         ("help,h", "Print this help message and exit");
   po::options_description clo("Command line options");
   po::options_description dcmdline_options;
@@ -33,59 +45,35 @@ void InitCommandLine(int argc, char** argv, po::variables_map* conf) {
   }
 }
 
-namespace {
-  inline bool IsWhitespace(char c) { return c == ' ' || c == '\t'; }
+typedef unordered_map<vector<WordID>, RuleStatistics, boost::hash<vector<WordID> > > ID2RuleStatistics;
 
-  inline void SkipWhitespace(const char* buf, int* ptr) {
-    while (buf[*ptr] && IsWhitespace(buf[*ptr])) { ++(*ptr); }
+void PlusEquals(const ID2RuleStatistics& v, ID2RuleStatistics* self) {
+  for (ID2RuleStatistics::const_iterator it = v.begin(); it != v.end(); ++it) {
+    RuleStatistics& dest = (*self)[it->first];
+    dest += it->second;
+    // TODO - do something smarter about alignments?
+    if (dest.aligns.empty() && !it->second.aligns.empty())
+      dest.aligns = it->second.aligns;
   }
 }
 
-struct CountAndAlignment {
-  CountAndAlignment() : count() {}
-  double count;
-  vector<pair<short,short> > aligns;
-  CountAndAlignment& operator+=(const CountAndAlignment& rhs) {
-    if (rhs.count > count) { aligns = rhs.aligns; }
-    count += rhs.count;
-    return *this;
+int ReadPhraseUntilDividerOrEnd(const char* buf, const int sstart, const int end, vector<WordID>* p) {
+  static const WordID kDIV = TD::Convert("|||");
+  int ptr = sstart;
+  while(ptr < end) {
+    while(ptr < end && IsWhitespace(buf[ptr])) { ++ptr; }
+    int start = ptr;
+    while(ptr < end && !IsWhitespace(buf[ptr])) { ++ptr; }
+    if (ptr == start) {cerr << "Warning! empty token.\n"; return ptr; }
+    const WordID w = TD::Convert(string(buf, start, ptr - start));
+    if (w == kDIV) return ptr;
+    p->push_back(w);
   }
-};
-
-typedef map<int, CountAndAlignment> ID2CountAndAlignment;
-
-void PlusEquals(const ID2CountAndAlignment& v, ID2CountAndAlignment* self) {
-  for (ID2CountAndAlignment::const_iterator it = v.begin(); it != v.end(); ++it) {
-    (*self)[it->first] += it->second;
-  }
+  return ptr;
 }
 
-void ParseCountAndAlignment(const char* buf,
-                            const int start,
-                            const int end,
-                            const bool has_alignment,
-                            CountAndAlignment* canda) {
-  canda->count = strtod(buf+start,NULL);
-  canda->aligns.clear();
-  if (has_alignment) {
-    int ptr = start;
-    while (buf[ptr] != '|') ++ptr;
-    ++ptr;
-    int cs;
-    while(buf[ptr] != 0 && ptr < end) {
-      SkipWhitespace(buf, &ptr);
-      cs = ptr;
-      while(ptr < end && !IsWhitespace(buf[ptr])) { ++ptr; }
-      if (ptr > cs) {
-        short a, b;
-        AnnotatedParallelSentence::ReadAlignmentPoint(buf, cs, ptr, false, &a, &b);
-        canda->aligns.push_back(make_pair(a,b));
-      }
-    }
-  }
-}
-
-void ParseLine(const char* buf, int* cur_key, ID2CountAndAlignment* counts) {
+void ParseLine(const char* buf, vector<WordID>* cur_key, ID2RuleStatistics* counts) {
+  static const WordID kDIV = TD::Convert("|||");
   counts->clear();
   int ptr = 0;
   while(buf[ptr] != 0 && buf[ptr] != '\t') { ++ptr; }
@@ -93,20 +81,21 @@ void ParseLine(const char* buf, int* cur_key, ID2CountAndAlignment* counts) {
     cerr << "Missing tab separator between key and value!\n INPUT=" << buf << endl;
     exit(1);
   }
-  *cur_key = FD::Convert(string(buf,0,ptr));
+  cur_key->clear();
+  // key is: "[X] ||| word word word"
+  int tmpp = ReadPhraseUntilDividerOrEnd(buf, 0, ptr, cur_key);
+  cur_key->push_back(kDIV);
+  ReadPhraseUntilDividerOrEnd(buf, tmpp, ptr, cur_key);
   ++ptr;
   int start = ptr;
   int end = ptr;
   int state = 0; // 0=reading label, 1=reading count
-  int name = 0;
-  bool seen_bar = false;
+  vector<WordID> name;
   while(buf[ptr] != 0) {
     while(buf[ptr] != 0 && buf[ptr] != '|') { ++ptr; }
     if (buf[ptr] == '|') {
       ++ptr;
-      if (buf[ptr] != '|') {
-        seen_bar = true;
-      } else {
+      if (buf[ptr] == '|') {
         ++ptr;
         if (buf[ptr] == '|') {
           ++ptr;
@@ -117,13 +106,12 @@ void ParseLine(const char* buf, int* cur_key, ID2CountAndAlignment* counts) {
             exit(1);
           }
           switch (state) {
-            case 0: ++state; name=FD::Convert(string(buf,start,end-start)); break;
-            case 1: --state; ParseCountAndAlignment(buf, start, end, seen_bar, &(*counts)[name]); break;
+            case 0: ++state; name.clear(); ReadPhraseUntilDividerOrEnd(buf, start, end, &name); break;
+            case 1: --state; (*counts)[name].ParseRuleStatistics(buf, start, end); break;
             default: cerr << "Can't happen\n"; abort();
           }
           SkipWhitespace(buf, &ptr);
           start = ptr;
-          seen_bar = false;
         }
       }
     }
@@ -132,55 +120,73 @@ void ParseLine(const char* buf, int* cur_key, ID2CountAndAlignment* counts) {
   while (end > start && IsWhitespace(buf[end-1])) { --end; }
   if (end > start) {
     switch (state) {
-      case 0: ++state; name=FD::Convert(string(buf,start,end-start)); break;
-      case 1: --state; ParseCountAndAlignment(buf, start, end, seen_bar, &(*counts)[name]); break;
+      case 0: ++state; name.clear(); ReadPhraseUntilDividerOrEnd(buf, start, end, &name); break;
+      case 1: --state; (*counts)[name].ParseRuleStatistics(buf, start, end); break;
       default: cerr << "Can't happen\n"; abort();
     }
   }
 }
 
-void WriteValues(int key, const ID2CountAndAlignment& val) {
-  const string& skey = FD::Convert(key);
-  const bool emajor = (skey[0] == 'E');
-  if (emajor) {
-    const size_t divp = skey.find(" |||");
-    const string lhs = skey.substr(2, divp - 2);
-    const string rhs_e = skey.substr(divp + 5);
-    for (ID2CountAndAlignment::const_iterator it = val.begin();
-         it != val.end(); ++it) {
-      cout << lhs << " ||| " << FD::Convert(it->first) << '\t' << rhs_e << " ||| FgivenE=" << it->second.count << endl;
-    }
-  } else {
-    cout << skey.substr(2) << "\t";
-    bool print_bar = false;
-    for (ID2CountAndAlignment::const_iterator it = val.begin();
-         it != val.end(); ++it) {
-      if (print_bar) cout << " ||| "; else print_bar = true;
-      cout << FD::Convert(it->first) << " ||| EgivenF=" << it->second.count;
-      const vector<pair<short,short> >& aligns = it->second.aligns;
-      if (aligns.size() > 0) {
-        cout << " A=";
-        for (int i = 0; i < aligns.size(); ++i) {
-          if (i) cout << ',';
-          cout << aligns[i].first << '-' << aligns[i].second;
-        }
-      }
-    }
-    cout << endl;
+void WriteKeyValue(const vector<WordID>& key, const ID2RuleStatistics& val) {
+  cout << TD::GetString(key) << '\t';
+  bool needdiv = false;
+  for (ID2RuleStatistics::const_iterator it = val.begin(); it != val.end(); ++it) {
+    if (needdiv) cout << " ||| "; else needdiv = true;
+    cout << TD::GetString(it->first) << " ||| " << it->second;
+  }
+  cout << endl;
+}
+
+void DoPhraseMarginals(const vector<WordID>& key, ID2RuleStatistics* val) {
+  static const WordID kF = TD::Convert("F");
+  static const WordID kE = TD::Convert("E");
+  static const int kCF = FD::Convert("CF");
+  static const int kCE = FD::Convert("CE");
+  static const int kCFE = FD::Convert("CFE");
+  assert(key.size() > 0);
+  if (key[0] != kF && key[0] != kE) {
+    cerr << "DoPhraseMarginals expects keys to have the from 'F|E [NT] word word word'\n";
+    cerr << "  but got: " << TD::GetString(key) << endl;
+    exit(1);
+  }
+  const int cur_marginal_id = (key[0] == kF ? kCF : kCE);
+  double tot = 0;
+  for (ID2RuleStatistics::iterator it = val->begin(); it != val->end(); ++it)
+    tot += it->second.counts.value(kCFE);
+  for (ID2RuleStatistics::iterator it = val->begin(); it != val->end(); ++it) {
+    it->second.counts.set_value(cur_marginal_id, tot);
+
+    // prevent double counting of the joint
+    if (cur_marginal_id == kCE) it->second.counts.clear_value(kCFE);
   }
 }
 
-void Normalize(ID2CountAndAlignment* v) {
-  double sum = 0;
-  for (ID2CountAndAlignment::iterator it = v->begin();
-       it != v->end(); ++it)
-    sum += it->second.count;
-  if (!sum) return;
-
-  sum = log(sum);
-  for (ID2CountAndAlignment::iterator it = v->begin();
-       it != v->end(); ++it)
-    it->second.count = sum - log(it->second.count);
+void WriteWithInversions(const vector<WordID>& key, const ID2RuleStatistics& val) {
+  static const WordID kE = TD::Convert("E");
+  static const WordID kDIV = TD::Convert("|||");
+  vector<WordID> new_key(key.size() - 1);
+  for (int i = 1; i < key.size(); ++i)
+    new_key[i - 1] = key[i];
+  const bool do_invert = (key[0] == kE);
+  if (!do_invert) {
+    WriteKeyValue(new_key, val);
+  } else {
+    ID2RuleStatistics inv;
+    assert(new_key.size() > 2);
+    vector<WordID> tk(new_key.size() - 2);
+    for (int i = 0; i < tk.size(); ++i)
+      tk[i] = new_key[2 + i];
+    RuleStatistics& inv_stats = inv[tk];
+    for (ID2RuleStatistics::const_iterator it = val.begin(); it != val.end(); ++it) {
+      inv_stats.counts = it->second.counts;
+      vector<WordID> ekey(2 + it->first.size());
+      ekey[0] = key[1];
+      ekey[1] = kDIV;
+      for (int i = 0; i < it->first.size(); ++i)
+        ekey[2+i] = it->first[i];
+      WriteKeyValue(ekey, inv);
+    }
+  }
 }
 
 int main(int argc, char** argv) {
@@ -188,32 +194,30 @@ int main(int argc, char** argv) {
   InitCommandLine(argc, argv, &conf);
 
   char* buf = new char[MAX_LINE_LENGTH];
-  ID2CountAndAlignment acc, cur_counts;
-  int key = -1, cur_key = -1;
+  ID2RuleStatistics acc, cur_counts;
+  vector<WordID> key, cur_key;
   int line = 0;
-  const bool normalize = conf.count("normalize") > 0;
+  const bool phrase_marginals = conf.count("phrase_marginals") > 0;
   while(cin) {
     ++line;
     cin.getline(buf, MAX_LINE_LENGTH);
     if (buf[0] == 0) continue;
     ParseLine(buf, &cur_key, &cur_counts);
     if (cur_key != key) {
-      if (key > 0) {
-        if (normalize) Normalize(&acc);
-        WriteValues(key, acc);
+      if (key.size() > 0) {
+        if (phrase_marginals)
+          { DoPhraseMarginals(key, &acc); WriteWithInversions(key, acc); }
+        else WriteKeyValue(key, acc);
         acc.clear();
-        if (FD::NumFeats() > 400000) {
-          FD::dict_.clear();
-          ParseLine(buf, &cur_key, &cur_counts);
-        }
       }
       key = cur_key;
     }
     PlusEquals(cur_counts, &acc);
   }
-  if (key > 0) {
-    if (normalize) Normalize(&acc);
-    WriteValues(key, acc);
+  if (key.size() > 0) {
+    if (phrase_marginals)
+      { DoPhraseMarginals(key, &acc); WriteWithInversions(key, acc); }
+    else WriteKeyValue(key, acc);
   }
   return 0;
 }

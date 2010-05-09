@@ -31,8 +31,8 @@ public:
     values_[index] = value;
   }
 
-    void add_value(int index, const T &value) {
-        values_[index] += value;
+    T add_value(int index, const T &value) {
+        return values_[index] += value;
     }
 
     T value(int index) const {

@@ -39,6 +39,7 @@ void InitCommandLine(int argc, char** argv, po::variables_map* conf) {
         ("max_syms,l", po::value<int>()->default_value(5), "Maximum number of symbols in final phrase size")
         ("max_vars,v", po::value<int>()->default_value(2), "Maximum number of nonterminal variables in final phrase size")
         ("permit_adjacent_nonterminals,A", "Permit adjacent nonterminals in source side of rules")
+        ("no_required_aligned_terminal,n", "Do not require an aligned terminal")
         ("help,h", "Print this help message and exit");
   po::options_description clo("Command line options");
   po::options_description dcmdline_options;
@@ -256,6 +257,7 @@ int main(int argc, char** argv) {
   const int max_vars = conf["max_vars"].as<int>();
   const int ctx_size = conf["phrase_context_size"].as<int>();
   const bool permit_adjacent_nonterminals = conf.count("permit_adjacent_nonterminals") > 0;
+  const bool require_aligned_terminal = conf.count("no_required_aligned_terminal") == 0;
   int line = 0;
   HadoopStreamingRuleObserver o(conf["combiner_size"].as<size_t>());;
   //SimpleRuleWriter o;
@@ -271,7 +273,7 @@ int main(int argc, char** argv) {
     phrases.clear();
     Extract::ExtractBasePhrases(max_base_phrase_size, sentence, &phrases);
     if (loose_phrases)
-      Extract::LoosenPhraseBounds(sentence, &phrases);
+      Extract::LoosenPhraseBounds(sentence, max_base_phrase_size, &phrases);
     if (phrases.empty()) {
       cerr << "WARNING no phrases extracted\n";
       continue;
@@ -285,7 +287,7 @@ int main(int argc, char** argv) {
       continue;
     }
     Extract::AnnotatePhrasesWithCategoryTypes(default_cat, sentence.span_types, &phrases);
-    Extract::ExtractConsistentRules(sentence, phrases, max_vars, max_syms, permit_adjacent_nonterminals, &o);
+    Extract::ExtractConsistentRules(sentence, phrases, max_vars, max_syms, permit_adjacent_nonterminals, require_aligned_terminal, &o);
   }
   if (!silent) cerr << endl;
   return 0;

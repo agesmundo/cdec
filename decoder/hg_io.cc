@@ -565,6 +565,57 @@ void HypergraphIO::PLFtoLattice(const string& plf, Lattice* pl) {
   }
 }
 
+void HypergraphIO::WriteAsCFG(const Hypergraph& hg) {
+  vector<int> cats(hg.nodes_.size());
+  // each node in the translation forest becomes a "non-terminal" in the new
+  // grammar, create the labels here
+  const string kSEP = "_";
+  for (int i = 0; i < hg.nodes_.size(); ++i) {
+    const char* pstr = "CAT";
+    if (hg.nodes_[i].cat_ < 0)
+      pstr = TD::Convert(-hg.nodes_[i].cat_);
+    cats[i] = TD::Convert(pstr + kSEP + boost::lexical_cast<string>(i)) * -1;
+  }
+
+  for (int i = 0; i < hg.edges_.size(); ++i) {
+    const Hypergraph::Edge& edge = hg.edges_[i];
+    const vector<WordID>& tgt = edge.rule_->e();
+    const vector<WordID>& src = edge.rule_->f();
+    TRulePtr rule(new TRule);
+    rule->prev_i = edge.i_;
+    rule->prev_j = edge.j_;
+    rule->lhs_ = cats[edge.head_node_];
+    vector<WordID>& f = rule->f_;
+    vector<WordID>& e = rule->e_;
+    f.resize(tgt.size());   // swap source and target, since the parser
+    e.resize(src.size());   // parses using the source side!
+    Hypergraph::TailNodeVector tn(edge.tail_nodes_.size());
+    int ntc = 0;
+    for (int j = 0; j < tgt.size(); ++j) {
+      const WordID& cur = tgt[j];
+      if (cur > 0) {
+        f[j] = cur;
+      } else {
+        tn[ntc++] = cur;
+        f[j] = cats[edge.tail_nodes_[-cur]];
+      }
+    }
+    ntc = 0;
+    for (int j = 0; j < src.size(); ++j) {
+      const WordID& cur = src[j];
+      if (cur > 0) {
+        e[j] = cur;
+      } else {
+        e[j] = tn[ntc++];
+      }
+    }
+    rule->scores_ = edge.feature_values_;
+    rule->parent_rule_ = edge.rule_;
+    rule->ComputeArity();
+    cout << rule->AsString() << endl;
+  }
+}
+
 namespace B64 {
 
 static const char cb64[]="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";

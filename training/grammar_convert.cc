@@ -130,64 +130,67 @@ bool CheckPermutationMask(const vector<int>& mask, const vector<int>& pi) {
 }
 
 void PermuteYKRecursive(int nodeid, const WordID& parent, const int max_reorder, Hypergraph* hg) {
+  // Hypergraph tmp = *hg;
   Hypergraph::Node* node = &hg->nodes_[nodeid];
   if (node->in_edges_.size() != 1) {
     cerr << "Multiple rewrites of [" << TD::Convert(node->cat_ * -1) << "] (parent is [" << TD::Convert(parent*-1) << "])\n";
     cerr << "  not recursing!\n";
     return;
   }
-  const int oe_index = node->in_edges_.front();
-  const TRule& rule = *hg->edges_[oe_index].rule_;
-  const Hypergraph::TailNodeVector orig_tail = hg->edges_[oe_index].tail_nodes_;
-  const int tail_size = orig_tail.size();
-  for (int i = 0; i < tail_size; ++i) {  
-    PermuteYKRecursive(hg->edges_[oe_index].tail_nodes_[i], node->cat_, max_reorder, hg);
-  }
-  const vector<WordID>& of = rule.f_;
-  if (of.size() == 1) return;
-//  cerr << "Permuting [" << TD::Convert(node->cat_ * -1) << "]\n";
-//  cerr << "ORIG: " << rule.AsString() << endl;
-  vector<WordID> pi(of.size(), 0);
-  for (int i = 0; i < pi.size(); ++i) pi[i] = i;
+//  for (int eii = 0; eii < node->in_edges_.size(); ++eii) {
+    const int oe_index = node->in_edges_.front();
+    const TRule& rule = *hg->edges_[oe_index].rule_;
+    const Hypergraph::TailNodeVector orig_tail = hg->edges_[oe_index].tail_nodes_;
+    const int tail_size = orig_tail.size();
+    for (int i = 0; i < tail_size; ++i) {  
+      PermuteYKRecursive(hg->edges_[oe_index].tail_nodes_[i], node->cat_, max_reorder, hg);
+    }
+    const vector<WordID>& of = rule.f_;
+    if (of.size() == 1) return;
+  //  cerr << "Permuting [" << TD::Convert(node->cat_ * -1) << "]\n";
+  //  cerr << "ORIG: " << rule.AsString() << endl;
+    vector<WordID> pi(of.size(), 0);
+    for (int i = 0; i < pi.size(); ++i) pi[i] = i;
 
-  vector<int> permutation_mask(of.size(), 0);
-  const bool dont_reorder_across_PU = true;  // TODO add configuration
-  if (dont_reorder_across_PU) {
-    int cur = 0;
-    for (int i = 0; i < pi.size(); ++i) {
-      if (of[i] >= 0) continue;
-      const string cat = PureCategory(of[i]);
-      if (cat == "PU" || cat == "PU!H" || cat == "PUNC" || cat == "PUNC!H" || cat == "CC") {
-        ++cur;
-        permutation_mask[i] = cur;
-        ++cur;
-      } else {
-        permutation_mask[i] = cur;
+    vector<int> permutation_mask(of.size(), 0);
+    const bool dont_reorder_across_PU = true;  // TODO add configuration
+    if (dont_reorder_across_PU) {
+      int cur = 0;
+      for (int i = 0; i < pi.size(); ++i) {
+        if (of[i] >= 0) continue;
+        const string cat = PureCategory(of[i]);
+        if (cat == "PU" || cat == "PU!H" || cat == "PUNC" || cat == "PUNC!H" || cat == "CC") {
+          ++cur;
+          permutation_mask[i] = cur;
+          ++cur;
+        } else {
+          permutation_mask[i] = cur;
+        }
       }
     }
-  }
-  int fid = FD::Convert(ConstituentOrderFeature(rule, pi));
-  hg->edges_[oe_index].feature_values_.set_value(fid, 1.0);
-  while (next_permutation(pi.begin(), pi.end())) {
-    if (!CheckPermutationMask(permutation_mask, pi))
-      continue;
-    vector<WordID> nf(pi.size(), 0);
-    Hypergraph::TailNodeVector tail(pi.size(), 0);
-    bool skip = false;
-    for (int i = 0; i < pi.size(); ++i) {
-      int dist = pi[i] - i; if (dist < 0) dist *= -1;
-      if (dist > max_reorder) { skip = true; break; }
-      nf[i] = of[pi[i]];
-      tail[i] = orig_tail[pi[i]];
-    }
-    if (skip) continue;
-    TRulePtr nr(new TRule(rule));
-    nr->f_ = nf;
     int fid = FD::Convert(ConstituentOrderFeature(rule, pi));
-    nr->scores_.set_value(fid, 1.0);
-//    cerr << "PERM: " << nr->AsString() << endl;
-    CreateEdge(nr, tail, node, hg);
-  }
+    hg->edges_[oe_index].feature_values_.set_value(fid, 1.0);
+    while (next_permutation(pi.begin(), pi.end())) {
+      if (!CheckPermutationMask(permutation_mask, pi))
+        continue;
+      vector<WordID> nf(pi.size(), 0);
+      Hypergraph::TailNodeVector tail(pi.size(), 0);
+      bool skip = false;
+      for (int i = 0; i < pi.size(); ++i) {
+        int dist = pi[i] - i; if (dist < 0) dist *= -1;
+        if (dist > max_reorder) { skip = true; break; }
+        nf[i] = of[pi[i]];
+        tail[i] = orig_tail[pi[i]];
+      }
+      if (skip) continue;
+      TRulePtr nr(new TRule(rule));
+      nr->f_ = nf;
+      int fid = FD::Convert(ConstituentOrderFeature(rule, pi));
+      nr->scores_.set_value(fid, 1.0);
+  //    cerr << "PERM: " << nr->AsString() << endl;
+      CreateEdge(nr, tail, node, hg);
+    }
+ // }
 }
 
 void PermuteYamadaAndKnight(Hypergraph* hg, int max_reorder) {

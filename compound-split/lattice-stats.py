@@ -42,5 +42,6 @@ for fname in args:
   avg=float(total_depth)/float(lc)
   print "averagePaths=%g" % (total_paths / float(lc))
   print "averageNodes=%f" % (float(total_depth) / float(lc))
-  print "averageLen=%f" % (float(total_cols) / float(lc))
+  print "totalPaths=%f" % (float(total_depth))
   print "Nodes/Len=%f" % (float(total_depth)/float(total_cols))
+  print "averageLen=%f" % (float(total_cols) / float(lc))

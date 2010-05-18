@@ -21,6 +21,8 @@ struct HypergraphIO {
   // (so it only contains structure and feature information)
   static bool WriteToJSON(const Hypergraph& hg, bool remove_rules, std::ostream* out);
 
+  static void WriteAsCFG(const Hypergraph& hg);
+
   // serialization utils
   static void ReadFromPLF(const std::string& in, Hypergraph* out, int line = 0);
   // return PLF string representation (undefined behavior on non-lattices)

@@ -72,6 +72,7 @@ libcdec_a_SOURCES = \
   ff_wordalign.cc \
   ff_csplit.cc \
   ff_tagger.cc \
+  tromble_loss.cc \
   freqdict.cc \
   lexalign.cc \
   lextrans.cc \

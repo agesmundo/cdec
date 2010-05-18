@@ -208,5 +208,18 @@ void ReverseCharLMCSplitFeature::TraversalFeaturesImpl(
   if (edge.rule_->EWords() != 1) return;
   const double lpp = pimpl_->LeftPhonotacticProb(smeta.GetSourceLattice(), edge.i_);
   features->set_value(fid_, lpp);
+#if 0
+  WordID neighbor_word = 0;
+  const WordID word = edge.rule_->e_[1];
+  if (chars > 4 && (sword[0] == 's' || sword[0] == 'n')) {
+    neighbor_word = TD::Convert(string(&sword[1]));
+  }
+  if (neighbor_word) {
+    float nfreq = freq_dict_.LookUp(neighbor_word);
+    cerr << "COMPARE: " << TD::Convert(word) << " & " << TD::Convert(neighbor_word) << endl;
+    if (!nfreq) nfreq = 99.0f;
+    features->set_value(fdoes_deletion_help_, (freq - nfreq));
+  }
+#endif
 }
 

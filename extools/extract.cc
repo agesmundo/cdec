@@ -74,12 +74,44 @@ void Extract::ExtractBasePhrases(const int max_base_phrase_size,
   }
 }
 
-// TODO implement phrase loosening!
 void Extract::LoosenPhraseBounds(const AnnotatedParallelSentence& sentence,
-                        vector<ParallelSpan>* phrases) {
-  assert(!"not implemented");
-  (void) sentence;
-  (void) phrases;
+                                 const int max_base_phrase_size,
+                                 vector<ParallelSpan>* phrases) {
+  const int num_phrases = phrases->size();
+  map<int, map<int, map<int, map<int, bool> > > > marker;
+  for (int i = 0; i < num_phrases; ++i) {
+    const ParallelSpan& cur = (*phrases)[i];
+    marker[cur.i1][cur.i2][cur.j1][cur.j2] = true;
+  }
+  for (int i = 0; i < num_phrases; ++i) {
+    const ParallelSpan& cur = (*phrases)[i];
+    const int i1_max = cur.i1;
+    const int i2_min = cur.i2;
+    const int j1_max = cur.j1;
+    const int j2_min = cur.j2;
+    int i1_min = i1_max;
+    while (i1_min > 0 && sentence.f_aligned[i1_min-1] == 0) { --i1_min; }
+    int j1_min = j1_max;
+    while (j1_min > 0 && sentence.e_aligned[j1_min-1] == 0) { --j1_min; }
+    int i2_max = i2_min;
+    while (i2_max < sentence.f_len && sentence.f_aligned[i2_max] == 0) { ++i2_max; }
+    int j2_max = j2_min;
+    while (j2_max < sentence.e_len && sentence.e_aligned[j2_max] == 0) { ++j2_max; }
+    for (int i1 = i1_min; i1 <= i1_max; ++i1) {
+      const int ilim = min(i2_max, i1 + max_base_phrase_size);
+      for (int i2 = max(i1+1,i2_min); i2 <= ilim; ++i2) {
+        for (int j1 = j1_min; j1 <= j1_max; ++j1) {
+          const int jlim = min(j2_max, j1 + max_base_phrase_size);
+          for (int j2 = max(j1+1, j2_min); j2 <= jlim; ++j2) {
+            bool& seen = marker[i1][i2][j1][j2];
+            if (!seen)
+              phrases->push_back(ParallelSpan(i1,i2,j1,j2));
+            seen = true;
+          }
+        }
+      }
+    }
+  }
 }
 
 // this uses the TARGET span (i,j) to annotate phrases, will copy
@@ -140,6 +172,7 @@ void Extract::ExtractConsistentRules(const AnnotatedParallelSentence& sentence,
                           const int max_vars,
                           const int max_syms,
                           const bool permit_adjacent_nonterminals,
+                          const bool require_aligned_terminal,
                           RuleObserver* observer) {
   queue<RuleItem> q;  // agenda for BFS
   int max_len = -1;
@@ -206,33 +239,49 @@ void Extract::ExtractConsistentRules(const AnnotatedParallelSentence& sentence,
         cur_fs.clear();
         cur_es.clear();
 
+        const int elen = orig_span.j2 - orig_span.j1;
+        vector<int> isvar(elen, 0);
         int fbias = rule.i;
+        bool bad_rule = false;
+        bool has_aligned_terminal = false;
         for (int i = 0; i < rule.f.size(); ++i) {
           const ParallelSpan& cur = rule.f[i];
           cur_rhs_f.push_back(cur.cat);
-          if (cur.cat > 0) {
+          if (cur.cat > 0) {   // terminal
+            if (sentence.f_aligned[fbias + i]) has_aligned_terminal = true;
             cur_fs.push_back(fbias + i);
-          } else {
+          } else {             // non-terminal
+            int subj1 = cur.j1 - orig_span.j1;
+            int subj2 = cur.j2 - orig_span.j1;
+            if (subj1 < 0 || subj2 > elen) { bad_rule = true; break; }
+            for (int j = subj1; j < subj2 && !bad_rule; ++j) {
+              int& isvarj = isvar[j];
+              isvarj = true;
+            }
+            if (bad_rule) break;
             cur_fs.push_back(-1);
             fbias += cur.i2 - cur.i1 - 1;
           }
         }
-        for (int j = orig_span.j1; j < orig_span.j2; ++j) {
-          if (next_e[j].first < 0) {
-            cur_rhs_e.push_back(sentence.e[j]);
-            cur_es.push_back(j);
-          } else {
-            cur_rhs_e.push_back(1 - next_e[j].second);  // next_e[j].second is NT gap index
-            cur_es.push_back(-1);
-            j = next_e[j].first - 1;
+        if (require_aligned_terminal && !has_aligned_terminal) bad_rule = true;
+        if (!bad_rule) {
+          for (int j = orig_span.j1; j < orig_span.j2; ++j) {
+            if (next_e[j].first < 0) {
+              cur_rhs_e.push_back(sentence.e[j]);
+              cur_es.push_back(j);
+            } else {
+              cur_rhs_e.push_back(1 - next_e[j].second);  // next_e[j].second is NT gap index
+              cur_es.push_back(-1);
+              j = next_e[j].first - 1;
+            }
           }
+          for (short i = 0; i < cur_fs.size(); ++i)
+            if (cur_fs[i] >= 0)
+              for (short j = 0; j < cur_es.size(); ++j)
+                if (cur_es[j] >= 0 && sentence.aligned(cur_fs[i],cur_es[j]))
+                  cur_terminal_align.push_back(make_pair(i,j));
+          observer->CountRule(lhs, cur_rhs_f, cur_rhs_e, cur_terminal_align);
         }
-        for (short i = 0; i < cur_fs.size(); ++i)
-          if (cur_fs[i] >= 0)
-            for (short j = 0; j < cur_es.size(); ++j)
-              if (cur_es[j] >= 0 && sentence.aligned(cur_fs[i],cur_es[j]))
-                cur_terminal_align.push_back(make_pair(i,j));
-        observer->CountRule(lhs, cur_rhs_f, cur_rhs_e, cur_terminal_align);
       }
     }
     q.pop();

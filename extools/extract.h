@@ -63,6 +63,7 @@ struct Extract {
   // given a set of "tight" phrases and the aligned sentence they were
   // extracted from, "loosen" them
   static void LoosenPhraseBounds(const AnnotatedParallelSentence& sentence,
+                                 const int max_base_phrase_size,
                                  std::vector<ParallelSpan>* phrases);
 
   // extract all consistent phrase pairs, up to size max_base_phrase_size
@@ -85,6 +86,7 @@ struct Extract {
                           const int max_vars,
                           const int max_syms,
                           const bool permit_adjacent_nonterminals,
+                          const bool require_aligned_terminal,
                           RuleObserver* observer);
 };
 

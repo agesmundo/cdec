@@ -31,6 +31,7 @@ void InitCommandLine(int argc, char** argv, po::variables_map* conf) {
         ("default_category,d", po::value<string>(), "Default span type (use X for 'Hiero')")
         ("loose", "Use loose phrase extraction heuristic for base phrases")
         ("base_phrase,B", "Write base phrases")
+        ("bidir,b", "Extract bidirectional rules (for computing p(f|e) in addition to p(e|f))")
         ("combiner_size,c", po::value<size_t>()->default_value(800000), "Number of unique items to store in cache before writing rule counts. Set to 0 to disable cache.")
         ("silent", "Write nothing to stderr except errors")
         ("phrase_context,C", "Write base phrase contexts")
@@ -116,7 +117,8 @@ struct SimpleRuleWriter : public Extract::RuleObserver {
 };
 
 struct HadoopStreamingRuleObserver : public Extract::RuleObserver {
-  HadoopStreamingRuleObserver(size_t csize) :
+  HadoopStreamingRuleObserver(size_t csize, bool bidir_flag) :
+     bidir(bidir_flag),
      kF(TD::Convert("F")),
      kE(TD::Convert("E")),
      kDIVIDER(TD::Convert("|||")),
@@ -128,7 +130,10 @@ struct HadoopStreamingRuleObserver : public Extract::RuleObserver {
      index2sym[1-i] = TD::Convert(kLB + boost::lexical_cast<string>(i) + kRB);
    fmajor_key.resize(10, kF);
    emajor_key.resize(10, kE);
-   fmajor_key[2] = emajor_key[2] = kDIVIDER;
+   if (bidir)
+     fmajor_key[2] = emajor_key[2] = kDIVIDER;
+   else
+     fmajor_key[1] = kDIVIDER;
  }
 
   ~HadoopStreamingRuleObserver() {
@@ -140,35 +145,57 @@ struct HadoopStreamingRuleObserver : public Extract::RuleObserver {
                              const vector<WordID>& rhs_f,
                              const vector<WordID>& rhs_e,
                              const vector<pair<short,short> >& fe_terminal_alignments) {
-    fmajor_key.resize(3 + rhs_f.size());
-    emajor_key.resize(3 + rhs_e.size());
-    fmajor_val.resize(rhs_e.size());
-    emajor_val.resize(rhs_f.size());
-    emajor_key[1] = fmajor_key[1] = MapSym(lhs);
-    int nt = 1;
-    for (int i = 0; i < rhs_f.size(); ++i) {
-      const WordID id = rhs_f[i];
-      if (id < 0) {
-        fmajor_key[3 + i] = MapSym(id, nt);
-        emajor_val[i] = MapSym(id, nt);
-        ++nt;
-      } else {
-        fmajor_key[3 + i] = id;
-        emajor_val[i] = id;
+    if (bidir) { // extract rules in "both directions" E->F and F->E
+      fmajor_key.resize(3 + rhs_f.size());
+      emajor_key.resize(3 + rhs_e.size());
+      fmajor_val.resize(rhs_e.size());
+      emajor_val.resize(rhs_f.size());
+      emajor_key[1] = fmajor_key[1] = MapSym(lhs);
+      int nt = 1;
+      for (int i = 0; i < rhs_f.size(); ++i) {
+        const WordID id = rhs_f[i];
+        if (id < 0) {
+          fmajor_key[3 + i] = MapSym(id, nt);
+          emajor_val[i] = MapSym(id, nt);
+          ++nt;
+        } else {
+          fmajor_key[3 + i] = id;
+          emajor_val[i] = id;
+        }
       }
-    }
-    for (int i = 0; i < rhs_e.size(); ++i) {
-      WordID id = rhs_e[i];
-      if (id <= 0) {
-        fmajor_val[i] = index2sym[id];
-        emajor_key[3 + i] = index2sym[id];
-      } else {
-        fmajor_val[i] = id;
-        emajor_key[3 + i] = id;
+      for (int i = 0; i < rhs_e.size(); ++i) {
+        WordID id = rhs_e[i];
+        if (id <= 0) {
+          fmajor_val[i] = index2sym[id];
+          emajor_key[3 + i] = index2sym[id];
+        } else {
+          fmajor_val[i] = id;
+          emajor_key[3 + i] = id;
+        }
       }
+      CombineCount(fmajor_key, fmajor_val, fe_terminal_alignments);
+      CombineCount(emajor_key, emajor_val, kEMPTY);
+    } else { // extract rules only in F->E
+      fmajor_key.resize(2 + rhs_f.size());
+      fmajor_val.resize(rhs_e.size());
+      fmajor_key[0] = MapSym(lhs);
+      int nt = 1;
+      for (int i = 0; i < rhs_f.size(); ++i) {
+        const WordID id = rhs_f[i];
+        if (id < 0)
+          fmajor_key[2 + i] = MapSym(id, nt++);
+        else
+          fmajor_key[2 + i] = id;
+      }
+      for (int i = 0; i < rhs_e.size(); ++i) {
+        const WordID id = rhs_e[i];
+        if (id <= 0)
+          fmajor_val[i] = index2sym[id];
+        else
+          fmajor_val[i] = id;
+      }
+      CombineCount(fmajor_key, fmajor_val, fe_terminal_alignments);
     }
-    CombineCount(fmajor_key, fmajor_val, fe_terminal_alignments);
-    CombineCount(emajor_key, emajor_val, kEMPTY);
   }
 
  private:
@@ -213,6 +240,7 @@ struct HadoopStreamingRuleObserver : public Extract::RuleObserver {
     return r;
   }
 
+  const bool bidir;
   const WordID kF, kE, kDIVIDER;
   const string kLB, kRB;
   const size_t combiner_size;
@@ -259,7 +287,8 @@ int main(int argc, char** argv) {
   const bool permit_adjacent_nonterminals = conf.count("permit_adjacent_nonterminals") > 0;
   const bool require_aligned_terminal = conf.count("no_required_aligned_terminal") == 0;
   int line = 0;
-  HadoopStreamingRuleObserver o(conf["combiner_size"].as<size_t>());;
+  HadoopStreamingRuleObserver o(conf["combiner_size"].as<size_t>(),
+                                conf.count("bidir") > 0);
   //SimpleRuleWriter o;
   while(in) {
     ++line;

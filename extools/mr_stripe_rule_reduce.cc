@@ -29,7 +29,8 @@ namespace {
 void InitCommandLine(int argc, char** argv, po::variables_map* conf) {
   po::options_description opts("Configuration options");
   opts.add_options()
-        ("phrase_marginals,p", "Compute phrase marginals (invert E rules in output)")
+        ("phrase_marginals,p", "Compute phrase marginals")
+        ("bidir,b", "Rules are tagged as being F->E or E->F, invert E rules in output")
         ("help,h", "Print this help message and exit");
   po::options_description clo("Command line options");
   po::options_description dcmdline_options;
@@ -137,19 +138,22 @@ void WriteKeyValue(const vector<WordID>& key, const ID2RuleStatistics& val) {
   cout << endl;
 }
 
-void DoPhraseMarginals(const vector<WordID>& key, ID2RuleStatistics* val) {
+void DoPhraseMarginals(const vector<WordID>& key, const bool bidir, ID2RuleStatistics* val) {
   static const WordID kF = TD::Convert("F");
   static const WordID kE = TD::Convert("E");
   static const int kCF = FD::Convert("CF");
   static const int kCE = FD::Convert("CE");
   static const int kCFE = FD::Convert("CFE");
   assert(key.size() > 0);
-  if (key[0] != kF && key[0] != kE) {
-    cerr << "DoPhraseMarginals expects keys to have the from 'F|E [NT] word word word'\n";
-    cerr << "  but got: " << TD::GetString(key) << endl;
-    exit(1);
+  int cur_marginal_id = kCF;
+  if (bidir) {
+    if (key[0] != kF && key[0] != kE) {
+      cerr << "DoPhraseMarginals expects keys to have the from 'F|E [NT] word word word'\n";
+      cerr << "  but got: " << TD::GetString(key) << endl;
+      exit(1);
+    }
+    if (key[0] == kE) cur_marginal_id = kCE;
   }
-  const int cur_marginal_id = (key[0] == kF ? kCF : kCE);
   double tot = 0;
   for (ID2RuleStatistics::iterator it = val->begin(); it != val->end(); ++it)
     tot += it->second.counts.value(kCFE);
@@ -198,6 +202,7 @@ int main(int argc, char** argv) {
   vector<WordID> key, cur_key;
   int line = 0;
   const bool phrase_marginals = conf.count("phrase_marginals") > 0;
+  const bool bidir = conf.count("bidir") > 0;
   while(cin) {
     ++line;
     cin.getline(buf, MAX_LINE_LENGTH);
@@ -206,8 +211,11 @@ int main(int argc, char** argv) {
     if (cur_key != key) {
       if (key.size() > 0) {
         if (phrase_marginals)
-          { DoPhraseMarginals(key, &acc); WriteWithInversions(key, acc); }
-        else WriteKeyValue(key, acc);
+          DoPhraseMarginals(key, bidir, &acc);
+        if (bidir)
+          WriteWithInversions(key, acc);
+        else
+          WriteKeyValue(key, acc);
         acc.clear();
       }
       key = cur_key;
@@ -216,8 +224,11 @@ int main(int argc, char** argv) {
   }
   if (key.size() > 0) {
     if (phrase_marginals)
-      { DoPhraseMarginals(key, &acc); WriteWithInversions(key, acc); }
-    else WriteKeyValue(key, acc);
+      DoPhraseMarginals(key, bidir, &acc);
+    if (bidir)
+      WriteWithInversions(key, acc);
+    else
+      WriteKeyValue(key, acc);
   }
   return 0;
 }

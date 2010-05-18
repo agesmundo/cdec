@@ -36,6 +36,10 @@ configure
 depcomp
 install-sh
 missing
+extools/.deps/
+extools/*.o
+extools/extractor
+extools/mr_stripe_rule_reduce
 decoder/.deps/
 decoder/*.o
 decoder/Makefile

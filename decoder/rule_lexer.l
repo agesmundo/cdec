@@ -194,8 +194,12 @@ NT [\-#$A-Z_:=.",\\][\-#$".A-Z+/=_0-9!:@\\]*
 <FEATS>[ \t;]	{ ; }
 <FEATS>[^ \t=;]+=	{
 		scfglex_tmp_token.assign(yytext, yyleng - 1);
-		FD::Convert(scfglex_tmp_token);
-		scfglex_feat_ids[scfglex_num_feats] = FD::Convert(scfglex_tmp_token);
+		const int fid = FD::Convert(scfglex_tmp_token);
+		if (fid < 1) {
+			std::cerr << "\nUNWEIGHED FEATURE " << scfglex_tmp_token << std::endl;
+			abort();
+		}
+		scfglex_feat_ids[scfglex_num_feats] = fid;
 		BEGIN(FEATVAL);
 		}
 <FEATS>\|\|\|	{

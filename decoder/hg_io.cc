@@ -66,6 +66,7 @@ struct HGReader : public JSONParser {
       if(type == JSON_T_ARRAY_END) { state = 0; break; }
       assert(type == JSON_T_STRING);
       fdict.push_back(FD::Convert(value->vu.str.value));
+      assert(fdict.back() > 0);
       break;
 
     // is_sorted
@@ -308,7 +309,8 @@ bool HypergraphIO::WriteToJSON(const Hypergraph& hg, bool remove_rules, ostream*
       o << "\"feats\":[";
       bool first = true;
       for (SparseVector<double>::const_iterator it = edge.feature_values_.begin(); it != edge.feature_values_.end(); ++it) {
-        if (!it->second) continue;
+        if (!it->second) continue;   // don't write features that have a zero value
+        if (!it->first) continue;    // if the feature set was frozen this might happen
         if (!first) o << ',';
         if (use_fdict)
           o << (it->first - 1);

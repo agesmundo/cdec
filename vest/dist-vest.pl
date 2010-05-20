@@ -304,7 +304,7 @@ while (1){
 			$mapoutput =~ s/mapinput/mapoutput/;
 			push @mapoutputs, "$dir/splag.$im1/$mapoutput";
 			$o2i{"$dir/splag.$im1/$mapoutput"} = "$dir/splag.$im1/$shard";
-			my $script = "$MAPPER -s $srcFile -l $metric $refs_comma_sep < $dir/splag.$im1/$shard | sort -k1 > $dir/splag.$im1/$mapoutput";
+			my $script = "$MAPPER -s $srcFile -l $metric $refs_comma_sep < $dir/splag.$im1/$shard | sort -t \$'\\t' -k 1 > $dir/splag.$im1/$mapoutput";
 			if ($run_local) {
 				print LOGFILE "COMMAND:\n$script\n";
 				$result = system($script);
@@ -355,7 +355,7 @@ while (1){
 		print LOGFILE "Results for $tol/$til lines\n";
 		print LOGFILE "\nSORTING AND RUNNING FMERT REDUCER\n";
 		print LOGFILE `date`;
-		$cmd="sort -k1 @mapoutputs | $REDUCER -l $metric > $dir/redoutput.$im1";
+		$cmd="sort -t \$'\\t' -k 1 @mapoutputs | $REDUCER -l $metric > $dir/redoutput.$im1";
 		print LOGFILE "COMMAND:\n$cmd\n";
 		$result = system($cmd);
 		unless ($result == 0){
@@ -397,7 +397,6 @@ while (1){
 			my $v = ($ori{$k} + $axi{$k} * $x) / $norm;
 			print W "$k $v\n";
 		}
-
 		`rm -rf $dir/splag.$im1`;
 		$inweights = $finalFile;
 	}

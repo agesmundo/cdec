@@ -85,8 +85,10 @@ void ParseLine(const char* buf, vector<WordID>* cur_key, ID2RuleStatistics* coun
   cur_key->clear();
   // key is: "[X] ||| word word word"
   int tmpp = ReadPhraseUntilDividerOrEnd(buf, 0, ptr, cur_key);
-  cur_key->push_back(kDIV);
-  ReadPhraseUntilDividerOrEnd(buf, tmpp, ptr, cur_key);
+  if (buf[tmpp] != '\t') {
+    cur_key->push_back(kDIV);
+    ReadPhraseUntilDividerOrEnd(buf, tmpp, ptr, cur_key);
+  }
   ++ptr;
   int start = ptr;
   int end = ptr;

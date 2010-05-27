@@ -22,7 +22,8 @@ using namespace std::tr1;
 namespace po = boost::program_options;
 
 static const size_t MAX_LINE_LENGTH = 100000;
-WordID kBOS, kEOS, kDIVIDER;
+WordID kBOS, kEOS, kDIVIDER, kGAP;
+int kCOUNT;
 
 void InitCommandLine(int argc, char** argv, po::variables_map* conf) {
   po::options_description opts("Configuration options");
@@ -72,14 +73,68 @@ void WriteBasePhrases(const AnnotatedParallelSentence& sentence,
   }
 }
 
+struct CountCombiner {
+  CountCombiner(size_t csize) : combiner_size(csize) {}
+  ~CountCombiner() {
+    if (!cache.empty()) WriteAndClearCache();
+  }
+
+  void Count(const vector<WordID>& key,
+             const vector<WordID>& val,
+             const int count_type,
+             const vector<pair<short,short> >& aligns) {
+    if (combiner_size > 0) {
+      RuleStatistics& v = cache[key][val];
+      float newcount = v.counts.add_value(count_type, 1.0f);
+      // hack for adding alignments
+      if (newcount < 7.0f && aligns.size() > v.aligns.size())
+        v.aligns = aligns;
+      if (cache.size() > combiner_size) WriteAndClearCache();
+    } else {
+      cout << TD::GetString(key) << '\t' << TD::GetString(val) << " ||| ";
+      cout << RuleStatistics(count_type, 1.0f, aligns) << endl;
+    }
+  }
+
+ private:
+  void WriteAndClearCache() {
+    for (unordered_map<vector<WordID>, Vec2PhraseCount, boost::hash<vector<WordID> > >::iterator it = cache.begin();
+         it != cache.end(); ++it) {
+      cout << TD::GetString(it->first) << '\t';
+      const Vec2PhraseCount& vals = it->second;
+      bool needdiv = false;
+      for (Vec2PhraseCount::const_iterator vi = vals.begin(); vi != vals.end(); ++vi) {
+        if (needdiv) cout << " ||| "; else needdiv = true;
+        cout << TD::GetString(vi->first) << " ||| " << vi->second;
+      }
+      cout << endl;
+    }
+    cache.clear();
+  }
+
+  const size_t combiner_size;
+  typedef unordered_map<vector<WordID>, RuleStatistics, boost::hash<vector<WordID> > > Vec2PhraseCount;
+  unordered_map<vector<WordID>, Vec2PhraseCount, boost::hash<vector<WordID> > > cache;
+};
+
 // TODO optional source context
+// output <k, v> : k = phrase "document" v = context "term"
 void WritePhraseContexts(const AnnotatedParallelSentence& sentence,
                          const vector<ParallelSpan>& phrases,
-                         const int ctx_size) {
+                         const int ctx_size,
+                         CountCombiner* o) {
   vector<WordID> context(ctx_size * 2 + 1);
-  context[ctx_size] = kDIVIDER;
+  context[ctx_size] = kGAP;
+  vector<WordID> key;
+  key.reserve(100);
   for (int it = 0; it < phrases.size(); ++it) {
     const ParallelSpan& phrase = phrases[it];
+
+    // TODO, support src keys as well
+    key.resize(phrase.j2 - phrase.j1);
+    for (int j = phrase.j1; j < phrase.j2; ++j)
+      key[j - phrase.j1] = sentence.e[j];
+
     for (int i = 0; i < ctx_size; ++i) {
       int epos = phrase.j1 - 1 - i;
       const WordID left_ctx = (epos < 0) ? kBOS : sentence.e[epos];
@@ -88,7 +143,7 @@ void WritePhraseContexts(const AnnotatedParallelSentence& sentence,
       const WordID right_ctx = (epos >= sentence.e_len) ? kEOS : sentence.e[epos];
       context[ctx_size + i + 1] = right_ctx;
     }
-    cerr << TD::GetString(context) << endl;
+    o->Count(key, context, kCOUNT, vector<pair<short,short> >());
   }
 }
 
@@ -117,13 +172,13 @@ struct SimpleRuleWriter : public Extract::RuleObserver {
 };
 
 struct HadoopStreamingRuleObserver : public Extract::RuleObserver {
-  HadoopStreamingRuleObserver(size_t csize, bool bidir_flag) :
+  HadoopStreamingRuleObserver(CountCombiner* cc, bool bidir_flag) :
      bidir(bidir_flag),
      kF(TD::Convert("F")),
      kE(TD::Convert("E")),
      kDIVIDER(TD::Convert("|||")),
      kLB("["), kRB("]"),
-     combiner_size(csize),
+     combiner(*cc),
      kEMPTY(),
      kCFE(FD::Convert("CFE")) {
    for (int i=1; i < 50; ++i)
@@ -135,10 +190,6 @@ struct HadoopStreamingRuleObserver : public Extract::RuleObserver {
    else
      fmajor_key[1] = kDIVIDER;
  }
-
-  ~HadoopStreamingRuleObserver() {
-    if (!cache.empty()) WriteAndClearCache();
-  }
 
  protected:
   virtual void CountRuleImpl(WordID lhs,
@@ -173,8 +224,8 @@ struct HadoopStreamingRuleObserver : public Extract::RuleObserver {
           emajor_key[3 + i] = id;
         }
       }
-      CombineCount(fmajor_key, fmajor_val, fe_terminal_alignments);
-      CombineCount(emajor_key, emajor_val, kEMPTY);
+      combiner.Count(fmajor_key, fmajor_val, kCFE, fe_terminal_alignments);
+      combiner.Count(emajor_key, emajor_val, kCFE, kEMPTY);
     } else { // extract rules only in F->E
       fmajor_key.resize(2 + rhs_f.size());
       fmajor_val.resize(rhs_e.size());
@@ -194,41 +245,11 @@ struct HadoopStreamingRuleObserver : public Extract::RuleObserver {
         else
           fmajor_val[i] = id;
       }
-      CombineCount(fmajor_key, fmajor_val, fe_terminal_alignments);
+      combiner.Count(fmajor_key, fmajor_val, kCFE, fe_terminal_alignments);
     }
   }
 
  private:
-  void CombineCount(const vector<WordID>& key,
-                    const vector<WordID>& val,
-                    const vector<pair<short,short> >& aligns) {
-    if (combiner_size > 0) {
-      RuleStatistics& v = cache[key][val];
-      float cfe = v.counts.add_value(kCFE, 1.0f);
-      if (cfe < 7.0f && aligns.size() > v.aligns.size())
-        v.aligns = aligns;
-      if (cache.size() > combiner_size) WriteAndClearCache();
-    } else {
-      cout << TD::GetString(key) << '\t' << TD::GetString(val) << " ||| ";
-      cout << RuleStatistics(kCFE, 1.0f, aligns) << endl;
-    }
-  }
-
-  void WriteAndClearCache() {
-    for (unordered_map<vector<WordID>, Vec2PhraseCount, boost::hash<vector<WordID> > >::iterator it = cache.begin();
-         it != cache.end(); ++it) {
-      cout << TD::GetString(it->first) << '\t';
-      const Vec2PhraseCount& vals = it->second;
-      bool needdiv = false;
-      for (Vec2PhraseCount::const_iterator vi = vals.begin(); vi != vals.end(); ++vi) {
-        if (needdiv) cout << " ||| "; else needdiv = true;
-        cout << TD::GetString(vi->first) << " ||| " << vi->second;
-      }
-      cout << endl;
-    }
-    cache.clear();
-  }
-
   WordID MapSym(WordID sym, int ind = 0) {
     WordID& r = cat2ind2sym[sym][ind];
     if (!r) {
@@ -243,13 +264,11 @@ struct HadoopStreamingRuleObserver : public Extract::RuleObserver {
   const bool bidir;
   const WordID kF, kE, kDIVIDER;
   const string kLB, kRB;
-  const size_t combiner_size;
+  CountCombiner& combiner;
   const vector<pair<short,short> > kEMPTY;
   const int kCFE;
   map<WordID, map<int, WordID> > cat2ind2sym;
   map<int, WordID> index2sym;
-  typedef unordered_map<vector<WordID>, RuleStatistics, boost::hash<vector<WordID> > > Vec2PhraseCount;
-  unordered_map<vector<WordID>, Vec2PhraseCount, boost::hash<vector<WordID> > > cache;
   vector<WordID> emajor_key, emajor_val, fmajor_key, fmajor_val;
 };
 
@@ -259,6 +278,8 @@ int main(int argc, char** argv) {
   kBOS = TD::Convert("<s>");
   kEOS = TD::Convert("</s>");
   kDIVIDER = TD::Convert("|||");
+  kGAP = TD::Convert("<PHRASE>");
+  kCOUNT = FD::Convert("C");
 
   WordID default_cat = 0;  // 0 means no default- extraction will
                            // fail if a phrase is extracted without a
@@ -287,7 +308,8 @@ int main(int argc, char** argv) {
   const bool permit_adjacent_nonterminals = conf.count("permit_adjacent_nonterminals") > 0;
   const bool require_aligned_terminal = conf.count("no_required_aligned_terminal") == 0;
   int line = 0;
-  HadoopStreamingRuleObserver o(conf["combiner_size"].as<size_t>(),
+  CountCombiner cc(conf["combiner_size"].as<size_t>());
+  HadoopStreamingRuleObserver o(&cc,
                                 conf.count("bidir") > 0);
   //SimpleRuleWriter o;
   while(in) {
@@ -304,11 +326,11 @@ int main(int argc, char** argv) {
     if (loose_phrases)
       Extract::LoosenPhraseBounds(sentence, max_base_phrase_size, &phrases);
     if (phrases.empty()) {
-      cerr << "WARNING no phrases extracted\n";
+      cerr << "WARNING no phrases extracted line: " << line << endl;
       continue;
     }
     if (write_phrase_contexts) {
-      WritePhraseContexts(sentence, phrases, ctx_size);
+      WritePhraseContexts(sentence, phrases, ctx_size, &cc);
       continue;
     }
     if (write_base_phrases) {

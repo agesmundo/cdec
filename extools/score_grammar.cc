@@ -16,6 +16,7 @@
 #include "fdict.h"
 #include "tdict.h"
 #include "lex_trans_tbl.h"
+#include "filelib.h"
 
 #include <boost/functional/hash.hpp>
 #include <boost/program_options.hpp>
@@ -133,10 +134,10 @@ void LexTranslationTable::createTTable(const char* buf){
     {
       for (int j=0;j<sent.aligned.height();j++)
 	{
-	  if (DEBUG) cout << sent.aligned(i,j) << " ";
+	  if (DEBUG) cerr << sent.aligned(i,j) << " ";
 	  if( sent.aligned(i,j))
 	    {
-	      if (DEBUG) cout << TD::Convert(sent.f[i])  << " aligned to " << TD::Convert(sent.e[j]);
+	      if (DEBUG) cerr << TD::Convert(sent.f[i])  << " aligned to " << TD::Convert(sent.e[j]);
 	      //local counts
 	      ++foreign_aligned[sent.f[i]];
 	      ++english_aligned[sent.e[j]];
@@ -147,9 +148,9 @@ void LexTranslationTable::createTTable(const char* buf){
 	      ++total_english[sent.e[j]];
 	    }
 	}
-      if (DEBUG)  cout << endl;
+      if (DEBUG)  cerr << endl;
     }
-  if (DEBUG) cout << endl;
+  if (DEBUG) cerr << endl;
   
   static const WordID NULL_ = TD::Convert("NULL");
   //handle unaligned words - align them to null
@@ -172,18 +173,25 @@ void LexTranslationTable::createTTable(const char* buf){
 }
 
 
-
+inline float safenlog(float v) {
+  if (v == 1.0f) return 0.0f;
+  float res = -log(v);
+  if (res > 100.0f) res = 100.0f;
+  return res;
+}
 
 int main(int argc, char** argv){
-
   bool DEBUG= false;
+  if (argc != 2) {
+    cerr << "Usage: " << argv[0] << " corpus.al < filtered.grammar\n";
+    return 1;
+  }
   ifstream alignment (argv[1]);
-  ifstream unscored_grammar (argv[2]);
-
-  ofstream scored_grammar;
+  istream& unscored_grammar = cin;
+  ostream& scored_grammar = cout;
 
   //create lexical translation table
-  cout << "Creating table..." << endl;
+  cerr << "Creating table..." << endl;
   char* buf = new char[MAX_LINE_LENGTH];
 
   LexTranslationTable table;
@@ -211,7 +219,7 @@ int main(int argc, char** argv){
   
  
   //score unscored grammar
-  cout <<"Scoring grammar..." << endl;
+  cerr <<"Scoring grammar..." << endl;
 
   ID2RuleStatistics acc, cur_counts;
   vector<WordID> key, cur_key,temp_key;
@@ -220,27 +228,17 @@ int main(int argc, char** argv){
   int line = 0;
 
 
-  scored_grammar.open(argv[3]);
-
   while(!unscored_grammar.eof())
     {
       ++line;
       unscored_grammar.getline(buf, MAX_LINE_LENGTH);
       if (buf[0] == 0) continue;
       ParseLine(buf, &cur_key, &cur_counts);
-            
-      for(int i=0;i<cur_key.size()-1; i++)
-	{
-	  scored_grammar << TD::Convert(cur_key[i]) << " ";
-	}
-      scored_grammar << "\t";
       
       //loop over all the Target side phrases that this source aligns to
       for (ID2RuleStatistics::const_iterator it = cur_counts.begin(); it != cur_counts.end(); ++it)
 	{
 	  
-	  scored_grammar << " " <<  TD::GetString(it->first) << " |||";// << "::" << it->second << "] ||| ";
-	 
 	  static const int kCF = FD::Convert("CF");
 	  static const int kCE = FD::Convert("CE");
 	  static const int kCFE = FD::Convert("CFE");	
@@ -256,8 +254,6 @@ int main(int argc, char** argv){
 	  float pEF_ = it->second.counts.value(kCFE) / it->second.counts.value(kCF);
 	  float pFE_ = it->second.counts.value(kCFE) / it->second.counts.value(kCE);
 
-	  scored_grammar << " " <<  pFE_ << " " << pEF_;
-	  
 	  map <WordID, pair<int, float> > foreign_aligned;
 	  map <WordID, pair<int, float> > english_aligned;
 
@@ -268,8 +264,8 @@ int main(int argc, char** argv){
 	     
 	      if (DEBUG)
 		{
-		  cout << "\nA:" << ita->first << "," << ita->second << "::";
-		  cout <<  TD::Convert(cur_key[ita->first + 2]) << "-" << TD::Convert(it->first[ita->second]);
+		  cerr << "\nA:" << ita->first << "," << ita->second << "::";
+		  cerr <<  TD::Convert(cur_key[ita->first + 2]) << "-" << TD::Convert(it->first[ita->second]);
 		}
 
 
@@ -349,10 +345,11 @@ int main(int argc, char** argv){
 	     }
 	   
 	   
-	   scored_grammar << " " << final_lex_e2f << " " << final_lex_f2e << " |||";
+           scored_grammar << TD::GetString(cur_key);
+	   scored_grammar << " " << TD::GetString(it->first) << " |||";
+	   scored_grammar << " " << safenlog(pFE_) << " " << safenlog(pEF_);
+	   scored_grammar << " " << safenlog(final_lex_e2f) << " " << safenlog(final_lex_f2e) << endl;
 	}  
-      scored_grammar << endl;
     }
-  scored_grammar.close();
 }
 

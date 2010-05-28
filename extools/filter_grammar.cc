@@ -1,7 +1,7 @@
 /*
- * Build lexical translation table from alignment file to use for lexical translation probabilties when scoring a grammar
+ * Build suffix tree representation of a data set for grammar filtering
+ * ./build_trie <test set> < unfiltered.grammar
  *
- * Ported largely from the train-factored-phrase-model.perl script by Philipp Koehn
  */
 #include <iostream>
 #include <string>
@@ -13,6 +13,7 @@
 #include <tr1/unordered_map>
 
 #include "sentence_pair.h"
+#include "suffix_tree.h"
 #include "extract.h"
 #include "fdict.h"
 #include "tdict.h"
@@ -38,20 +39,31 @@ namespace {
   }
 }
 
+
+
 int ReadPhraseUntilDividerOrEnd(const char* buf, const int sstart, const int end, vector<WordID>* p) {
   static const WordID kDIV = TD::Convert("|||");
+
   int ptr = sstart;
   while(ptr < end) {
     while(ptr < end && IsWhitespace(buf[ptr])) { ++ptr; }
     int start = ptr;
     while(ptr < end && !IsWhitespace(buf[ptr])) { ++ptr; }
     if (ptr == start) {cerr << "Warning! empty token.\n"; return ptr; }
+    //look in the buffer and see if its a nonterminal marker before integerizing it to wordID-anything with [...] or |||
+
     const WordID w = TD::Convert(string(buf, start, ptr - start));
-    if (w == kDIV) return ptr;
-    p->push_back(w);
+
+    if((IsBracket(buf[start]) and IsBracket(buf[ptr-1])) or( w == kDIV))
+      p->push_back(-1);
+    else {
+	if (w == kDIV) return ptr;
+	p->push_back(w);
+    }
   }
   return ptr;
 }
+
 
 
 void ParseLine(const char* buf, vector<WordID>* cur_key, ID2RuleStatistics* counts) {
@@ -82,15 +94,15 @@ void ParseLine(const char* buf, vector<WordID>* cur_key, ID2RuleStatistics* coun
         if (buf[ptr] == '|') {
           ++ptr;
           end = ptr - 3;
-	  while (end > start && IsWhitespace(buf[end-1])) { --end; }
+          while (end > start && IsWhitespace(buf[end-1])) { --end; }
           if (start == end) {
             cerr << "Got empty token!\n  LINE=" << buf << endl;
             exit(1);
           }
           switch (state) {
-	  case 0: ++state; name.clear(); ReadPhraseUntilDividerOrEnd(buf, start, end, &name); break;
-	  case 1: --state; (*counts)[name].ParseRuleStatistics(buf, start, end); break;
-	  default: cerr << "Can't happen\n"; abort();
+            case 0: ++state; name.clear(); ReadPhraseUntilDividerOrEnd(buf, start, end, &name); break;
+            case 1: --state; (*counts)[name].ParseRuleStatistics(buf, start, end); break;
+            default: cerr << "Can't happen\n"; abort();
           }
           SkipWhitespace(buf, &ptr);
           start = ptr;
@@ -102,82 +114,86 @@ void ParseLine(const char* buf, vector<WordID>* cur_key, ID2RuleStatistics* coun
   while (end > start && IsWhitespace(buf[end-1])) { --end; }
   if (end > start) {
     switch (state) {
-    case 0: ++state; name.clear(); ReadPhraseUntilDividerOrEnd(buf, start, end, &name); break;
-    case 1: --state; (*counts)[name].ParseRuleStatistics(buf, start, end); break;
-    default: cerr << "Can't happen\n"; abort();
+      case 0: ++state; name.clear(); ReadPhraseUntilDividerOrEnd(buf, start, end, &name); break;
+      case 1: --state; (*counts)[name].ParseRuleStatistics(buf, start, end); break;
+      default: cerr << "Can't happen\n"; abort();
     }
   }
 }
 
-int main(int argc, char* argv[]){
 
+
+
+
+
+
+int main(int argc, char* argv[]){
+  if (argc != 2) {
+    cerr << "Usage: " << argv[0] << " testset.txt < unfiltered.grammar\n";
+    return 1;
+  }
+
+  ifstream testSet (argv[1]);
+  ofstream filter_grammar_;
   bool DEBUG = false;
 
-  map < pair<WordID,WordID>,int > word_translation;
-  map <WordID, int> total_foreign;
-  map <WordID, int> total_english;
 
   AnnotatedParallelSentence sent;
   char* buf = new char[MAX_LINE_LENGTH];
-  while(cin) 
-    {
-      cin.getline(buf, MAX_LINE_LENGTH);
-      if (buf[0] == 0) continue;
-      
-      sent.ParseInputLine(buf);
-      
-      map <WordID, int> foreign_aligned;
-      map <WordID, int> english_aligned;
+  cerr << "Build suffix tree from test set in " << argv[1] << endl;
+  //root of the suffix tree
+  Node<int> root;
+  int line=0;
 
-      //iterate over the alignment to compute aligned words
-            
-      for(int i =0;i<sent.aligned.width();i++)
-	{
-	  for (int j=0;j<sent.aligned.height();j++)
-	    {
-	      if (DEBUG) cout << sent.aligned(i,j) << " ";
-	      if( sent.aligned(i,j))
-		{
-		  if (DEBUG) cout << TD::Convert(sent.f[i])  << " aligned to " << TD::Convert(sent.e[j]);
-		  //local counts
-		  ++foreign_aligned[sent.f[i]];
-		  ++english_aligned[sent.e[j]];
+  /* process the data set to build suffix tree
+   */
+  while(!testSet.eof()) {
+    ++line;
+    testSet.getline(buf, MAX_LINE_LENGTH);
+    if (buf[0] == 0) continue;
 
-		  //global counts
-		  ++word_translation[pair<WordID,WordID> (sent.f[i], sent.e[j])];
-		  ++total_foreign[sent.f[i]];
-		  ++total_english[sent.e[j]];
-		}
-	    }
-	  if (DEBUG)  cout << endl;
-	}
-      if (DEBUG) cout << endl;
-      
-      static const WordID NULL_ = TD::Convert("NULL");
-      //handle unaligned words - align them to null
-      for (int j =0; j < sent.e_len; j++)
-	{
-	  if (english_aligned.count(sent.e[j])) continue;
-	  ++word_translation[pair<WordID,WordID> (NULL_, sent.e[j])];
-	  ++total_foreign[NULL_];
-	  ++total_english[sent.e[j]];
-	}
+    //hack to read in the test set using the alignedparallelsentence methods
+    strcat(buf," ||| fake ||| 0-0");   
+    sent.ParseInputLine(buf);
 
-      for (int i =0; i < sent.f_len; i++)
-	{
-	  if (foreign_aligned.count(sent.f[i])) continue;
-	  ++word_translation[pair<WordID,WordID> (sent.f[i], NULL_)];
-	  ++total_english[NULL_];
-	  ++total_foreign[sent.f[i]];
-	}
-      
-    }
+    if (DEBUG)cerr << line << "||| " << buf << " -- " << sent.f_len << endl;
 
-  for(map < pair<WordID,WordID>,int >::iterator it = word_translation.begin(); it != word_translation.end(); ++it)
-    {
-      cout <<  TD::Convert(it->first.first) <<  "," << TD::Convert(it->first.second) << "=" << it->second << "/" << total_foreign[it->first.first] << endl;
-    }
+    //add each successive suffix to the tree
+    for(int i =0;i<sent.f_len;i++)
+	root.InsertPath(sent.f, i, sent.f_len - 1);
+    if(DEBUG)cerr<<endl;
 
+  }  
+
+  cerr << "Filtering grammar..." << endl;
+  //process the unfiltered, unscored grammar    
+
+  ID2RuleStatistics cur_counts;
+  vector<WordID> cur_key;
+  line = 0;
+  
+  while(cin)
+      {
+        ++line;
+	cin.getline(buf, MAX_LINE_LENGTH);
+	if (buf[0] == 0) continue;
+	ParseLine(buf, &cur_key, &cur_counts);
+        const Node<int>* curnode = &root;	
+	for(int i=0;i<cur_key.size() - 1; i++)
+	  {
+		if (DEBUG) cerr << line << " " << cur_key[i] << " ::: ";
+		if(cur_key[i] == -1)
+		  {
+			curnode = &root;
+		} else if (curnode) {
+			curnode = root.Extend(cur_key[i]);
+			if (!curnode) break;
+		  }
+	      }
+	    
+	if(curnode)
+          cout << buf << endl;
+      }
 
   return 0;
 }

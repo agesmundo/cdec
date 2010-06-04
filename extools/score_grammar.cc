@@ -1,6 +1,6 @@
 /*
  * Score a grammar in striped format
- * ./score_grammar <alignment> <filter_grammar> <output_scored_grammar>
+ * ./score_grammar <alignment> < filtered.grammar > scored.grammar
  */
 #include <iostream>
 #include <string>

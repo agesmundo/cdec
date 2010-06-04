@@ -1,6 +1,6 @@
 /*
  * Build suffix tree representation of a data set for grammar filtering
- * ./build_trie <test set> < unfiltered.grammar
+ * ./filter_grammar <test set> < unfiltered.grammar > filter.grammar
  *
  */
 #include <iostream>

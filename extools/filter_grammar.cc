@@ -12,6 +12,7 @@
 #include <fstream>
 #include <tr1/unordered_map>
 
+#include "filelib.h"
 #include "sentence_pair.h"
 #include "suffix_tree.h"
 #include "extract.h"
@@ -133,7 +134,9 @@ int main(int argc, char* argv[]){
     return 1;
   }
 
-  ifstream testSet (argv[1]);
+  assert(FileExists(argv[1]));
+  ReadFile rfts(argv[1]);
+  istream& testSet = *rfts.stream();
   ofstream filter_grammar_;
   bool DEBUG = false;
 

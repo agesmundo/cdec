@@ -138,6 +138,7 @@ void WriteKeyValue(const vector<WordID>& key, const ID2RuleStatistics& val) {
     cout << TD::GetString(it->first) << " ||| " << it->second;
   }
   cout << endl;
+  cerr << "reporter:counter:UserCounters,RuleCount," << val.size() << endl;
 }
 
 void DoPhraseMarginals(const vector<WordID>& key, const bool bidir, ID2RuleStatistics* val) {

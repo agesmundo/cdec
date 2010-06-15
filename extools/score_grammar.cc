@@ -125,9 +125,6 @@ void LexTranslationTable::createTTable(const char* buf){
       
   sent.ParseInputLine(buf);
       
-  map <WordID, int> foreign_aligned;
-  map <WordID, int> english_aligned;
-  
   //iterate over the alignment to compute aligned words
   
   for(int i =0;i<sent.aligned.width();i++)
@@ -138,11 +135,6 @@ void LexTranslationTable::createTTable(const char* buf){
 	  if( sent.aligned(i,j))
 	    {
 	      if (DEBUG) cerr << TD::Convert(sent.f[i])  << " aligned to " << TD::Convert(sent.e[j]);
-	      //local counts
-	      ++foreign_aligned[sent.f[i]];
-	      ++english_aligned[sent.e[j]];
-	      
-	      //global counts
 	      ++word_translation[pair<WordID,WordID> (sent.f[i], sent.e[j])];
 	      ++total_foreign[sent.f[i]];
 	      ++total_english[sent.e[j]];
@@ -156,7 +148,7 @@ void LexTranslationTable::createTTable(const char* buf){
   //handle unaligned words - align them to null
   for (int j =0; j < sent.e_len; j++)
     {
-      if (english_aligned.count(sent.e[j])) continue;
+      if (sent.e_aligned[j]) continue;
       ++word_translation[pair<WordID,WordID> (NULL_, sent.e[j])];
       ++total_foreign[NULL_];
       ++total_english[sent.e[j]];
@@ -164,7 +156,7 @@ void LexTranslationTable::createTTable(const char* buf){
   
   for (int i =0; i < sent.f_len; i++)
     {
-      if (foreign_aligned.count(sent.f[i])) continue;
+      if (sent.f_aligned[i]) continue;
       ++word_translation[pair<WordID,WordID> (sent.f[i], NULL_)];
       ++total_english[NULL_];
       ++total_foreign[sent.f[i]];
@@ -227,6 +219,9 @@ int main(int argc, char** argv){
   vector< pair<short,short> >::iterator ita;
   int line = 0;
 
+  static const int kCF = FD::Convert("CF");
+  static const int kCE = FD::Convert("CE");
+  static const int kCFE = FD::Convert("CFE");	
 
   while(!unscored_grammar.eof())
     {
@@ -239,10 +234,6 @@ int main(int argc, char** argv){
       for (ID2RuleStatistics::const_iterator it = cur_counts.begin(); it != cur_counts.end(); ++it)
 	{
 	  
-	  static const int kCF = FD::Convert("CF");
-	  static const int kCE = FD::Convert("CE");
-	  static const int kCFE = FD::Convert("CFE");	
-
 	 /*Compute phrase translation prob.
 	   Print out scores in this format:
 	   Phrase trnaslation prob P(F|E)

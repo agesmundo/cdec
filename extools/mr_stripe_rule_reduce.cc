@@ -19,6 +19,8 @@ namespace po = boost::program_options;
 
 static const size_t MAX_LINE_LENGTH = 64000000;
 
+bool use_hadoop_counters = false;
+
 namespace {
   inline bool IsWhitespace(char c) { return c == ' ' || c == '\t'; }
 
@@ -30,6 +32,7 @@ void InitCommandLine(int argc, char** argv, po::variables_map* conf) {
   po::options_description opts("Configuration options");
   opts.add_options()
         ("phrase_marginals,p", "Compute phrase marginals")
+	("use_hadoop_counters,C", "Enable this if running inside Hadoop")
         ("bidir,b", "Rules are tagged as being F->E or E->F, invert E rules in output")
         ("help,h", "Print this help message and exit");
   po::options_description clo("Command line options");
@@ -138,7 +141,7 @@ void WriteKeyValue(const vector<WordID>& key, const ID2RuleStatistics& val) {
     cout << TD::GetString(it->first) << " ||| " << it->second;
   }
   cout << endl;
-  cerr << "reporter:counter:UserCounters,RuleCount," << val.size() << endl;
+  if (use_hadoop_counters) cerr << "reporter:counter:UserCounters,RuleCount," << val.size() << endl;
 }
 
 void DoPhraseMarginals(const vector<WordID>& key, const bool bidir, ID2RuleStatistics* val) {
@@ -204,6 +207,7 @@ int main(int argc, char** argv) {
   ID2RuleStatistics acc, cur_counts;
   vector<WordID> key, cur_key;
   int line = 0;
+  use_hadoop_counters = conf.count("use_hadoop_counters") > 0;
   const bool phrase_marginals = conf.count("phrase_marginals") > 0;
   const bool bidir = conf.count("bidir") > 0;
   while(cin) {

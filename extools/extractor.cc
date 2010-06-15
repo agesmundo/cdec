@@ -32,6 +32,7 @@ void InitCommandLine(int argc, char** argv, po::variables_map* conf) {
         ("default_category,d", po::value<string>(), "Default span type (use X for 'Hiero')")
         ("loose", "Use loose phrase extraction heuristic for base phrases")
         ("base_phrase,B", "Write base phrases")
+        ("base_phrase_spans", "Write base sentences and phrase spans")
         ("bidir,b", "Extract bidirectional rules (for computing p(f|e) in addition to p(e|f))")
         ("combiner_size,c", po::value<size_t>()->default_value(800000), "Number of unique items to store in cache before writing rule counts. Set to 0 to disable cache.")
         ("silent", "Write nothing to stderr except errors")
@@ -69,8 +70,19 @@ void WriteBasePhrases(const AnnotatedParallelSentence& sentence,
       f.push_back(sentence.f[i]);
     for (int j = phrase.j1; j < phrase.j2; ++j)
       e.push_back(sentence.e[j]);
-    cerr << TD::GetString(f) << " ||| " << TD::GetString(e) << endl;
+    cout << TD::GetString(f) << " ||| " << TD::GetString(e) << endl;
   }
+}
+
+void WriteBasePhraseSpans(const AnnotatedParallelSentence& sentence,
+                          const vector<ParallelSpan>& phrases) {
+  cout << TD::GetString(sentence.f) << " ||| " << TD::GetString(sentence.e) << " |||";
+  for (int it = 0; it < phrases.size(); ++it) {
+    const ParallelSpan& phrase = phrases[it];
+    cout << " " << phrase.i1 << "-" << phrase.i2 
+      << "-" << phrase.j1 << "-" << phrase.j2;
+  }
+  cout << endl;
 }
 
 struct CountCombiner {
@@ -300,6 +312,7 @@ int main(int argc, char** argv) {
   const int max_base_phrase_size = conf["max_base_phrase_size"].as<int>();
   const bool write_phrase_contexts = conf.count("phrase_context") > 0;
   const bool write_base_phrases = conf.count("base_phrase") > 0;
+  const bool write_base_phrase_spans = conf.count("base_phrase_spans") > 0;
   const bool loose_phrases = conf.count("loose") > 0;
   const bool silent = conf.count("silent") > 0;
   const int max_syms = conf["max_syms"].as<int>();
@@ -335,6 +348,10 @@ int main(int argc, char** argv) {
     }
     if (write_base_phrases) {
       WriteBasePhrases(sentence, phrases);
+      continue;
+    }
+    if (write_base_phrase_spans) {
+      WriteBasePhraseSpans(sentence, phrases);
       continue;
     }
     Extract::AnnotatePhrasesWithCategoryTypes(default_cat, sentence.span_types, &phrases);

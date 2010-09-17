@@ -95,7 +95,8 @@ void InitCommandLine(int argc, char** argv, po::variables_map* conf) {
         ("vector_format",po::value<string>()->default_value("b64"), "Sparse vector serialization format for feature expectations or gradients, includes (text or b64)")
         ("combine_size,C",po::value<int>()->default_value(1), "When option -G is used, process this many sentence pairs before writing the gradient (1=emit after every sentence pair)")
         ("forest_output,O",po::value<string>(),"Directory to write forests to")
-        ("minimal_forests,m","Write minimal forests (excludes Rule information). Such forests can be used for ML/MAP training, but not rescoring, etc.");
+        ("minimal_forests,m","Write minimal forests (excludes Rule information). Such forests can be used for ML/MAP training, but not rescoring, etc.")
+        ("mbr","Minimum Bayes Risk Decoding");
   po::options_description clo("Command line options");
   clo.add_options()
         ("config,c", po::value<string>(), "Configuration file")
@@ -431,6 +432,10 @@ int main(int argc, char** argv) {
         preserve_mask[CompoundSplit::GetFullWordEdgeIndex(forest)] = true;
       forest.BeamPruneInsideOutside(1.0, false, conf["beam_prune"].as<double>(), &preserve_mask);
       cerr << "  Pruned forest    (paths): " << forest.NumberOfPaths() << endl;
+    }
+
+    if (conf.count("mbr")) {
+
     }
 
     if (conf.count("forest_output") && !has_ref) {

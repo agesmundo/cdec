@@ -31,6 +31,7 @@
 #include "kbest.h"
 #include "inside_outside.h"
 #include "exp_semiring.h"
+#include "mbr_semiring.h"
 #include "sentence_metadata.h"
 
 using namespace std;
@@ -435,7 +436,27 @@ int main(int argc, char** argv) {
     }
 
     if (conf.count("mbr")) {
+      //First pass to compute n-grams
+      
+      // store output of first pass (nodeID, childEdgeID)-> (set of ngramId for child edge)
+			const int num_nodes = forest.nodes_.size();
+      std::vector< VectorSetIdWeightType* > ngramTailSets;
+      ngramTailSets.resize(num_nodes);
+      
 
+      //doctionary to map ngramId to the ngram string
+      Dict* ngramDict = new Dict;
+
+			//call main method for computation of first pass
+			//NB that we cannot use Inside() because the 'x' is not binary  
+			ComputeNgramSets(forest, ngramDict);//, ngramTailSets);			
+
+      //TODO second pass to compute posterior of graph
+
+      //call inside alg
+			//Inside< VectorSetIdWeightType , MBR1WeightFunction >(forest);//, ngramTailSets);
+      //TODO third pass to find best path 
+      //see above  viterbi
     }
 
     if (conf.count("forest_output") && !has_ref) {

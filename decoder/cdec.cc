@@ -438,18 +438,17 @@ int main(int argc, char** argv) {
     if (conf.count("mbr")) {
       //First pass to compute n-grams
       
-      // store output of first pass (nodeID, childEdgeID)-> (set of ngramId for child edge)
-			const int num_nodes = forest.nodes_.size();
-      std::vector< VectorSetIdWeightType* > ngramTailSets;
+      // store output of first pass (childEdgeID)-> (set of ngramId for child edge)
+      const int num_nodes = forest.nodes_.size();
+      std::vector<std::set<int> > ngramTailSets;
       ngramTailSets.resize(num_nodes);
       
-
       //doctionary to map ngramId to the ngram string
-      Dict* ngramDict = new Dict;
+      Dict ngramDict;
 
-			//call main method for computation of first pass
-			//NB that we cannot use Inside() because the 'x' is not binary  
-			ComputeNgramSets(forest, ngramDict);//, ngramTailSets);			
+      //call main method for computation of first pass
+      //NB that we cannot use Inside() because the 'x' is not binary  
+      ComputeNgramSets(forest, ngramTailSets, ngramDict );			
 
       //TODO second pass to compute posterior of graph
 

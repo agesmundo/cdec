@@ -2,17 +2,17 @@
 #define _MBR_SEMIRING_H_
 
 #include <iostream>
+#include <vector>
+
+#include "hg.h"
 
 //////////////////////////////////////////
 ////////////////////////////////////////////
 // First pass of MBR,
 // Note that it is not possible to directly use Inside() because the 'x' operator in not binary
 
-void ComputeNgramSets(const Hypergraph& in,
-											Dict* ngramDict//,
-											//std::vector< VectorSetIdWeightType* > ngramTailSets
-											){
-
+void ComputeNgramSets(const Hypergraph& in, std::vector<std::set<int> >& ngramTailSets , Dict& ngramDict){
+;
 }
 
 //////////////////////////////////////////
@@ -22,6 +22,7 @@ void ComputeNgramSets(const Hypergraph& in,
 //NB first pass cannot be computed as a semiring, computation is not local
 //the 'x' is not a 
 //WeightType for first MBR pass
+/*
 struct VectorSetIdWeightType{
 
 	VectorSetIdWeightType()	{
@@ -55,10 +56,8 @@ struct VectorSetIdWeightType{
 		return VectorSetIdWeightType();
 	}
 
-	static int nextFreeId_;// id in vector of the next set to be filled, if =size processing of rule is complete
-	static int size_; //number of children nodes of the rule
 	std::set<int>* idSetsPtr_; //one set of ngram-Ids for each edge child
-};
+};*/
 
 //WeightFunction for first MBR pass
 struct MBR1WeightFunction {

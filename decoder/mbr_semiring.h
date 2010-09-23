@@ -12,7 +12,9 @@
 // Note that it is not possible to directly use Inside() because the 'x' operator in not binary
 
 void ComputeNgramSets(const Hypergraph& in, std::vector<std::set<int> >& ngramTailSets , Dict& ngramDict){
-;
+    for (int i = 0; i < in.nodes_.size(); ++i) {
+      ;
+    }
 }
 
 //////////////////////////////////////////

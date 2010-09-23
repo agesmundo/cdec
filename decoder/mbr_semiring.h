@@ -5,45 +5,10 @@
 #include <vector>
 
 #include "hg.h"
+#include "tdict.h"
 
 using namespace std;
 
-
-// run the inside algorithm and return the inside score
-// if result is non-NULL, result will contain the inside
-// score for each node
-// NOTE: WeightType()  must construct the semiring's additive identity
-//       WeightType(1) must construct the semiring's multiplicative identity
-//TODO test redoing one Inside call with this generalized version
-template<typename WeightType, typename WeightFunctionMult, typename WeightFunctionAdd >
-WeightType GenInside(const Hypergraph& hg,
-		std::vector<WeightType>* result = NULL,
-		const WeightFunctionMult& weight = WeightFunctionMult()) {
-	const int num_nodes = hg.nodes_.size();
-	std::vector<WeightType> dummy;
-	std::vector<WeightType>& inside_score_nodes = result ? *result : dummy;
-	inside_score_nodes.resize(num_nodes);
-	std::fill(inside_score_nodes.begin(), inside_score_nodes.end(), WeightType());
-	for (int i = 0; i < num_nodes; ++i) {
-		const Hypergraph::Node& cur_node = hg.nodes_[i];
-		WeightType* const cur_node_inside_score = &inside_score_nodes[i];
-		const int num_in_edges = cur_node.in_edges_.size();
-		if (num_in_edges == 0) {
-			*cur_node_inside_score = WeightType(1);
-			continue;
-		}
-		for (int j = 0; j < num_in_edges; ++j) {
-			const Hypergraph::Edge& edge = hg.edges_[cur_node.in_edges_[j]];
-			WeightType score = weight(edge);
-			for (int k = 0; k < edge.tail_nodes_.size(); ++k) {
-				const int tail_node_index = edge.tail_nodes_[k];
-				score *= inside_score_nodes[tail_node_index];
-			}
-			*cur_node_inside_score += score;
-		}
-	}
-	return inside_score_nodes.back();
-}
 
 //////////////////////////////////////////
 ////////////////////////////////////////////
@@ -52,31 +17,109 @@ WeightType GenInside(const Hypergraph& hg,
 
 struct Ngram{
 	
-	Ngram(vector <int>* words_Ids){
-		words_Ids_=words_Ids;
+	Ngram(){
+		words_Id_ = new vector <WordID>();
+	}
+
+	Ngram(vector <WordID>* words_Id_to_Copy){
+		this();
+		for(int i=0; i<word_Ids.size(); i++){
+			words_Id_[i]=word_Ids_to_Copy[i];
+		}
 	}
 	
 	~Ngram(){
-		delete words_Ids_;
+		delete word_Ids_;
 	}
 	
-	vector <int>* words_Ids_; //ids of words that compose the ngram
+	int size(){ //implemented depth first to reduce memory usage
+		return word_Ids_->size();
+
+	}
+
+	void append(WordID wid){
+		word_Ids_->insert(wid);
+	}
+
+	vector <WordID>* word_Ids_; //ids of words that compose the ngram
 };
 
-const int ngram_size = 3;
+const int ngram_max_size = 3;
+const WordID kSTAR(TD::Convert("<{STAR}>"));
 
-void ComputeNgramSets(const Hypergraph& hg, vector<set<Ngram> >& edgeToGeneratedNgrams){
+typedef set<Ngram> NgramSet;
+
+void ComputeNgramSets(const Hypergraph& hg, vector<NgramSet >& edgeToGeneratedNgrams){
 	const int num_nodes = hg.nodes_.size();
 	const int num_edges = hg.edges_.size();
 	edgeToGeneratedNgrams.resize(num_edges); //output vector, map id of edge -> set of ngrams generated there
-	vector<set<pair<Ngram,Ngram> > > nodeToBoundariesNgram; //map id of node -> set of boundary ngrams
+	vector<NgramSet> nodeToBoundariesNgram; //map id of node -> set of boundary ngrams
 	for (int node_index = 0; node_index < num_nodes; ++node_index) { //loop nodes
 		const Hypergraph::Node& cur_node = hg.nodes_[node_index];
 		const vector<int>& in_edges = cur_node.in_edges_;
 		const int num_in_edges = in_edges.size();
 		for (int j = 0; j < num_in_edges; ++j) { //loop back-star edges for current node
-			
+			const Hypergraph::Edge& curr_edge = hg.edges_[cur_node.in_edges_[j]];
+			int tail_size = curr_edge->tail_nodes_.size();
+			vector<NgramSet> antsToBoundaryNgrams(tail_size);
+			for (int k=0;k<tail_size;k++){
+				antsToBoundaryNgrams[k]= nodeToBoundariesNgram[curr_edge->tail_nodes_[k]];
+			}
+			getSetOfGeneratedNgrams(curr_edge,antsToBoundaryNgrams, edgeToGeneratedNgrams[curr_edge.id_]);
+
+			NgramSet toAdd=	getBoundariesNgrams(curr_edge,antsToBoundaryNgrams);
+			nodeToBoundariesNgram[cur_node.id_].insert(toAdd.begin(),toAdd.end());
 		}
+	}
+}
+
+NgramSet getBoundariesNgrams(const Hypergraph::Edge& edge, const vector<NgramSet>& antsToBoundaryNgrams){
+	return NULL;
+}
+
+
+struct NgramGenerator{
+
+	NgramGenerator(){
+		eId_(0);
+		candidateBoundariesIterator_=NULL;
+		ng_();
+	}
+
+	vector<NgramGenerator> step(NgramSet& ngSet){
+
+	    for (int j = 0; j < e_.size(); ++j) {
+	      if (e_[j] < 1) {
+	        const int* astate = reinterpret_cast<const int*>(ant_states[-e_[j]]);
+	        int slen = StateSize(astate);
+	        for (int k = 0; k < slen; ++k)
+	          buffer_[i--] = astate[k];
+	      } else {
+	    	  assert(ng_.size<ngram_max_size);
+	    	  ng_.append(e_[j]);
+	      }
+	    }
+
+	}
+
+	static const vector<WordID>& e_;
+	static const vector<NgramSet>& antsToBoundaryNgrams_;
+	int eId_;
+	Ngram ng_;
+	set::iterator candidateBoundariesIterator_;//TODO pointer ref?? what is returned from set?
+
+};
+
+
+void getSetOfGeneratedNgrams(const Hypergraph::Edge& edge, const vector<NgramSet>& antsToBoundaryNgrams, NgramSet& ngSet){
+
+	stack<NgramGenerator> stack;
+	NgramGenerator::e_ = rule.e();
+	NgramGenerator::antsToBoundaryNgrams_ = antsToBoundaryNgrams;
+	stak.push(NgramGenerator());
+	while(stack.size()!=0){
+		NgramGenerator currGen = stack.pop();
+		stack.pushAll(currGen.step(ngSet));
 	}
 }
 

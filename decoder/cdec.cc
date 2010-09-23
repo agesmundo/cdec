@@ -448,7 +448,7 @@ int main(int argc, char** argv) {
 
       //call main method for computation of first pass
       //NB that we cannot use Inside() because the 'x' is not binary  
-      ComputeNgramSets(forest, ngramTailSets, ngramDict );			
+      ComputeNgramSets(forest, ngramTailSets);			
 
       //TODO second pass to compute posterior of graph
 

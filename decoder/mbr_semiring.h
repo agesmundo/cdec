@@ -6,12 +6,14 @@
 
 #include "hg.h"
 
+using namespace std;
+
 //////////////////////////////////////////
 ////////////////////////////////////////////
 // First pass of MBR,
 // Note that it is not possible to directly use Inside() because the 'x' operator in not binary
 
-void ComputeNgramSets(const Hypergraph& in, std::vector<std::set<int> >& ngramTailSets /*, Dict& ngramDict*/){
+void ComputeNgramSets(const Hypergraph& in, vector<std::set<int> >& ngramTailSets /*, Dict& ngramDict*/){
     for (int vert_index = 0; vert_index < in.nodes_.size(); ++vert_index) {
 	const Hypergraph::Node& v = in.nodes_[vert_index];
 	const vector<int>& in_edges = v.in_edges_;

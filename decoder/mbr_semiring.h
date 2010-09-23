@@ -62,11 +62,11 @@ struct VectorSetIdWeightType{
 };*/
 
 //WeightFunction for first MBR pass
-struct MBR1WeightFunction {
-	inline VectorSetIdWeightType operator()(const Hypergraph::Edge& e) const {
-		return VectorSetIdWeightType(e);
-	}
-};
+//struct MBR1WeightFunction {
+//	inline VectorSetIdWeightType operator()(const Hypergraph::Edge& e) const {
+//		return VectorSetIdWeightType(e);
+//	}
+//};
 
 /*
 // this file implements the first-order expectation semiring described

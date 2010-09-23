@@ -439,12 +439,9 @@ int main(int argc, char** argv) {
       //First pass to compute n-grams
       
       // store output of first pass (childEdgeID)-> (set of ngramId for child edge)
-      const int num_nodes = forest.nodes_.size();
-      std::vector<std::set<int> > ngramTailSets;
-      ngramTailSets.resize(num_nodes);
-      
-      //dictionary to map ngramId to the ngram string
-      /*Dict ngramDict;*/
+      //const int num_nodes = forest.nodes_.size();
+      std::vector<std::set<Ngram> > ngramTailSets;
+      //ngramTailSets.resize(num_nodes);
 
       //call main method for computation of first pass
       //NB that we cannot use Inside() because the 'x' is not binary  

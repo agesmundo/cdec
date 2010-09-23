@@ -443,8 +443,8 @@ int main(int argc, char** argv) {
       std::vector<std::set<int> > ngramTailSets;
       ngramTailSets.resize(num_nodes);
       
-      //doctionary to map ngramId to the ngram string
-      Dict ngramDict;
+      //dictionary to map ngramId to the ngram string
+      /*Dict ngramDict;*/
 
       //call main method for computation of first pass
       //NB that we cannot use Inside() because the 'x' is not binary  

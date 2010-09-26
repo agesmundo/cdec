@@ -16,25 +16,24 @@ using namespace std;
 // Note that it is not possible to directly use Inside() because the 'x' operator in not binary
 
 struct Ngram{
-	
+
 	Ngram(){
 		words_Id_ = new vector <WordID>();
 	}
 
-	Ngram(vector <WordID>* words_Id_to_Copy){
+	Ngram(vector <WordID>* words_Id_to_Copy, int start_id){
 		this();
-		for(int i=0; i<word_Ids.size(); i++){
-			words_Id_[i]=word_Ids_to_Copy[i];
+		for(; start_id<word_Ids.size(); start_id++){
+			words_Id_[start_id]=word_Ids_to_Copy[start_id];
 		}
 	}
-	
+
 	~Ngram(){
 		delete word_Ids_;
 	}
-	
-	int size(){ //implemented depth first to reduce memory usage
-		return word_Ids_->size();
 
+	int size(){
+		return word_Ids_->size();
 	}
 
 	void append(WordID wid){
@@ -44,84 +43,80 @@ struct Ngram{
 	vector <WordID>* word_Ids_; //ids of words that compose the ngram
 };
 
-const int ngram_max_size = 3;
+const int order = 3;//size of ngram is in language model feat.order
+
+
 const WordID kSTAR(TD::Convert("<{STAR}>"));
 
 typedef set<Ngram> NgramSet;
 
+//TODO check Ngram.h ??
 void ComputeNgramSets(const Hypergraph& hg, vector<NgramSet >& edgeToGeneratedNgrams){
 	const int num_nodes = hg.nodes_.size();
-	const int num_edges = hg.edges_.size();
 	edgeToGeneratedNgrams.resize(num_edges); //output vector, map id of edge -> set of ngrams generated there
-	vector<NgramSet> nodeToBoundariesNgram; //map id of node -> set of boundary ngrams
+	vector<Ngram> nodeToBoundariesNgram; //map id of node -> !(set) of boundary ngrams //TODO check that is true that there is only one state per node
 	for (int node_index = 0; node_index < num_nodes; ++node_index) { //loop nodes
-		const Hypergraph::Node& cur_node = hg.nodes_[node_index];
-		const vector<int>& in_edges = cur_node.in_edges_;
+		const Hypergraph::Node& curr_node = hg.nodes_[node_index];
+		const vector<int>& in_edges = curr_node.in_edges_;
 		const int num_in_edges = in_edges.size();
-		for (int j = 0; j < num_in_edges; ++j) { //loop back-star edges for current node
-			const Hypergraph::Edge& curr_edge = hg.edges_[cur_node.in_edges_[j]];
+		for (int i = 0; i < num_in_edges; ++i) { //loop back-star edges for current node
+			const Hypergraph::Edge& curr_edge = hg.edges_[curr_node.in_edges_[j]];
 			int tail_size = curr_edge->tail_nodes_.size();
-			vector<NgramSet> antsToBoundaryNgrams(tail_size);
-			for (int k=0;k<tail_size;k++){
-				antsToBoundaryNgrams[k]= nodeToBoundariesNgram[curr_edge->tail_nodes_[k]];
-			}
-			getSetOfGeneratedNgrams(curr_edge,antsToBoundaryNgrams, edgeToGeneratedNgrams[curr_edge.id_]);
 
-			NgramSet toAdd=	getBoundariesNgrams(curr_edge,antsToBoundaryNgrams);
-			nodeToBoundariesNgram[cur_node.id_].insert(toAdd.begin(),toAdd.end());
+			//get starred sequence of terminals
+			vector<WordID> buffer;
+			const vector<WordID>& e = curr_edge.rule_.e();
+			for (int j = 0; j < e.size(); ++j) {
+				if (e[j] < 1) {
+					Ngram antState = nodeToBoundariesNgram[edge->tail_nodes_[-e[j]]];
+					int slen = StateSize(astate);
+					for (int k = 0; k < slen; ++k)
+						buffer.insert(astate[k]);
+				} else {
+					buffer.insert(e[j]);
+				}
+			}
+
+			//extract state for node and //extract set of generated ngrams
+			//see ff_lm.cc 266
+			//should do this just for first edge of head node
+			//debug checking that all the edges create the same state
+			Ngram state;
+			int start=0;
+			for (int j=0; j< buffer.size();j++){
+				if (buffer[j]==kSTAR){
+					start=j+1;
+				}
+				else {
+					if(j-start+1>=order){ //length span reached order
+						start=j-order;
+					}
+					else if (start==0){
+						state.append(buffer[j]);
+					}
+					//TODO add all the ngrams that end at j
+					for (int k=start;k<=j;k++){
+						edgeToGeneratedNgrams.add(buffer.substring(k,j+1));
+					}
+				}
+
+			}
+
+			if (buffer.size()>state.size()){
+				state.append(kSTAR);
+
+				for(int w=start; w<buffer.size(); w++){
+					state.append(buffer[w]);
+				}
+
+			}
+			nodeToBoundariesNgram.insert(curr_node, state); //NB do not insert something that is in methond memory
+
+
 		}
 	}
 }
 
-NgramSet getBoundariesNgrams(const Hypergraph::Edge& edge, const vector<NgramSet>& antsToBoundaryNgrams){
-	return NULL;
-}
-
-
-struct NgramGenerator{
-
-	NgramGenerator(){
-		eId_(0);
-		candidateBoundariesIterator_=NULL;
-		ng_();
-	}
-
-	vector<NgramGenerator> step(NgramSet& ngSet){
-
-	    for (int j = 0; j < e_.size(); ++j) {
-	      if (e_[j] < 1) {
-	        const int* astate = reinterpret_cast<const int*>(ant_states[-e_[j]]);
-	        int slen = StateSize(astate);
-	        for (int k = 0; k < slen; ++k)
-	          buffer_[i--] = astate[k];
-	      } else {
-	    	  assert(ng_.size<ngram_max_size);
-	    	  ng_.append(e_[j]);
-	      }
-	    }
-
-	}
-
-	static const vector<WordID>& e_;
-	static const vector<NgramSet>& antsToBoundaryNgrams_;
-	int eId_;
-	Ngram ng_;
-	set::iterator candidateBoundariesIterator_;//TODO pointer ref?? what is returned from set?
-
-};
-
-
-void getSetOfGeneratedNgrams(const Hypergraph::Edge& edge, const vector<NgramSet>& antsToBoundaryNgrams, NgramSet& ngSet){
-
-	stack<NgramGenerator> stack;
-	NgramGenerator::e_ = rule.e();
-	NgramGenerator::antsToBoundaryNgrams_ = antsToBoundaryNgrams;
-	stak.push(NgramGenerator());
-	while(stack.size()!=0){
-		NgramGenerator currGen = stack.pop();
-		stack.pushAll(currGen.step(ngSet));
-	}
-}
 
 //////////////////////////////////////////
 ////////////////////////////////////////////

@@ -440,7 +440,7 @@ int main(int argc, char** argv) {
       
       // store output of first pass (childEdgeID)-> (set of ngramId for child edge)
       //const int num_nodes = forest.nodes_.size();
-      std::vector<std::set<Ngram> > ngramTailSets;
+      std::vector<NgramSet > ngramTailSets;
       //ngramTailSets.resize(num_nodes);
 
       //call main method for computation of first pass

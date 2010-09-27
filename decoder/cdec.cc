@@ -440,7 +440,7 @@ int main(int argc, char** argv) {
       
       // store output of first pass (childEdgeID)-> (set of ngramId for child edge)
       //const int num_nodes = forest.nodes_.size();
-      std::vector<NgramSet > ngramTailSets;
+      std::vector< NGramSet > ngramTailSets;
       //ngramTailSets.resize(num_nodes);
 
       //call main method for computation of first pass
@@ -451,9 +451,9 @@ int main(int argc, char** argv) {
       //second pass to compute posterior of ngrams
 
       //map ngram to posterior prob
-      std::map<Ngram,prob_t> ngramToPosterior; //TODO how to map the content not the pointer!?!?!
-
-      ComputeNgramPosteriors(forest, ngramTailSets, ngramToPosterior);
+//      std::map<Ngram,prob_t> ngramToPosterior; //TODO how to map the content not the pointer!?!?!
+//
+//      ComputeNgramPosteriors(forest, ngramTailSets, ngramToPosterior);
 
       ////////////////////////////////////
       //third pass rescore derivations

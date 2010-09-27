@@ -117,6 +117,20 @@ void ComputeNgramSets(const Hypergraph& hg, vector<NgramSet >& edgeToGeneratedNg
 	}
 }
 
+void ComputeNgramPosteriors(const Hypergraph& hg, vector<NgramSet >& edgeToGeneratedNgrams, map <Ngram,prob_t> ngramToPosterior){
+	const int num_nodes = hg.nodes_.size();
+	for (int node_index = 0; node_index < num_nodes; ++node_index) {
+		const Hypergraph::Node& curr_node = hg.nodes_[node_index];
+				const vector<int>& in_edges = curr_node.in_edges_;
+				const int num_in_edges = in_edges.size();
+				for (int i = 0; i < num_in_edges; ++i) {
+					const Hypergraph::Edge& curr_edge = hg.edges_[curr_node.in_edges_[j]];
+					int tail_size = curr_edge->tail_nodes_.size();
+					prob_t w = curr_edge.edge_prob_;
+				}
+	}
+}
+
 
 //////////////////////////////////////////
 ////////////////////////////////////////////

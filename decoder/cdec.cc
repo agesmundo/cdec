@@ -447,8 +447,16 @@ int main(int argc, char** argv) {
       //NB that we cannot use Inside() because the 'x' is not binary  
       ComputeNgramSets(forest, ngramTailSets);			
 
-      //TODO second pass to compute posterior of graph
+      ////////////////////////////////////////
+      //second pass to compute posterior of ngrams
 
+      //map ngram to posterior prob
+      std::map<Ngram,prob_t> ngramToPosterior; //TODO how to map the content not the pointer!?!?!
+
+      ComputeNgramPosteriors(forest, ngramTailSets, ngramToPosterior);
+
+      ////////////////////////////////////
+      //third pass rescore derivations
       //call inside alg
 			//Inside< VectorSetIdWeightType , MBR1WeightFunction >(forest);//, ngramTailSets);
       //TODO third pass to find best path 

@@ -41,7 +41,7 @@ namespace po = boost::program_options;
 
 // some globals ...
 boost::shared_ptr<RandomNumberGenerator<boost::mt19937> > rng;
-static const double kMINUS_EPSILON = -1e-6;  // don't be too strict
+static const double kMINUS_EPSILON = -1e-6;// don't be too strict
 
 namespace Hack { void MaxTrans(const Hypergraph& in, int beam_size); }
 namespace NgramCache { void Clear(); }
@@ -436,24 +436,35 @@ int main(int argc, char** argv) {
     }
 
     if (conf.count("mbr")) {
+    	
+    	////////////////////////////////////////
       //First pass to compute n-grams
       
-      // store output of first pass (childEdgeID)-> (set of ngramId for child edge)
-      //const int num_nodes = forest.nodes_.size();
-      std::vector< NGramSet > ngramTailSets;
-      //ngramTailSets.resize(num_nodes);
+    	//NGram order
+    	//TODO extract from LM params
+    	int order = 3;
+    	
+      // store output of first pass (edgeId)-> (set of NGrams generated at that edge)
+      std::vector< NGramSet > edgeToNGramSet;
 
       //call main method for computation of first pass
       //NB that we cannot use Inside() because the 'x' is not binary  
-      ComputeNgramSets(forest, ngramTailSets);			
+      ComputeNgramSets(forest, edgeToNGramSet, order);	
 
       ////////////////////////////////////////
-      //second pass to compute posterior of ngrams
+      //Second pass to compute posterior of ngrams
 
-      //map ngram to posterior prob
-//      std::map<Ngram,prob_t> ngramToPosterior; //TODO how to map the content not the pointer!?!?!
-//
-//      ComputeNgramPosteriors(forest, ngramTailSets, ngramToPosterior);
+      
+      //Store output of second pass (ngram) -> (posterior prob)
+      std::map<NGram, prob_t> ngramToPosterior;
+
+      //reference to result of first pass, to be used for second pass
+      //NB cannot pass as parameter if want use generalize inside algorithm
+      NGramScoresWeightType::edge_to_ngram_set_ = &edgeToNGramSet;
+      
+      //call main method for computation of second pass
+      //NB that we cannot use Inside() because the 'x' is not binary
+      GeneralizedInside<NGramScoresWeightType>(forest);//, ngramTailSets, ngramToPosterior);
 
       ////////////////////////////////////
       //third pass rescore derivations

@@ -103,6 +103,11 @@ typedef set<NGram,compNGrams> NGramSet;
 
 //TODO check Ngram.h ??
 void ComputeNgramSets(const Hypergraph& hg, vector<NGramSet >& edgeToGeneratedNgrams, const int order){
+
+#ifdef DEBUG_MBR_1
+	cerr << "\n MBR FIRST PASS \n" ;
+#endif
+
 	const int num_edges = hg.edges_.size();
 	const int num_nodes = hg.nodes_.size();
 	const int goal_id = num_nodes - 1;
@@ -210,7 +215,7 @@ void ComputeNgramSets(const Hypergraph& hg, vector<NGramSet >& edgeToGeneratedNg
 					NGramSet& currentNgramSet = edgeToGeneratedNgrams[curr_edge.id_];
 
 #ifdef DEBUG_MBR_1			
-					cerr<< "\tExtracting all n-grams generated at EDGE " << node_index << " , " << curr_edge.id_ <<" , ending in " << j << " , starting from "<< start <<endl ;
+					cerr<< "\tExtracting all n-grams generated at EDGE " << node_index << " , " << curr_edge.id_ <<" , ending in " << j << " (start = "<< start << ")" <<endl ;
 #endif
 
 					bool pass =false;
@@ -223,6 +228,7 @@ void ComputeNgramSets(const Hypergraph& hg, vector<NGramSet >& edgeToGeneratedNg
 #endif
 
 							currentNgramSet.insert(tmp);
+							pass=true;
 						}
 					}
 				}
@@ -307,10 +313,10 @@ void ComputeNgramSets(const Hypergraph& hg, vector<NGramSet >& edgeToGeneratedNg
 // second pass
 //
 
-
-//WeightType for second pass
 //map any possible ngram to score
 typedef map<NGram, prob_t, compNGrams>  MapNGramScore;
+
+//WeightType for second pass
 struct NGramScoresWeightType{
 
 	NGramScoresWeightType(){
@@ -463,9 +469,8 @@ ostream& operator<<(ostream& os, NGramScoresWeightType& ng) {
 		}
 		os << "(" << (*it).first << " | " << double((*it).second) << ")";
 	}
-	return os << "\t}\n]\n";
+	return os << " }\n]\n";
 }
-
 
 template<typename WeightType>
 void GeneralizedInside(const Hypergraph& hg,
@@ -514,6 +519,7 @@ void GeneralizedInside(const Hypergraph& hg,
 			cerr << "EDGE : " << curr_edge.id_ << " , rule score : " << curr_edge.edge_prob_ << " , tail:";
 			for (int w=0 ; w<curr_edge.tail_nodes_.size();w++) cerr <<curr_edge.tail_nodes_[w]<< " ";
 			cerr <<", weights : \n" <<  child_edges_weights[j] ;
+			//this line is not that generalized ... debug statements should be (re)moved
 			const NGramSet& currentNgramSet = (*NGramScoresWeightType::edge_to_ngram_set_)[curr_edge.id_];
 			cerr <<"Set of NGrams |" <<currentNgramSet.size() << "| : { " ;
 			for(NGramSet::iterator it = currentNgramSet.begin(); it != currentNgramSet.end(); it++){
@@ -531,6 +537,16 @@ void GeneralizedInside(const Hypergraph& hg,
 #endif
 	}
 
+}
+
+
+void ComputeNGramPosteriors(const Hypergraph& hg, MapNGramScore ngramToPosterior){
+
+#ifdef DEBUG_MBR_2
+	cerr << "\n MBR SECOND PASS \n" ;
+#endif
+
+	GeneralizedInside<NGramScoresWeightType>(hg);
 }
 
 

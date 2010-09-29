@@ -456,15 +456,16 @@ int main(int argc, char** argv) {
 
       
       //Store output of second pass (ngram) -> (posterior prob)
-      std::map<NGram, prob_t> ngramToPosterior;
+      MapNGramScore ngramToPosterior;
 
       //reference to result of first pass, to be used for second pass
       //NB cannot pass as parameter if want use generalize inside algorithm
       NGramScoresWeightType::edge_to_ngram_set_ = &edgeToNGramSet;
       
+
       //call main method for computation of second pass
       //NB that we cannot use Inside() because the 'x' is not binary
-      GeneralizedInside<NGramScoresWeightType>(forest);//, ngramTailSets, ngramToPosterior);
+      ComputeNGramPosteriors(forest, ngramToPosterior);
 
       ////////////////////////////////////
       //third pass rescore derivations

@@ -11,7 +11,7 @@ using namespace std;
 
 // Define the following macros if you want to see lots of debugging output 
 // ... for first pass
-#define DEBUG_MBR_1
+//#define DEBUG_MBR_1
 // ... for second pass
 #define DEBUG_MBR_2
 
@@ -311,7 +311,7 @@ void ComputeNgramSets(const Hypergraph& hg, vector<NGramSet >& edgeToGeneratedNg
 //////////////////////////////////////////
 //////////////////////////////////////////
 // second pass
-//
+// compute ngram posteriors
 
 //map any possible ngram to score
 typedef map<NGram, prob_t, compNGrams>  MapNGramScore;
@@ -382,10 +382,29 @@ struct NGramScoresWeightType{
 			assert( edge_scores.ngram_score_.insert(pair<NGram, prob_t>(*it, edge_scores.tot_score_)).second);
 		}
 		
+		if(tail_size==0) return;
+
 #ifdef DEBUG_MBR_2
 		cerr <<"-  base with gen ng :\n" << *cur_edge_inside_score << endl ;
 #endif
 		
+		//compute set of NGrams generated in the yield but not at current edge 
+		NGramSet yield_ngs;
+
+		for(int i=0; i<tail_size; i++){
+			const NGramScoresWeightType child_weights= child_nodes_weights[i];
+			for(MapNGramScore::const_iterator it = child_weights.ngram_score_.begin(); it != child_weights.ngram_score_.end(); it++){
+				const NGram& key = (*it).first; 
+
+				//if current element is not in the ngram generated at edge
+				if(ngram_set.find(key)==ngram_set.end()){
+					yield_ngs.insert(key);					
+				}
+
+			}
+		}
+		
+
 		///assign score_of_paths_containing_ngram to ngrams generated in the yield
 		//NB:
 		//1) score_of_paths_containing_ngram = tot_score - score_of_paths_NOT_containing_ngram
@@ -395,11 +414,16 @@ struct NGramScoresWeightType{
 		NGramScoresWeightType tmp = NGramScoresWeightType(1);
 		for(int i=0; i<tail_size; i++){
 			NGramScoresWeightType child_update = NGramScoresWeightType(1);
-			const NGramScoresWeightType child_weights= child_nodes_weights[i];
+			NGramScoresWeightType child_weights= child_nodes_weights[i];
 
-			for(MapNGramScore::const_iterator it = child_weights.ngram_score_.begin(); it != child_weights.ngram_score_.end(); it++){
-				const NGram& key = (*it).first; //TODO try to test if ngram is already in set of gen ng
-				prob_t child_notNg = child_nodes_weights[i].tot_score_ - child_nodes_weights[i].getScore(key); // <- 3)
+
+			for(NGramSet::const_iterator it = yield_ngs.begin(); it != yield_ngs.end(); it++){
+				const NGram& key = *it; 
+
+				assert(child_weights.default_score_ ==0 );
+
+				prob_t child_notNg = child_weights.tot_score_ - child_weights.getScore(key); // <- 3)
+
 				assert(child_update.insert(key, child_notNg));
 
 			}
@@ -412,6 +436,7 @@ struct NGramScoresWeightType{
 		}
 
 		for(MapNGramScore::iterator it = tmp.ngram_score_.begin(); it != tmp.ngram_score_.end(); it++){
+		//	for(NGramSet::const_iterator it = yield_ngs.begin(); it != yield_ngs.end(); it++){TODO try iterate on yield ng and should have same output
 			(*it).second *= edge.edge_prob_; // <- 2)b rule_score * ...
 		}
 		
@@ -421,21 +446,9 @@ struct NGramScoresWeightType{
 		
 		for(MapNGramScore::const_iterator it = tmp.ngram_score_.begin(); it != tmp.ngram_score_.end(); it++){
 			prob_t paths_with_ng = edge_scores.tot_score_ - (*it).second; // <- 3)
-			edge_scores.insert((*it).first, paths_with_ng); //NB for ngrams generated at curr_edge there is already the value set and the insertion will fail
+			assert(edge_scores.insert((*it).first, paths_with_ng)); 
 		}
 
-	}
-
-	bool insert (const NGram& ng, prob_t p){
-		return ngram_score_.insert(pair <NGram, prob_t> (ng, p )).second;
-	}
-
-	prob_t getScore(NGram ng){
-		MapNGramScore::const_iterator found = ngram_score_.find(ng);
-		if (found == ngram_score_.end())
-			return default_score_;
-		else
-			return found->second;
 	}
 
 	NGramScoresWeightType& operator*=(const NGramScoresWeightType& o) {
@@ -450,6 +463,23 @@ struct NGramScoresWeightType{
 		return *this;
 	}
 
+///////////////
+//UTILS METHODS
+
+  bool insert (const NGram& ng, prob_t p){
+    return ngram_score_.insert(pair <NGram, prob_t> (ng, p )).second;
+  }
+
+	prob_t getScore(NGram ng){
+		MapNGramScore::const_iterator found = ngram_score_.find(ng);
+		if (found == ngram_score_.end())
+			return default_score_;
+		else
+			return found->second;
+	}
+
+///////////////
+//Variables
 	prob_t tot_score_; //score all derivations
 	MapNGramScore ngram_score_; //score of derivations generating NGram
 	prob_t default_score_; //score for all NGram not explicitly cited in the map
@@ -467,13 +497,13 @@ ostream& operator<<(ostream& os, NGramScoresWeightType& ng) {
 		if (it!= ng.ngram_score_.begin()){
 			os << ", ";
 		}
-		os << "(" << (*it).first << " | " << double((*it).second) << ")";
+		os << "\n\t\t(" << double((*it).second) << " | " << (*it).first << ")";
 	}
-	return os << " }\n]\n";
+	return os << "\n\t}\n]\n";
 }
 
 template<typename WeightType>
-void GeneralizedInside(const Hypergraph& hg,
+WeightType GeneralizedInside(const Hypergraph& hg,
 		std::vector<WeightType>* result = NULL){
 	//const Hypergraph& hg, vector<NGramSet >& edgeToGeneratedNgrams, map <NGram,prob_t> ngramToPosterior)
 
@@ -490,11 +520,9 @@ void GeneralizedInside(const Hypergraph& hg,
 		WeightType* const cur_node_inside_score = &inside_score[i];
 		const int num_in_edges = curr_node.in_edges_.size();
 
-		if (num_in_edges == 0) {
+		//this case never happen, leafs are edges if hg is correctly structured
+		if (num_in_edges == 0) { 
 			(*cur_node_inside_score)=WeightType(1);
-
-			cerr << "XXXNODE : " << i << " , weights : \n" <<  *cur_node_inside_score << endl ;
-			assert (false);
 			continue;
 		}
 
@@ -516,8 +544,10 @@ void GeneralizedInside(const Hypergraph& hg,
 
 			WeightType::MultFunction(curr_edge, child_nodes_weights, &child_edges_weights[j] );
 #ifdef DEBUG_MBR_2
-			cerr << "EDGE : " << curr_edge.id_ << " , rule score : " << curr_edge.edge_prob_ << " , tail:";
-			for (int w=0 ; w<curr_edge.tail_nodes_.size();w++) cerr <<curr_edge.tail_nodes_[w]<< " ";
+			cerr << "EDGE : " << curr_edge.id_ << " , rule score : " << curr_edge.edge_prob_ << " , tails :";
+			for (int w=0 ; w<curr_edge.tail_nodes_.size();w++){ 
+				cerr <<curr_edge.tail_nodes_[w]<< " ";
+			}
 			cerr <<", weights : \n" <<  child_edges_weights[j] ;
 			//this line is not that generalized ... debug statements should be (re)moved
 			const NGramSet& currentNgramSet = (*NGramScoresWeightType::edge_to_ngram_set_)[curr_edge.id_];
@@ -531,110 +561,46 @@ void GeneralizedInside(const Hypergraph& hg,
 
 		WeightType::AddFunction(curr_node, child_edges_weights, cur_node_inside_score);
 #ifdef DEBUG_MBR_2
-		cerr << "NODE : " << i << " , tail:";
+		cerr << "NODE : " << i << " , tails :";
 		for (int w=0 ; w<curr_node.in_edges_.size();w++) cerr <<curr_node.in_edges_[w]<< " ";
 		cerr << " , weights : \n" <<  *cur_node_inside_score << endl ;
 #endif
 	}
 
+  return inside_score.back();
 }
 
 
-void ComputeNGramPosteriors(const Hypergraph& hg, MapNGramScore ngramToPosterior){
+void ComputeNGramPosteriors(const Hypergraph& hg, MapNGramScore& ngramToPosterior){
 
 #ifdef DEBUG_MBR_2
 	cerr << "\n MBR SECOND PASS \n" ;
 #endif
 
-	GeneralizedInside<NGramScoresWeightType>(hg);
-}
+	NGramScoresWeightType root_scores = GeneralizedInside<NGramScoresWeightType>(hg);
+	
+	//TODO can I avoid to make a copy?
+	ngramToPosterior = MapNGramScore(root_scores.ngram_score_.begin() , root_scores.ngram_score_.end());
 
-
-
-
-
-//WeightFunction for second pass
-//struct MBR2WeightFunction {
-//	MBR2WeightFunction(){
-//		
-//	}
-//	
-//	inline NGramScoresWeightType operator()(const Hypergraph::Edge& e) const {
-//		//for each ngram
-//		return e.edge_prob_;
-//	}
-//	
-//	//shares the vector filled with results by Inside alg
-//	//neede to know the set of ngrams at each node
-//	vector<WeightType>& result_; 
-//};
-
-/*
-// this file implements the first-order expectation semiring described
-// in Li & Eisner (EMNLP 2009)
-
-// requirements:
-//   RType * RType ==> RType
-//   PType * PType ==> PType
-//   RType * PType ==> RType
-// good examples:
-//   PType scalar, RType vector
-// BAD examples:
-//   PType vector, RType scalar
-template <typename PType, typename RType>
-struct PRPair {
-	PRPair() : p(), r() {}
-	// Inside algorithm requires that T(0) and T(1)
-	// return the 0 and 1 values of the semiring
-	explicit PRPair(double x) : p(x), r() {}
-	PRPair(const PType& p, const RType& r) : p(p), r(r) {}
-	PRPair& operator+=(const PRPair& o) {
-		p += o.p;
-		r += o.r;
-		return *this;
+	//TODO can I avoid to divide for norm constant?
+	for(MapNGramScore::iterator it =ngramToPosterior.begin() ; it !=ngramToPosterior.end(); it++){
+		(*it).second /=root_scores.tot_score_;
 	}
-	PRPair& operator*=(const PRPair& o) {
-		r = (o.r * p) + (o.p * r);
-		p *= o.p;
-		return *this;
+
+#ifdef DEBUG_MBR_2
+	cerr << " POSTERIORS: \n" ;
+	for(MapNGramScore::iterator it =ngramToPosterior.begin() ; it !=ngramToPosterior.end(); it++){
+		cerr << (*it).second << "\t|\t" << (*it).first << "\n" ;
 	}
-	PType p;
-	RType r;
-};
+#endif
 
-template <typename P, typename R>
-std::ostream& operator<<(std::ostream& o, const PRPair<P,R>& x) {
-	return o << '<' << x.p << ", " << x.r << '>';
 }
 
-template <typename P, typename R>
-const PRPair<P,R> operator+(const PRPair<P,R>& a, const PRPair<P,R>& b) {
-	PRPair<P,R> result = a;
-	result += b;
-	return result;
-}
+//////////////////////////////////////////
+//////////////////////////////////////////
+// third pass
+//
 
-template <typename P, typename R>
-const PRPair<P,R> operator*(const PRPair<P,R>& a, const PRPair<P,R>& b) {
-	PRPair<P,R> result = a;
-	result *= b;
-	return result;
-}
-
-template <typename P, typename PWeightFunction, typename R, typename RWeightFunction>
-struct PRWeightFunction {
-	explicit PRWeightFunction(const PWeightFunction& pwf = PWeightFunction(),
-			const RWeightFunction& rwf = RWeightFunction()) :
-		pweight(pwf), rweight(rwf) {}
-	PRPair<P,R> operator()(const Hypergraph::Edge& e) const {
-		const P p = pweight(e);
-		const R r = rweight(e);
-		return PRPair<P,R>(p, r * p);
-	}
-	const PWeightFunction pweight;
-	const RWeightFunction rweight;
-};
- */
 
 #undef DEBUG_MBR_1
 #undef DEBUG_MBR_2

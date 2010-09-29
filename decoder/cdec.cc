@@ -451,9 +451,9 @@ int main(int argc, char** argv) {
       //NB that we cannot use Inside() because the 'x' is not binary  
       ComputeNgramSets(forest, edgeToNGramSet, order);	
 
+      
       ////////////////////////////////////////
       //Second pass to compute posterior of ngrams
-
       
       //Store output of second pass (ngram) -> (posterior prob)
       MapNGramScore ngramToPosterior;

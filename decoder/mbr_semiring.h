@@ -13,7 +13,9 @@ using namespace std;
 // ... for first pass
 //#define DEBUG_MBR_1
 // ... for second pass
-#define DEBUG_MBR_2
+//#define DEBUG_MBR_2
+// ... for third pass
+//#define DEBUG_MBR_3
 
 struct NGramScoresWeightType;
 ostream& operator<<(ostream& os, NGramScoresWeightType& ng);
@@ -488,6 +490,7 @@ struct NGramScoresWeightType{
 };
 vector< NGramSet >* NGramScoresWeightType::edge_to_ngram_set_;
 
+#ifdef DEBUG_MBR_2
 ostream& operator<<(ostream& os, NGramScoresWeightType& ng) {
 	os << "NGramScoresWeightType[\n";
 	os << "\ttot_score_ : " << double(ng.tot_score_) << endl;
@@ -497,10 +500,12 @@ ostream& operator<<(ostream& os, NGramScoresWeightType& ng) {
 		if (it!= ng.ngram_score_.begin()){
 			os << ", ";
 		}
-		os << "\n\t\t(" << double((*it).second) << " | " << (*it).first << ")";
+		os << "\n\t\t(" << double((*it).second) << " | " ;
+		os<< (*it).first << ")";
 	}
 	return os << "\n\t}\n]\n";
 }
+#endif
 
 template<typename WeightType>
 WeightType GeneralizedInside(const Hypergraph& hg,
@@ -599,8 +604,36 @@ void ComputeNGramPosteriors(const Hypergraph& hg, MapNGramScore& ngramToPosterio
 //////////////////////////////////////////
 //////////////////////////////////////////
 // third pass
-//
+// rescore hypergraph
 
+void RescoreHypergraph(Hypergraph& hg, MapNGramScore& ngramToPosterior, vector<NGramSet>& edgeToNGramSet) {
+#ifdef DEBUG_MBR_3
+	cerr << "\n MBR THIRD PASS \n" ;
+#endif
+  const int num_nodes = hg.nodes_.size();
+  for (int i = 0; i < num_nodes; ++i) {
+    const Hypergraph::Node& cur_node = hg.nodes_[i];
+    const int num_in_edges = cur_node.in_edges_.size();
+    for (int j = 0; j < num_in_edges; ++j) {
+      Hypergraph::Edge& edge = hg.edges_[cur_node.in_edges_[j]];
+#ifdef DEBUG_MBR_3
+	cerr << "EDGE : "<< edge.id_ << " , old score :" << edge.edge_prob_ ;
+#endif
+			//edge.edge_prob_=prob_t(1);
+			NGramSet& curr_set = edgeToNGramSet[edge.id_];
+			for(NGramSet::const_iterator it = curr_set.begin(); it !=curr_set.end(); it++){
+				const NGram& key = *it; 
+#ifdef DEBUG_MBR_3
+				assert(ngramToPosterior.find(key)!=ngramToPosterior.end());
+#endif
+				edge.edge_prob_ *= ngramToPosterior.find(key)->second;
+			}
+#ifdef DEBUG_MBR_3
+	cerr << " , new score :" << edge.edge_prob_ << endl ;
+#endif
+    }
+  }
+}
 
 #undef DEBUG_MBR_1
 #undef DEBUG_MBR_2

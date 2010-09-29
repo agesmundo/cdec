@@ -469,10 +469,14 @@ int main(int argc, char** argv) {
 
       ////////////////////////////////////
       //third pass rescore derivations
-      //call inside alg
-			//Inside< VectorSetIdWeightType , MBR1WeightFunction >(forest);//, ngramTailSets);
-      //TODO third pass to find best path 
-      //see above  viterbi
+     	RescoreHypergraph(forest, ngramToPosterior, edgeToNGramSet); 
+      
+      
+      ////////////////////////////////////
+      //get best sentence
+      trans.clear();
+      ViterbiESentence(forest, &trans);
+      cerr << "  +MBR Viterbi: " << TD::GetString(trans) << endl;
     }
 
     if (conf.count("forest_output") && !has_ref) {

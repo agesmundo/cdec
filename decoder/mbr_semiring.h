@@ -11,7 +11,7 @@ using namespace std;
 
 // Define the following macros if you want to see lots of debugging output 
 // ... for first pass
-//#define DEBUG_MBR_1
+#define DEBUG_MBR_1
 // ... for second pass
 #define DEBUG_MBR_2
 
@@ -130,17 +130,18 @@ void ComputeNgramSets(const Hypergraph& hg, vector<NGramSet >& edgeToGeneratedNg
 		for (int tail_edge_index = 0; tail_edge_index < num_in_edges; ++tail_edge_index) {
 
 			const Hypergraph::Edge& curr_edge = hg.edges_[curr_node.in_edges_[tail_edge_index]];
-			//			const int tail_size = curr_edge.tail_nodes_.size();
-
-#ifdef DEBUG_MBR_1
-			cerr << "AT EDGE: " << tail_edge_index << " , " << curr_edge.id_ <<endl;
-#endif
 			
 			//get starred sequence of terminals
 			vector<WordID> buffer;
 			const vector<WordID>& e = curr_edge.rule_->e_;
 
+			//set of index of rule-terminal elements in buffer
+			//needed to distinguish them from the child-state-terminals
+			//since a generated NGram must contain at least one rule-terminal
+			set<int> rule_terminal_ids;
+
 #ifdef DEBUG_MBR_1
+			cerr << "AT EDGE: " << tail_edge_index << " , " << curr_edge.id_ <<endl;
 			cerr << "\tRule applied: ";
 #endif
 
@@ -174,6 +175,7 @@ void ComputeNgramSets(const Hypergraph& hg, vector<NGramSet >& edgeToGeneratedNg
 
 				//if target side of rule is >0, it is an index of word
 				else {
+					assert( (rule_terminal_ids.insert(buffer.size())).second );	
 					buffer.push_back(e[j]);
 
 #ifdef DEBUG_MBR_1		
@@ -211,14 +213,17 @@ void ComputeNgramSets(const Hypergraph& hg, vector<NGramSet >& edgeToGeneratedNg
 					cerr<< "\tExtracting all n-grams generated at EDGE " << node_index << " , " << curr_edge.id_ <<" , ending in " << j << " , starting from "<< start <<endl ;
 #endif
 
-					for (int k=start;k<=j;k++){
-						NGram tmp = NGram(buffer,k,j+1);
+					bool pass =false;
+					for (int k=j ;k>=start;k--){
+						if(pass || ( rule_terminal_ids.find(k) != rule_terminal_ids.end()) ){
+							NGram tmp = NGram(buffer,k,j+1);
 
 #ifdef DEBUG_MBR_1	
-						cerr<< "\t\t" << tmp << endl;
+							cerr<< "\t\t" << tmp << endl;
 #endif
 
-						currentNgramSet.insert(tmp);
+							currentNgramSet.insert(tmp);
+						}
 					}
 				}
 

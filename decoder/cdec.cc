@@ -69,7 +69,7 @@ void InitCommandLine(int argc, char** argv, po::variables_map* conf) {
 	("k_best,k",po::value<int>(),"Extract the k best derivations")
 	("unique_k_best,r", "Unique k-best translation list")
         ("aligner,a", "Run as a word/phrase aligner (src & ref required)")
-        ("intersection_strategy,I",po::value<string>()->default_value("cube_pruning"), "Intersection strategy for incorporating finite-state features; values include Cube_pruning, Full")
+        ("intersection_strategy,I",po::value<string>()->default_value("cube_pruning"), "Intersection strategy for incorporating finite-state features; values include Cube_pruning, Full, Fast_cube_pruning, Fast_cube_pruning_2")
         ("cubepruning_pop_limit,K",po::value<int>()->default_value(200), "Max number of pops from the candidate heap at each node")
         ("goal",po::value<string>()->default_value("S"),"Goal symbol (SCFG & FST)")
         ("scfg_extra_glue_grammar", po::value<string>(), "Extra glue grammar file (Glue grammars apply when i=0 but have no other span restrictions)")

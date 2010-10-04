@@ -405,20 +405,28 @@ void ApplyModelSet(const Hypergraph& in,
                    const IntersectionConfiguration& config,
                    Hypergraph* out) {
   // TODO special handling when all models are stateless
-  if (config.algorithm == 1) {
+  if (config.algorithm == 0) {
+    NoPruningRescorer ma(models, smeta, in, out);
+    ma.Apply();
+  } else {
     int pl = config.pop_limit;
     if (pl > 100 && in.nodes_.size() > 80000) {
       cerr << "  Note: reducing pop_limit to " << pl << " for very large forest\n";
       pl = 30;
     }
-    CubePruningRescorer ma(models, smeta, in, pl, out);
-    ma.Apply();
-  } else if (config.algorithm == 0) {
-    NoPruningRescorer ma(models, smeta, in, out);
-    ma.Apply();
-  } else {
-    cerr << "Don't understand intersection algorithm " << config.algorithm << endl;
-    exit(1);
+    if (config.algorithm ==1){
+      CubePruningRescorer ma(models, smeta, in, pl, out);
+      ma.Apply();
+    } else if (config.algorithm ==2){
+      CubePruningRescorer ma(models, smeta, in, pl, out);
+      ma.Apply();
+    } else if (config.algorithm ==3){
+      CubePruningRescorer ma(models, smeta, in, pl, out);
+      ma.Apply();
+    } else {
+      cerr << "Don't understand intersection algorithm " << config.algorithm << endl;
+      exit(1);
+    }
   }
   out->is_linear_chain_ = in.is_linear_chain_;  // TODO remove when this is computed
                                                 // automatically

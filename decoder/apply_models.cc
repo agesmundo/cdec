@@ -302,6 +302,7 @@ public:
   vector<string> node_states_;  // for each node in the out-HG what is
                              // its q function value?
   const int pop_limit_;
+  const int strategy_;       //switch Cube Pruning strategy: 1 normal, 2 fast (alg 2), 3 fast_2 (alg 3). (see: Gesmundo A., Henderson J,. Faster Cube Pruning, IWSLT 2010)
 };
 
 struct NoPruningRescorer {

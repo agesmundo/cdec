@@ -318,6 +318,14 @@ int main(int argc, char** argv) {
     palg = 0;
     cerr << "Using full intersection (no pruning).\n";
   }
+  if (LowercaseString(conf["intersection_strategy"].as<string>()) == "Fast_cube_pruning") {
+    palg = 2;
+    cerr << "Using Fast Cube Pruning intersection (see Algorithm 2 described in: Gesmundo A., Henderson J,. Faster Cube Pruning, IWSLT 2010).\n";
+  }
+  if (LowercaseString(conf["intersection_strategy"].as<string>()) == "Fast_cube_pruning_2") {
+    palg = 3;
+    cerr << "Using Fast Cube Pruning 2 intersection (see Algorithm 3 described in: Gesmundo A., Henderson J,. Faster Cube Pruning, IWSLT 2010).\n";
+  }
   const IntersectionConfiguration inter_conf(palg, conf["cubepruning_pop_limit"].as<int>());
 
   const int sample_max_trans = conf.count("max_translation_sample") ?

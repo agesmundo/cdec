@@ -13,7 +13,7 @@ using namespace std;
 // ... for first pass
 //#define DEBUG_MBR_1
 // ... for second pass
-//#define DEBUG_MBR_2
+#define DEBUG_MBR_2
 // ... for third pass
 //#define DEBUG_MBR_3
 
@@ -88,9 +88,6 @@ struct compNGrams{
 				return true;
 			}
 
-			//TODO why??
-			//removing ".word_Ids" generate error
-			//passing «const NGram» as «this» argument of «WordID NGram::operator[](unsigned int)» discards qualifiers
 			if(frst.word_Ids_[i]>scnd.word_Ids_[i]){
 				return false;
 			}
@@ -103,7 +100,6 @@ const WordID kSTAR(TD::Convert("<{STAR}>"));
 
 typedef set<NGram,compNGrams> NGramSet;
 
-//TODO check Ngram.h ??
 void ComputeNgramSets(const Hypergraph& hg, vector<NGramSet >& edgeToGeneratedNgrams, const int order){
 
 #ifdef DEBUG_MBR_1
@@ -117,7 +113,7 @@ void ComputeNgramSets(const Hypergraph& hg, vector<NGramSet >& edgeToGeneratedNg
 	//output vector, map id of edge -> set of ngrams generated there
 	edgeToGeneratedNgrams.resize(num_edges);
 
-	//map id of node -> !(set) of boundary ngrams //TODO check that is true that there is only one state per node
+	//map id of node -> !(set) of boundary ngrams
 	vector<NGram> nodeToBoundariesNgram;
 	nodeToBoundariesNgram.resize(num_nodes);
 
@@ -198,8 +194,6 @@ void ComputeNgramSets(const Hypergraph& hg, vector<NGramSet >& edgeToGeneratedNg
 #endif
 
 			//extract state for node and extract set of generated ngrams
-			//XXX see ff_lm.cc 266
-
 			int start=0;
 			for (int j=0; j< buffer.size();j++){
 				if (buffer[j]==kSTAR){
@@ -213,7 +207,7 @@ void ComputeNgramSets(const Hypergraph& hg, vector<NGramSet >& edgeToGeneratedNg
 						state.append(buffer[j]);
 					}
 
-					//add all the ngrams that end at j
+					//add all the valid ngrams that end at j
 					NGramSet& currentNgramSet = edgeToGeneratedNgrams[curr_edge.id_];
 
 #ifdef DEBUG_MBR_1			
@@ -251,28 +245,28 @@ void ComputeNgramSets(const Hypergraph& hg, vector<NGramSet >& edgeToGeneratedNg
 				}
 
 				//compute state once
-//#ifndef DEBUG_MBR_1 
+#ifndef DEBUG_MBR_1 
 
 				assert(nodeToBoundariesNgram[node_index].word_Ids_.size()==0); 
 				nodeToBoundariesNgram[node_index] =state;
 				compute_state=false;	
-//#endif
+#endif
 
-//				//compute states for all incoming endges and check if matching
-//#ifdef DEBUG_MBR_1 
-//
-//				cerr<< "\tState for NODE "<< node_index << " : " << state<< endl;
-//
-//				if(nodeToBoundariesNgram[node_index].word_Ids_.size()==0){
-//					nodeToBoundariesNgram[node_index] =state;
-//					cerr<< "INSERTED" << endl;
-//				}
-//				else{
-//					assert(nodeToBoundariesNgram[node_index]==state);
-//					cerr<< "MATCHING" << endl;
-//				}
-//				state=NGram();
-//#endif
+				//compute states for all incoming endges and check if matching
+#ifdef DEBUG_MBR_1 
+
+				cerr<< "\tState for NODE "<< node_index << " : " << state<< endl;
+
+				if(nodeToBoundariesNgram[node_index].word_Ids_.size()==0){
+					nodeToBoundariesNgram[node_index] =state;
+					cerr<< "INSERTED!" << endl;
+				}
+				else{
+					assert(nodeToBoundariesNgram[node_index]==state);
+					cerr<< "MATCHING!" << endl;
+				}
+				state=NGram();
+#endif
 
 
 
@@ -342,7 +336,6 @@ struct NGramScoresWeightType{
 		assert(node.in_edges_.size()==child_edges_weights.size());
 #endif
 
-		//*cur_node_inside_score =NGramScoresWeightType();
 		for (int i =0; i<node.in_edges_.size(); i++){
 			*cur_node_inside_score += child_edges_weights[i];
 		}
@@ -373,7 +366,6 @@ struct NGramScoresWeightType{
 		int tail_size = child_nodes_weights.size() ; 
 
 		///compute tot score
-		//this could be done with regular inside
 		edge_scores.tot_score_ = edge.edge_prob_;
 		for(int i=0; i<tail_size; i++){
 			edge_scores.tot_score_ *= child_nodes_weights[i].tot_score_;
@@ -387,6 +379,13 @@ struct NGramScoresWeightType{
 		if(tail_size==0) return;
 
 #ifdef DEBUG_MBR_2
+		const NGramSet& currentNgramSet = (*NGramScoresWeightType::edge_to_ngram_set_)[edge.id_];
+		cerr <<"Set of NGrams |" <<currentNgramSet.size() << "| : { " ;
+		for(NGramSet::iterator it = currentNgramSet.begin(); it != currentNgramSet.end(); it++){
+			cerr << *it << " " ;
+		}
+		cerr << "};\n" << endl;
+
 		cerr <<"-  base with gen ng :\n" << *cur_edge_inside_score << endl ;
 #endif
 		
@@ -450,10 +449,9 @@ struct NGramScoresWeightType{
 			prob_t paths_with_ng = edge_scores.tot_score_ - (*it).second; // <- 3)
 			assert(edge_scores.insert((*it).first, paths_with_ng)); 
 		}
-
 	}
 
-	NGramScoresWeightType& operator*=(const NGramScoresWeightType& o) {
+		NGramScoresWeightType& operator*=(const NGramScoresWeightType& o) {
 		for(MapNGramScore::const_iterator it= o.ngram_score_.begin();it != o.ngram_score_.end(); it++){
 			pair<MapNGramScore::iterator, bool> pointer = ngram_score_.insert(*it);
 			if (!pointer.second){
@@ -525,7 +523,6 @@ WeightType GeneralizedInside(const Hypergraph& hg,
 		WeightType* const cur_node_inside_score = &inside_score[i];
 		const int num_in_edges = curr_node.in_edges_.size();
 
-		//this case never happen, leafs are edges if hg is correctly structured
 		if (num_in_edges == 0) { 
 			(*cur_node_inside_score)=WeightType(1);
 			continue;
@@ -553,14 +550,8 @@ WeightType GeneralizedInside(const Hypergraph& hg,
 			for (int w=0 ; w<curr_edge.tail_nodes_.size();w++){ 
 				cerr <<curr_edge.tail_nodes_[w]<< " ";
 			}
-			cerr <<", weights : \n" <<  child_edges_weights[j] ;
-			//this line is not that generalized ... debug statements should be (re)moved
-			const NGramSet& currentNgramSet = (*NGramScoresWeightType::edge_to_ngram_set_)[curr_edge.id_];
-			cerr <<"Set of NGrams |" <<currentNgramSet.size() << "| : { " ;
-			for(NGramSet::iterator it = currentNgramSet.begin(); it != currentNgramSet.end(); it++){
-				cerr << *it << " " ;
-			}
-			cerr << "};\n" << endl;
+			cerr <<", weights : \n" <<  child_edges_weights[j] <<"\n------\n\n";
+		
 #endif
 		}
 
@@ -568,7 +559,7 @@ WeightType GeneralizedInside(const Hypergraph& hg,
 #ifdef DEBUG_MBR_2
 		cerr << "NODE : " << i << " , tails :";
 		for (int w=0 ; w<curr_node.in_edges_.size();w++) cerr <<curr_node.in_edges_[w]<< " ";
-		cerr << " , weights : \n" <<  *cur_node_inside_score << endl ;
+		cerr << " , weights : \n" <<  *cur_node_inside_score <<"\n------\n";
 #endif
 	}
 
@@ -584,10 +575,9 @@ void ComputeNGramPosteriors(const Hypergraph& hg, MapNGramScore& ngramToPosterio
 
 	NGramScoresWeightType root_scores = GeneralizedInside<NGramScoresWeightType>(hg);
 	
-	//TODO can I avoid to make a copy?
 	ngramToPosterior = MapNGramScore(root_scores.ngram_score_.begin() , root_scores.ngram_score_.end());
 
-	//TODO can I avoid to divide for norm constant?
+	//divide for tot score
 	for(MapNGramScore::iterator it =ngramToPosterior.begin() ; it !=ngramToPosterior.end(); it++){
 		(*it).second /=root_scores.tot_score_;
 	}
@@ -619,7 +609,7 @@ void RescoreHypergraph(Hypergraph& hg, MapNGramScore& ngramToPosterior, vector<N
 #ifdef DEBUG_MBR_3
 	cerr << "EDGE : "<< edge.id_ << " , old score :" << edge.edge_prob_ ;
 #endif
-			//edge.edge_prob_=prob_t(1);
+			edge.edge_prob_=prob_t(1);
 			NGramSet& curr_set = edgeToNGramSet[edge.id_];
 			for(NGramSet::const_iterator it = curr_set.begin(); it !=curr_set.end(); it++){
 				const NGram& key = *it; 

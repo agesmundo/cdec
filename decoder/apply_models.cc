@@ -10,9 +10,9 @@
 #include "hg.h"
 #include "ff.h"
 
-#define NORMAL_CP = 1;
-#define FAST_CP = 2;
-#define FAST_CP_2 = 3;
+#define NORMAL_CP 1
+#define FAST_CP 2
+#define FAST_CP_2 3
 
 using namespace std;
 using namespace std::tr1;
@@ -162,13 +162,13 @@ public:
                       const Hypergraph& i,
                       int pop_limit,
                       Hypergraph* o,
-		      int s = NORMAL_CP) :
+		      int s = NORMAL_CP ) :
       models(m),
       smeta(sm),
       in(i),
       out(*o),
       D(in.nodes_.size()),
-      pop_limit_(pop_limit) 
+      pop_limit_(pop_limit),
       strategy_(s)	{
     cerr << "  Applying feature functions (cube pruning, pop_limit = " << pop_limit_ << ')' << endl;
     node_states_.reserve(kRESERVE_NUM_NODES);
@@ -447,6 +447,20 @@ public:
 		}
 	}
 
+        bool HasAllAncestors(const Candidate* item, UniqueCandidateSet* cs){
+                for (int i = 0; i < item->j_.size(); ++i) {
+                        JVector j = item->j_;
+                        --j[i];
+                        if (j[i] >=0) {
+                                Candidate query_unique(*item->in_edge_, j);
+                                if (cs->count(&query_unique) == 0) {
+                                        return false;
+                                }
+                        }
+                }
+                return true;
+        }
+
   const ModelSet& models;
   const SentenceMetadata& smeta;
   const Hypergraph& in;
@@ -573,15 +587,17 @@ void ApplyModelSet(const Hypergraph& in,
     }
     if (config.algorithm ==1){
       CubePruningRescorer ma(models, smeta, in, pl, out);
+      ma.Apply();
     } else if (config.algorithm ==2){
       CubePruningRescorer ma(models, smeta, in, pl, out, FAST_CP);
+      ma.Apply();
     } else if (config.algorithm ==3){
       CubePruningRescorer ma(models, smeta, in, pl, out, FAST_CP_2);
+      ma.Apply();
     } else {
       cerr << "Don't understand intersection algorithm " << config.algorithm << endl;
       exit(1);
     }
-    ma.Apply();
   }
   out->is_linear_chain_ = in.is_linear_chain_;  // TODO remove when this is computed
                                                 // automatically

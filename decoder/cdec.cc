@@ -318,11 +318,11 @@ int main(int argc, char** argv) {
     palg = 0;
     cerr << "Using full intersection (no pruning).\n";
   }
-  if (LowercaseString(conf["intersection_strategy"].as<string>()) == "Fast_cube_pruning") {
+  if (LowercaseString(conf["intersection_strategy"].as<string>()) == "fast_cube_pruning") {
     palg = 2;
     cerr << "Using Fast Cube Pruning intersection (see Algorithm 2 described in: Gesmundo A., Henderson J,. Faster Cube Pruning, IWSLT 2010).\n";
   }
-  if (LowercaseString(conf["intersection_strategy"].as<string>()) == "Fast_cube_pruning_2") {
+  if (LowercaseString(conf["intersection_strategy"].as<string>()) == "fast_cube_pruning_2") {
     palg = 3;
     cerr << "Using Fast Cube Pruning 2 intersection (see Algorithm 3 described in: Gesmundo A., Henderson J,. Faster Cube Pruning, IWSLT 2010).\n";
   }

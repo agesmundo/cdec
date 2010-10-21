@@ -10,6 +10,8 @@
 #include "trule.h"
 #include "prob.h"
 
+using namespace std;
+
 // if you define this, edges_ will be sorted
 // (normally, just nodes_ are), but this can be quite
 // slow
@@ -206,6 +208,8 @@ class Hypergraph {
   static TRulePtr kEPSRule;
   static TRulePtr kUnaryRule;
 };
+
+ostream& operator<<(ostream& os, const Hypergraph::Edge& edge);
 
 // common WeightFunctions, map an edge -> WeightType
 // for generic Viterbi/Inside algorithms

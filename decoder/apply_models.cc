@@ -14,7 +14,6 @@
 #define NORMAL_CP 1
 #define FAST_CP   2
 #define FAST_CP_2 3
-#define GUIDED_P  4
 
 #define DUMMY 0
 
@@ -281,13 +280,14 @@ struct GCandidate {
 			}
 };
 
+
 ostream& operator<<(ostream& os, const GCandidate& cand) {
-	os << "CAND[";
-	if (!cand.IsIncorporatedIntoHypergraph()) { os << "PENDING "; }
-	else { os << "+LM_node=" << cand.node_index_; }
-	os << " edge=" << cand.in_edge_->id_;
-	os << " vit=" << log(cand.vit_prob_);
-	os << " est=" << log(cand.est_prob_);
+	os << "CAND=[";
+	if (!cand.IsIncorporatedIntoHypergraph()) { os << "PENDING "<< "; "; }
+	else { os << "+LM_node=" << cand.node_index_<< "; "; }
+	os << " in_edge_= " << *(cand.in_edge_)<< "; ";
+	os << " vit_prob_= " << log(cand.vit_prob_)<< "; ";
+	os << " est_prob_= " << log(cand.est_prob_)<< "; ";
 	return os << ']';
 }
 

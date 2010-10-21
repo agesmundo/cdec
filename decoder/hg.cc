@@ -586,3 +586,11 @@ Hypergraph* Hypergraph::CreateViterbiHypergraph(const vector<bool>* edges) const
   return out;
 }
 
+ostream& operator<<(
+		ostream& os, 
+		const Hypergraph::Edge& edge) {
+	os << " Edge[";
+	os << "id_= " << edge.id_ << "; ";
+	os << "rule_= " << *(edge.rule_.get()) << "; ";
+	return os << "]";
+}

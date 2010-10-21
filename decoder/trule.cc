@@ -240,3 +240,7 @@ string TRule::AsString(bool verbose) const {
   }
   return os.str();
 }
+
+ostream& operator<<(ostream& os, const TRule& rule){
+	return os << rule.AsString();
+}

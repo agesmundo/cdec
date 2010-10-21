@@ -9,6 +9,8 @@
 #include "sparse_vector.h"
 #include "wordid.h"
 
+using namespace std;
+
 class TRule;
 typedef boost::shared_ptr<TRule> TRulePtr;
 
@@ -141,5 +143,7 @@ class TRule {
   TRule(const WordID& src, const WordID& trg) : e_(1, trg), f_(1, src), lhs_(), arity_(), prev_i(), prev_j() {}
   bool SanityCheck() const;
 };
+
+ostream& operator<<(ostream& os, const TRule& rule);
 
 #endif

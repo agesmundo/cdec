@@ -799,6 +799,7 @@ public:
 			GCandidate* aCand = PopBest(cands);
 			
 			IncorporateIntoPlusLMForest(aCand);
+			
 			PushSucc(*aCand, cands, unique_cands);
 			HeadPropagation(*aCand, cands, unique_cands);
 			TailPropagation(*aCand, cands, unique_cands);
@@ -955,7 +956,7 @@ private:
 
 				//link new cand to fathers if are there
 				GCandidate* newCandWithHead;
-				if(!H[currentHeadEdge.head_node_].IsEmpty()){
+				if(currentHeadEdge.head_node_<H.size() && !H[currentHeadEdge.head_node_].IsEmpty()){
 					newCandWithHead=CreateCandidate(currentHeadEdge,H[currentHeadEdge.head_node_].GetTailIterator(),newTailIterators);
 					AddCandidate(newCandWithHead,cands,unique_cands);
 				}

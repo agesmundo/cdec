@@ -173,10 +173,10 @@ struct SharedArrayIterator{
 		length_=current_id_+1;
 	}
 
-	bool IsActive(){//points to something?
+/*	bool IsActive(){//points to something?
 		if (length_==0)return false;
 		return (sr_.get());
-	}
+	}*/
 
 	inline bool HasMore(){
 		return (current_id_+1 < length_);
@@ -249,7 +249,7 @@ struct GCandidate {
 
 				// cerr << "\nEstimating application of " << in_edge.rule_->AsString() << endl;
 				for (int i = 0; i < tail.size(); ++i) {
-					if (tail_iterators_[i]->IsActive()){
+					if (tail_iterators_[i]){//is not dummy
 						const GCandidate* ant=tail_iterators_[i]->GetCurrent();
 						tail[i] = ant->node_index_;
 						p *= ant->vit_prob_;
@@ -743,7 +743,7 @@ public:
 		GCandidateHeap cands; //contains cands
 		UniqueGCandidateSet unique_cands; //to check that cadidate is unique at insertion in cands TODO shouldn't be needed!!!we use trick of alg2
 		
-		InitCands(cands);
+		InitCands(cands, unique_cands);
 		
 		for (int pops=0;pops<100&&!cands.empty();pops++) {
 			
@@ -752,8 +752,11 @@ public:
 			IncorporateIntoPlusLMForest(aCand);
 			
 			PushSucc(*aCand, cands, unique_cands);
+			
 			HeadPropagation(*aCand, cands, unique_cands);
+			
 			TailPropagation(*aCand, cands, unique_cands);
+			
 			if(!aCand->head_iterator_){//???? should remove and check the compatibility?
 				D[aCand->in_edge_->head_node_].push_back(aCand);
 			}
@@ -791,21 +794,21 @@ private:
 	}
 	
 	//initialize candidate heap with leafs
-	void InitCands(GCandidateHeap& cands)
+	void InitCands(GCandidateHeap& cands, UniqueGCandidateSet& unique_cands)
 	{
+#ifdef DEBUG_GP
+				cerr << "InintCands(): " << "\n"; 
+#endif
 		for (int i = 0; i < in.edges_.size(); ++i) {//loop edges
 			const Hypergraph::Edge& currentEdge= in.edges_.at(i);
 			if(currentEdge.tail_nodes_.size()==0){//leafs
 				GCandidate* new_cand = new GCandidate(currentEdge, out, node_states_, smeta, models, IsGoal(currentEdge), DUMMY, DUMMY);
-				cands.push_back(new_cand);
-#ifdef DEBUG_GP
-				cerr << "InintCands() put GCand: " << *new_cand << "\n"; 
-#endif
+				AddCandidate(new_cand,cands,unique_cands);
 			}
 		}
 		
 #ifdef DEBUG_GP
-		cout << "cands.size(): "<< cands.size()<<"\n";
+		cerr << "cands.size(): "<< cands.size()<<"\n";
 #endif
 		
 	}
@@ -872,6 +875,9 @@ private:
 		cands.push_back(cand);
 		push_heap(cands.begin(), cands.end(), HeapCandCompare());
 		assert(unique_cands.insert(cand).second);  // insert into uniqueness set, sanity check
+#ifdef DEBUG_GP
+			cerr << "\tAddCandidate(): " << *cand << "\n"; 
+#endif
 	}
 
 	inline SharedArrayIterator** CopyTailPTArray(SharedArrayIterator** toCopy, int size){
@@ -881,6 +887,9 @@ private:
 	}
 
 	void PushSucc(const GCandidate& aCand, GCandidateHeap& cands, UniqueGCandidateSet& unique_cands) {
+#ifdef DEBUG_GP
+			cerr << "PushSucc(): \n"; 
+#endif
 		int tailSize =aCand.TailSize();
 		SharedArrayIterator** newTailIterators;
 		for (int i = 0; i < tailSize; ++i) {//tail nodes
@@ -902,7 +911,10 @@ private:
 	}
 
 	void TailPropagation(GCandidate& aCand, GCandidateHeap& cands, UniqueGCandidateSet& unique_cands){
-		for(int i=0;i<aCand.TailSize();i++){
+#ifdef DEBUG_GP
+			cerr << "TailPropagation(): \n"; 
+#endif		
+			for(int i=0;i<aCand.TailSize();i++){
 			if(!aCand.tail_iterators_[i]){
 				int currentTailNodeID = aCand.in_edge_->tail_nodes_[i];
 				const Hypergraph::Node& currentTailNode = in.nodes_[currentTailNodeID];
@@ -927,6 +939,9 @@ private:
 	}
 
 	void HeadPropagation(GCandidate& aCand, GCandidateHeap& cands, UniqueGCandidateSet& unique_cands){
+#ifdef DEBUG_GP
+			cerr << "HeadPropagation(): \n"; 
+#endif
 		if(!aCand.head_iterator_){
 			const Hypergraph::Node& headNode=in.nodes_[aCand.in_edge_->head_node_];
 
@@ -951,12 +966,19 @@ private:
 				}
 
 				//put dummy head cand
+#ifdef DEBUG_GP
+			cerr << "\tput dummy head cand:"; 
+#endif
 				GCandidate* newCandWithDummyHead=CreateCandidate(currentHeadEdge,NULL,newTailIterators);
 				AddCandidate(newCandWithDummyHead,cands,unique_cands);
+
 
 				//link new cand to fathers if are there
 				GCandidate* newCandWithHead;
 				if(currentHeadEdge.head_node_<H.size() && !H[currentHeadEdge.head_node_].IsEmpty()){
+#ifdef DEBUG_GP
+			cerr << "\tput cand with head:"; 
+#endif
 					newCandWithHead=CreateCandidate(currentHeadEdge,H[currentHeadEdge.head_node_].GetTailIterator(),newTailIterators);
 					AddCandidate(newCandWithHead,cands,unique_cands);
 				}
@@ -967,6 +989,9 @@ private:
 				//add cands with dummy tails
 				for(int j=0;j<tailSize;j++){
 					if(newCandWithHead->tail_iterators_[j]){
+#ifdef DEBUG_GP
+			cerr << "\tput cand with dummy tail "<< j<<" :"; 
+#endif
 						newTailIterators=CopyTailPTArray(newCandWithHead->tail_iterators_,tailSize);
 						newTailIterators[j]=NULL;
 						GCandidate* newCandWithHeadAndADummyTail=CreateCandidate(currentHeadEdge,newCandWithHead->head_iterator_,newTailIterators);

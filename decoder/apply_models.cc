@@ -760,12 +760,29 @@ public:
 				GCandidate* new_cand = new GCandidate(currentEdge, out, node_states_, smeta, models, IsGoal(currentEdge), DUMMY, DUMMY);
 				cands.push_back(new_cand);
 #ifdef DEBUG_GP
-				cerr << "INIT CANDS: " << *new_cand << "\n"; 
+				cerr << "InintCands() put GCand: " << *new_cand << "\n"; 
 #endif
 			}
 		}
+		
+#ifdef DEBUG_GP
+		cout << "cands.size(): "<< cands.size()<<"\n";
+#endif
+		
 	}
 
+	//order cands and pop best
+	inline GCandidate* PopBest(GCandidateHeap& cands){
+		make_heap(cands.begin(), cands.end(), HeapCandCompare());
+		pop_heap(cands.begin(), cands.end(), HeapCandCompare());
+		GCandidate* aCand = cands.back(); //accepted cand
+		cands.pop_back();
+#ifdef DEBUG_GP
+			cerr << "PopBest(): " << *aCand << "\n"; 
+#endif
+			return aCand;
+	}
+	
 	void Apply() {
 		int num_nodes = in.nodes_.size();
 		int goal_id = num_nodes - 1;
@@ -774,13 +791,13 @@ public:
 		cerr << "    ";
 		GCandidateHeap cands; //contains cands
 		UniqueGCandidateSet unique_cands; //to check that cadidate is unique at insertion in cands TODO shouldn't be needed!!!we use trick of alg2
+		
 		InitCands(cands);
-		cout << "cands size: "<< cands.size()<<"\n";
+		
 		for (int pops=0;pops<100&&!cands.empty();pops++) {
-			make_heap(cands.begin(), cands.end(), HeapCandCompare());
-			pop_heap(cands.begin(), cands.end(), HeapCandCompare());
-			GCandidate* aCand = cands.back(); //accepted cand
-			cands.pop_back();
+			
+			GCandidate* aCand = PopBest(cands);
+			
 			IncorporateIntoPlusLMForest(aCand);
 			PushSucc(*aCand, cands, unique_cands);
 			HeadPropagation(*aCand, cands, unique_cands);

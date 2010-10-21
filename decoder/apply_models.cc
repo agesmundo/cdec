@@ -734,55 +734,6 @@ public:
 		node_states_.reserve(kRESERVE_NUM_NODES);
 	}
 
-	bool IsGoal (const Hypergraph::Edge& edge){
-		return (edge.head_node_==goal_id_);
-	}
-
-	inline bool IsGoal (const GCandidate& cand){
-		return IsGoal(*cand.in_edge_);
-	}
-
-	size_t TailSize(const Hypergraph::Edge& edge){
-		return edge.tail_nodes_.size();
-	}
-
-	size_t TailSize(const GCandidate& cand){
-		return cand.in_edge_->tail_nodes_.size();
-	}
-
-
-	//initialize candidate heap with leafs
-	void InitCands(GCandidateHeap& cands)
-	{
-		for (int i = 0; i < in.edges_.size(); ++i) {//loop edges
-			const Hypergraph::Edge& currentEdge= in.edges_.at(i);
-			if(currentEdge.tail_nodes_.size()==0){//leafs
-				GCandidate* new_cand = new GCandidate(currentEdge, out, node_states_, smeta, models, IsGoal(currentEdge), DUMMY, DUMMY);
-				cands.push_back(new_cand);
-#ifdef DEBUG_GP
-				cerr << "InintCands() put GCand: " << *new_cand << "\n"; 
-#endif
-			}
-		}
-		
-#ifdef DEBUG_GP
-		cout << "cands.size(): "<< cands.size()<<"\n";
-#endif
-		
-	}
-
-	//order cands and pop best
-	inline GCandidate* PopBest(GCandidateHeap& cands){
-		make_heap(cands.begin(), cands.end(), HeapCandCompare());
-		pop_heap(cands.begin(), cands.end(), HeapCandCompare());
-		GCandidate* aCand = cands.back(); //accepted cand
-		cands.pop_back();
-#ifdef DEBUG_GP
-			cerr << "PopBest(): " << *aCand << "\n"; 
-#endif
-			return aCand;
-	}
-	
 	void Apply() {
 		int num_nodes = in.nodes_.size();
 		int goal_id = num_nodes - 1;
@@ -822,6 +773,55 @@ public:
 	}
 
 private:
+
+	bool IsGoal (const Hypergraph::Edge& edge){
+		return (edge.head_node_==goal_id_);
+	}
+
+	inline bool IsGoal (const GCandidate& cand){
+		return IsGoal(*cand.in_edge_);
+	}
+
+	size_t TailSize(const Hypergraph::Edge& edge){
+		return edge.tail_nodes_.size();
+	}
+
+	size_t TailSize(const GCandidate& cand){
+		return cand.in_edge_->tail_nodes_.size();
+	}
+	
+	//initialize candidate heap with leafs
+	void InitCands(GCandidateHeap& cands)
+	{
+		for (int i = 0; i < in.edges_.size(); ++i) {//loop edges
+			const Hypergraph::Edge& currentEdge= in.edges_.at(i);
+			if(currentEdge.tail_nodes_.size()==0){//leafs
+				GCandidate* new_cand = new GCandidate(currentEdge, out, node_states_, smeta, models, IsGoal(currentEdge), DUMMY, DUMMY);
+				cands.push_back(new_cand);
+#ifdef DEBUG_GP
+				cerr << "InintCands() put GCand: " << *new_cand << "\n"; 
+#endif
+			}
+		}
+		
+#ifdef DEBUG_GP
+		cout << "cands.size(): "<< cands.size()<<"\n";
+#endif
+		
+	}
+
+	//order cands and pop best
+	inline GCandidate* PopBest(GCandidateHeap& cands){
+		make_heap(cands.begin(), cands.end(), HeapCandCompare());
+		pop_heap(cands.begin(), cands.end(), HeapCandCompare());
+		GCandidate* aCand = cands.back(); //accepted cand
+		cands.pop_back();
+#ifdef DEBUG_GP
+			cerr << "PopBest(): " << *aCand << "\n"; 
+#endif
+			return aCand;
+	}
+	
 	void FreeAll() {
 		for (int i = 0; i < D.size(); ++i) {
 			GCandidateSmartList& D_i = D[i];

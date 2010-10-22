@@ -193,6 +193,7 @@ struct SharedArrayIterator{
 	}
 };
 
+
 struct GCandidate {
 	int node_index_;                     // -1 until incorporated
 	// into the +LM forest
@@ -280,6 +281,20 @@ struct GCandidate {
 			}
 };
 
+ostream& operator<<(ostream& os, const SharedArrayIterator& sai) {
+	os << "SharedArrayIterator=[";
+	for (int i=0; i<sai.length_ ; i++){
+		if(i==sai.current_id_){
+			os<< "(( ";
+		}
+		os << sai.sr_[i]->in_edge_->id_;
+		if(i==sai.current_id_){
+			os<< " ))";
+		}
+		os << "; ";
+	}
+	return os << ']';
+}
 
 ostream& operator<<(ostream& os, const GCandidate& cand) {
 	os << "CAND=[";
@@ -288,8 +303,29 @@ ostream& operator<<(ostream& os, const GCandidate& cand) {
 	os << " in_edge_= " << *(cand.in_edge_)<< "; ";
 	os << " vit_prob_= " << log(cand.vit_prob_)<< "; ";
 	os << " est_prob_= " << log(cand.est_prob_)<< "; ";
-	return os << ']';
+	
+	os << "\n\t\thead_iterator_=";
+	if(cand.head_iterator_){
+		os<< *cand.head_iterator_<< ";";
+	}
+	else{
+		os<< " DUMMY;";
+	}
+	
+	for(int i =0; i<cand.TailSize();i++){
+		os << "\n\t\ttail_iterator_["<<i<<"]=";
+		if(cand.tail_iterators_[i]){
+			os<< *cand.tail_iterators_[i]<< ";";
+		}
+		else{
+			os<< " DUMMY;";
+		}
+	}
+
+	return os << "]";
 }
+
+
 
 struct HeapCandCompare {
 	bool operator()(const Candidate* l, const Candidate* r) const {

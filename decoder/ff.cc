@@ -109,7 +109,9 @@ void ModelSet::AddFeaturesToEdge(const SentenceMetadata& smeta,
       int spos = model_state_pos_[i];
       cur_ff_context = &(*context)[spos];
       for (int i = 0; i < ants.size(); ++i) {
-        ants[i] = &node_states[edge->tail_nodes_[i]][spos];
+      	if(edge->tail_nodes_[i]>=0){ //GP this test is needed for guided pruning, irrelevant otherwise
+      		ants[i] = &node_states[edge->tail_nodes_[i]][spos];
+      	}
       }
     }
     ff.TraversalFeatures(smeta, *edge, ants, &edge->feature_values_, &est_vals, cur_ff_context);

@@ -19,6 +19,10 @@
 #include "RandLM.h"
 #endif
 
+// Define the following macro if you want to see debugging output
+//#define DEBUG_FF_LM
+//#undef DEBUG_FF_LM
+
 using namespace std;
 
 namespace NgramCache {
@@ -163,10 +167,14 @@ public:
 	}
 
 	inline double LookupProbForBufferContents(int i) {
-		//    int k = i; cerr << "P("; while(buffer_[k] > 0) { std::cerr << TD::Convert(buffer_[k++]) << " "; }
+#ifdef DEBUG_FF_LM
+		int k = i; cerr << "P("; while(buffer_[k] > 0) { std::cerr << TD::Convert(buffer_[k++]) << " "; }
+#endif
 		double p = WordProb(buffer_[i], &buffer_[i+1]);
 		if (p < floor_) p = floor_;
-		//    cerr << ")=" << p << endl;
+#ifdef DEBUG_FF_LM
+		cerr << ")=" << p << endl;
+#endif
 		return p;
 	}
 
@@ -269,8 +277,10 @@ public:
 			}
 		}
 
-		//GP_DEBUG 
-		int k = i; cerr << "P("; while(buffer_[k] > 0) { std::cerr << TD::Convert(buffer_[k++]) << " "; }
+		//GP_DEBUG
+#ifdef DEBUG_FF_LM
+		{int k = 0; cerr << "buffer("; while(buffer_[k] > 0) { std::cerr << TD::Convert(buffer_[k++]) << " "; } cerr <<")\n";}
+#endif
 		
 		double sum = 0.0;
 		int* remnant = reinterpret_cast<int*>(vstate);
@@ -290,13 +300,18 @@ public:
 		}
 		if (!remnant) return sum;
 
-		if (edge != len || len >= order_) {
+		if (edge != len || len >= order_) {//TODO should be modif, can it be compatible with old?
 			remnant[j++] = kSTAR;
 			if (order_-1 < edge) edge = order_-1;
 			for (int i = edge-1; i >= 0; --i)
 				remnant[j++] = buffer_[i];
 		}
-
+		
+		//GP_DEBUG
+#ifdef DEBUG_FF_LM
+		{int k = 0; cerr << "remnant("; while(k<j) { std::cerr << TD::Convert(remnant[k++]) << " "; } cerr <<")\n";}
+#endif
+		
 		SetStateSize(j, vstate);
 		return sum;
 	}
@@ -514,3 +529,4 @@ void LanguageModelRandLM::FinalTraversalFeatures(const void* ant_state,
 
 #endif
 
+#undef DEBUG_FF_LM

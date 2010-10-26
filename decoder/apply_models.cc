@@ -131,7 +131,7 @@ typedef vector<GCandidate*> GCandidateHeap;
 typedef vector<GCandidate*> GCandidateList;
 
 struct SharedArrayIterator{
-	boost::shared_array<GCandidate*> sr_;
+	boost::shared_array<GCandidate*> sr_; //TODO ?? do we need to use this?
 	int length_;
 	int current_id_;
 
@@ -163,17 +163,17 @@ struct SharedArrayIterator{
 		current_id_=0;
 	}
 
-	SharedArrayIterator(){
+	/*	SharedArrayIterator(){
 		length_=0;
 		current_id_=0;
-	}
+	}*/
 
 	//avoid future expansion from this iterator
 	void Freeze(){
 		length_=current_id_+1;
 	}
 
-/*	bool IsActive(){//points to something?
+	/*	bool IsActive(){//points to something?
 		if (length_==0)return false;
 		return (sr_.get());
 	}*/
@@ -210,7 +210,7 @@ struct GCandidate {
 
 	GCandidate(const Hypergraph::Edge& e,
 			const Hypergraph& out_hg,
-			const vector<string>& node_states,
+			//const vector<string>& node_states,
 			const SentenceMetadata& smeta,
 			const ModelSet& models,
 			const bool is_goal,
@@ -221,11 +221,25 @@ struct GCandidate {
 				head_iterator_(headIterator),
 				tail_iterators_(tailIterators)
 				{
-				InitializeGCandidate(out_hg, smeta, node_states, models, is_goal);
+				InitializeGCandidate(out_hg, smeta, /*node_states,*/ models, is_goal);
 				}
 
 			// used to query uniqueness
 			//GCandidate(const Hypergraph::Edge& e): in_edge_(&e) {} //TODO init iterators
+
+			GCandidate* GetCurrentTailIterator(int i) const{
+				if(tail_iterators_[i]==DUMMY){
+					return NULL;
+				}
+				return tail_iterators_[i]->GetCurrent();
+			}
+
+			GCandidate* GetCurrentHeadIterator() const {
+				if(head_iterator_==DUMMY){
+					return NULL;
+				}
+				return head_iterator_->GetCurrent();
+			}
 
 			bool IsIncorporatedIntoHypergraph() const {
 				return node_index_ >= 0;
@@ -233,7 +247,7 @@ struct GCandidate {
 
 			void InitializeGCandidate(const Hypergraph& out_hg,
 					const SentenceMetadata& smeta,
-					const vector<string>& node_states,
+					//const vector<string>& node_states,
 					const ModelSet& models,
 					const bool is_goal) {
 				const Hypergraph::Edge& in_edge = *in_edge_;
@@ -262,15 +276,22 @@ struct GCandidate {
 				}
 
 				//TODO!!
-				//if father link is there add its score ot edge_estimate
+				//if father link is there add its score to edge_estimate
 				//else edge_estimate *= <the default prob for the missing head link>
 
 				if (is_goal) {
 					assert(tail.size() == 1);
-					const string& ant_state = node_states[tail.front()];
+					assert(tail_iterators_[0]);
+					const string& ant_state = tail_iterators_[0]->GetCurrent()->state_;
 					models.AddFinalFeatures(ant_state, &out_edge_);
 				} else {
-					models.AddFeaturesToEdge(smeta, out_hg, node_states, &out_edge_, &state_, &edge_estimate);
+					vector<string*> ant_states(tail.size()); //TODO try with string pointed test on same output
+					for (int i = 0; i < tail.size(); ++i) {
+						if (tail_iterators_[i]){
+							ant_states[i]=&tail_iterators_[i]->GetCurrent()->state_;
+						}
+					}
+					models.AddFeaturesToEdgeGP(smeta, out_hg, ant_states, &out_edge_, &state_, &edge_estimate);
 				}
 				vit_prob_ = out_edge_.edge_prob_ * p;
 				est_prob_ = vit_prob_ * edge_estimate;
@@ -278,6 +299,14 @@ struct GCandidate {
 
 			int TailSize() const{
 				return in_edge_->tail_nodes_.size();
+			}
+			
+			bool HasMoreForTail(int i) const{
+				return tail_iterators_[i] && tail_iterators_[i]->HasMore();
+			}
+			
+			bool HasMoreHead() const{
+				return head_iterator_ && head_iterator_->HasMore();
 			}
 };
 
@@ -303,7 +332,7 @@ ostream& operator<<(ostream& os, const GCandidate& cand) {
 	os << " in_edge_= " << *(cand.in_edge_)<< "; ";
 	os << " vit_prob_= " << log(cand.vit_prob_)<< "; ";
 	os << " est_prob_= " << log(cand.est_prob_)<< "; ";
-	
+
 	os << "\n\t\thead_iterator_=";
 	if(cand.head_iterator_){
 		os<< *cand.head_iterator_<< ";";
@@ -311,7 +340,7 @@ ostream& operator<<(ostream& os, const GCandidate& cand) {
 	else{
 		os<< " DUMMY;";
 	}
-	
+
 	for(int i =0; i<cand.TailSize();i++){
 		os << "\n\t\ttail_iterator_["<<i<<"]=";
 		if(cand.tail_iterators_[i]){
@@ -358,7 +387,7 @@ struct CandidateUniquenessHash {
 			x = ((x << 5) + x) ^ c->j_[i];
 		return x;
 	}
-	
+
 	size_t operator()(const GCandidate* c) const {
 		size_t x = 5381;
 		x = ((x << 5) + x) ^ c->in_edge_->id_;
@@ -373,16 +402,13 @@ struct CandidateUniquenessEquals {
 	bool operator()(const Candidate* a, const Candidate* b) const {
 		return (a->in_edge_ == b->in_edge_) && (a->j_ == b->j_);
 	}
-	
+
 	bool operator()(const GCandidate* a, const GCandidate* b) const {
 		if (a->in_edge_ != b->in_edge_) return false;
-		//	  if (a->head_cand_ == NULL && b->head_cand_ !=NULL)return false;
-		//	  if (a->head_cand_ != NULL && b->head_cand_ ==NULL)return false;
-		//	  if (a->head_cand_ != NULL && b->head_cand_ !=NULL && a->head_cand_->in_edge_!=b->head_cand_->in_edge_)return false;
-		if (a->head_iterator_->GetCurrent() != b->head_iterator_->GetCurrent())return false;
+		if (a->GetCurrentHeadIterator() != b->GetCurrentHeadIterator())return false;
 		if (a->TailSize()!=b->TailSize()) return false;
 		for (int i =0; i<a->TailSize();i++){
-			if (a->tail_iterators_[i]->GetCurrent() !=  b->tail_iterators_[i]->GetCurrent() )return false;
+			if (a->GetCurrentTailIterator(i)!=  b->GetCurrentTailIterator(i) )return false;
 		}
 		return true;
 	}
@@ -707,11 +733,11 @@ private:
 
 	vector<CandidateList> D;   // maps nodes in in-HG to the
 	// equivalent nodes (many due to state
-			// splits) in the out-HG.
-			vector<string> node_states_;  // for each node in the out-HG what is
-			// its q function value?
-					const int pop_limit_;
-			const int strategy_;       //switch Cube Pruning strategy: 1 normal, 2 fast (alg 2), 3 fast_2 (alg 3). (see: Gesmundo A., Henderson J,. Faster Cube Pruning, IWSLT 2010)
+	// splits) in the out-HG.
+	vector<string> node_states_;  // for each node in the out-HG what is
+	// its q function value?
+	const int pop_limit_;
+	const int strategy_;       //switch Cube Pruning strategy: 1 normal, 2 fast (alg 2), 3 fast_2 (alg 3). (see: Gesmundo A., Henderson J,. Faster Cube Pruning, IWSLT 2010)
 };
 
 struct GCandidateSmartList{
@@ -727,7 +753,7 @@ public:
 		list_.push_back(item);
 	}
 
-	SharedArrayIterator* GetTailIterator(){
+	SharedArrayIterator* GetTailIterator(){//XX rename GetIterator
 		if(isSAIReady_){
 			return sai_;
 		}
@@ -767,7 +793,7 @@ public:
 				D(in.nodes_.size()),
 				pop_limit_(pop_limit) {
 		cerr << "  Applying feature functions (guided pruning, pop_limit = " << pop_limit_ << ')' << endl;
-		node_states_.reserve(kRESERVE_NUM_NODES);
+		//node_states_.reserve(kRESERVE_NUM_NODES);
 	}
 
 	void Apply() {
@@ -778,21 +804,25 @@ public:
 		cerr << "    ";
 		GCandidateHeap cands; //contains cands
 		UniqueGCandidateSet unique_cands; //to check that cadidate is unique at insertion in cands TODO shouldn't be needed!!!we use trick of alg2
-		
+
 		InitCands(cands, unique_cands);
-		
+
 		for (int pops=0;pops<100&&!cands.empty();pops++) {
-			
+
 			GCandidate* aCand = PopBest(cands);
-			
+
+			//TODO! incorporate only cands with all tails
+			//what if they have a head??
+			//ip: do not incorporate when have head,
+			//when no head all tails popped recursively incorporate children (root)
 			IncorporateIntoPlusLMForest(aCand);
-			
+
 			PushSucc(*aCand, cands, unique_cands);
-			
+
 			HeadPropagation(*aCand, cands, unique_cands);
-			
+
 			TailPropagation(*aCand, cands, unique_cands);
-			
+
 			if(!aCand->head_iterator_){//???? should remove and check the compatibility?
 				D[aCand->in_edge_->head_node_].push_back(aCand);
 			}
@@ -828,25 +858,25 @@ private:
 	size_t TailSize(const GCandidate& cand){
 		return cand.in_edge_->tail_nodes_.size();
 	}
-	
+
 	//initialize candidate heap with leafs
 	void InitCands(GCandidateHeap& cands, UniqueGCandidateSet& unique_cands)
 	{
 #ifdef DEBUG_GP
-				cerr << "InintCands(): " << "\n"; 
+		cerr << "InintCands(): " << "\n"; 
 #endif
 		for (int i = 0; i < in.edges_.size(); ++i) {//loop edges
 			const Hypergraph::Edge& currentEdge= in.edges_.at(i);
 			if(currentEdge.tail_nodes_.size()==0){//leafs
-				GCandidate* new_cand = new GCandidate(currentEdge, out, node_states_, smeta, models, IsGoal(currentEdge), DUMMY, DUMMY);
+				GCandidate* new_cand = CreateCandidate(currentEdge, DUMMY, DUMMY);
 				AddCandidate(new_cand,cands,unique_cands);
 			}
 		}
-		
+
 #ifdef DEBUG_GP
 		cerr << "cands.size(): "<< cands.size()<<"\n";
 #endif
-		
+
 	}
 
 	//order cands and pop best
@@ -856,11 +886,11 @@ private:
 		GCandidate* aCand = cands.back(); //accepted cand
 		cands.pop_back();
 #ifdef DEBUG_GP
-			cerr << "PopBest(): " << *aCand << "\n"; 
+		cerr << "PopBest(): " << *aCand << "\n"; 
 #endif
-			return aCand;
+		return aCand;
 	}
-	
+
 	void FreeAll() {
 		for (int i = 0; i < D.size(); ++i) {
 			GCandidateSmartList& D_i = D[i];
@@ -885,7 +915,7 @@ private:
 		assert (node_id < 0);//while not using s2n
 		if (node_id < 0) {
 			Hypergraph::Node* new_node = out.AddNode(in.nodes_[item->in_edge_->head_node_].cat_);
-			node_states_.push_back(item->state_);
+			//node_states_.push_back(item->state_);
 			node_id = new_node->id_;
 		}
 		Hypergraph::Node* node = &out.nodes_[node_id];
@@ -904,7 +934,7 @@ private:
 	}
 
 	inline GCandidate* CreateCandidate(const Hypergraph::Edge& edge,SharedArrayIterator* headIterator,SharedArrayIterator** tailIterators){
-		return new GCandidate(edge,out,node_states_, smeta, models,IsGoal(edge),headIterator,tailIterators);
+		return new GCandidate(edge,out,/*node_states_,*/ smeta, models,IsGoal(edge),headIterator,tailIterators);
 	}
 
 	inline void AddCandidate( GCandidate* cand,GCandidateHeap& cands, UniqueGCandidateSet& unique_cands){
@@ -912,7 +942,7 @@ private:
 		push_heap(cands.begin(), cands.end(), HeapCandCompare());
 		assert(unique_cands.insert(cand).second);  // insert into uniqueness set, sanity check
 #ifdef DEBUG_GP
-			cerr << "\tAddCandidate(): " << *cand << "\n"; 
+		cerr << "\tAddCandidate(): " << *cand << "\n"; 
 #endif
 	}
 
@@ -924,12 +954,12 @@ private:
 
 	void PushSucc(const GCandidate& aCand, GCandidateHeap& cands, UniqueGCandidateSet& unique_cands) {
 #ifdef DEBUG_GP
-			cerr << "PushSucc(): \n"; 
+		cerr << "PushSucc(): \n"; 
 #endif
 		int tailSize =aCand.TailSize();
 		SharedArrayIterator** newTailIterators;
 		for (int i = 0; i < tailSize; ++i) {//tail nodes
-			if(aCand.tail_iterators_[i] && aCand.tail_iterators_[i]->HasMore()){//TODO TEST
+			if(aCand.HasMoreForTail(i)){
 				newTailIterators = CopyTailPTArray(aCand.tail_iterators_,tailSize);
 				newTailIterators[i]=new SharedArrayIterator(*aCand.tail_iterators_[i]);//copy (NB inside there is SP)
 				assert(newTailIterators[i]->Advance());//and advance
@@ -938,7 +968,7 @@ private:
 				AddCandidate(new_cand,cands,unique_cands);
 			}
 		}
-		if(aCand.head_iterator_ && aCand.head_iterator_->HasMore()){//head  //TODO TEST
+		if(aCand.HasMoreHead()){//head 
 			SharedArrayIterator* newHeadIterator=new SharedArrayIterator(*aCand.head_iterator_);
 			assert(newHeadIterator->Advance());
 			GCandidate* new_cand = CreateCandidate(*aCand.in_edge_,newHeadIterator,aCand.tail_iterators_);
@@ -948,9 +978,9 @@ private:
 
 	void TailPropagation(GCandidate& aCand, GCandidateHeap& cands, UniqueGCandidateSet& unique_cands){
 #ifdef DEBUG_GP
-			cerr << "TailPropagation(): \n"; 
+		cerr << "TailPropagation(): \n"; 
 #endif		
-			for(int i=0;i<aCand.TailSize();i++){
+		for(int i=0;i<aCand.TailSize();i++){
 			if(!aCand.tail_iterators_[i]){
 				int currentTailNodeID = aCand.in_edge_->tail_nodes_[i];
 				const Hypergraph::Node& currentTailNode = in.nodes_[currentTailNodeID];
@@ -976,7 +1006,7 @@ private:
 
 	void HeadPropagation(GCandidate& aCand, GCandidateHeap& cands, UniqueGCandidateSet& unique_cands){
 #ifdef DEBUG_GP
-			cerr << "HeadPropagation(): \n"; 
+		cerr << "HeadPropagation(): \n"; 
 #endif
 		if(!aCand.head_iterator_){
 			const Hypergraph::Node& headNode=in.nodes_[aCand.in_edge_->head_node_];
@@ -1003,7 +1033,7 @@ private:
 
 				//put dummy head cand
 #ifdef DEBUG_GP
-			cerr << "\tput dummy head cand:"; 
+				cerr << "\tput dummy head cand:\n"; 
 #endif
 				GCandidate* newCandWithDummyHead=CreateCandidate(currentHeadEdge,NULL,newTailIterators);
 				AddCandidate(newCandWithDummyHead,cands,unique_cands);
@@ -1013,7 +1043,7 @@ private:
 				GCandidate* newCandWithHead;
 				if(currentHeadEdge.head_node_<H.size() && !H[currentHeadEdge.head_node_].IsEmpty()){
 #ifdef DEBUG_GP
-			cerr << "\tput cand with head:"; 
+					cerr << "\tput cand with head:"; 
 #endif
 					newCandWithHead=CreateCandidate(currentHeadEdge,H[currentHeadEdge.head_node_].GetTailIterator(),newTailIterators);
 					AddCandidate(newCandWithHead,cands,unique_cands);
@@ -1023,10 +1053,12 @@ private:
 				}
 
 				//add cands with dummy tails
+				//* NB tail that ref to propagating node cannot be dummy!
 				for(int j=0;j<tailSize;j++){
-					if(newCandWithHead->tail_iterators_[j]){
+					if(newCandWithHead->tail_iterators_[j] &&
+							currentHeadEdge.tail_nodes_[j]!= aCand.in_edge_->head_node_){//*
 #ifdef DEBUG_GP
-			cerr << "\tput cand with dummy tail "<< j<<" :"; 
+						cerr << "\tput cand with dummy tail "<< j<<" :\n"; 
 #endif
 						newTailIterators=CopyTailPTArray(newCandWithHead->tail_iterators_,tailSize);
 						newTailIterators[j]=NULL;
@@ -1070,7 +1102,10 @@ private:
 	// maps nodes in in-HG to the
 	// equivalent nodes (many due to state
 	// splits) in the out-HG.
-	vector<string> node_states_;  // for each node in the out-HG what is
+
+	//In GP we don't incorporate all cands, we need state of not-inc. cand. use state stored in cand
+	//vector<string> node_states_;  // for each node in the out-HG what is
+
 	// its q function value?
 	const int pop_limit_;
 };
@@ -1206,3 +1241,4 @@ void ApplyModelSet(const Hypergraph& in,
 	// automatically
 }
 
+#undef DEBUG_GP

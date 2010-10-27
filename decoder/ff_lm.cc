@@ -20,7 +20,7 @@
 #endif
 
 // Define the following macro if you want to see debugging output
-//#define DEBUG_FF_LM
+#define DEBUG_FF_LM
 //#undef DEBUG_FF_LM
 
 using namespace std;
@@ -288,7 +288,7 @@ public:
 		i = len - 1;
 		int edge = len;
 
-		while (i >= 0) {
+		while (i >= 0) {//TODO should be modif? can it be compatible with old?
 			if (buffer_[i] == kSTAR) {
 				edge = i;
 			} else if (edge-i >= order_) {
@@ -300,7 +300,7 @@ public:
 		}
 		if (!remnant) return sum;
 
-		if (edge != len || len >= order_) {//TODO should be modif, can it be compatible with old?
+		if (edge != len || len >= order_) {//TODO should be modif? can it be compatible with old?
 			remnant[j++] = kSTAR;
 			if (order_-1 < edge) edge = order_-1;
 			for (int i = edge-1; i >= 0; --i)

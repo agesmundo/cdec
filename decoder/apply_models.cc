@@ -19,7 +19,7 @@
 
 // Define the following macro if you want to see lots of debugging output
 // when you run the GuidedPruning
-//#define DEBUG_GP
+#define DEBUG_GP
 //#undef DEBUG_GP
 
 using namespace std;
@@ -285,7 +285,7 @@ struct GCandidate {
 					const string& ant_state = tail_iterators_[0]->GetCurrent()->state_;
 					models.AddFinalFeatures(ant_state, &out_edge_);
 				} else {
-					vector<string*> ant_states(tail.size()); //TODO try with string pointed test on same output
+					vector<string*> ant_states(tail.size());
 					for (int i = 0; i < tail.size(); ++i) {
 						if (tail_iterators_[i]){
 							ant_states[i]=&tail_iterators_[i]->GetCurrent()->state_;
@@ -803,14 +803,15 @@ public:
 		assert(in.nodes_[pregoal].out_edges_.size() == 1);
 		cerr << "    ";
 		GCandidateHeap cands; //contains cands
+		GCandidateList free; //popped cands, to free mem
 		UniqueGCandidateSet unique_cands; //to check that cadidate is unique at insertion in cands TODO shouldn't be needed!!!we use trick of alg2
 
 		InitCands(cands, unique_cands);
 
 		for (int pops=0;pops<100&&!cands.empty();pops++) {
 
-			GCandidate* aCand = PopBest(cands);
-
+			GCandidate* aCand = PopBest(cands, free);
+			
 			//TODO! incorporate only cands with all tails
 			//what if they have a head??
 			//ip: do not incorporate when have head,
@@ -837,7 +838,10 @@ public:
 		for (int i = 0; i < cands.size(); ++i){
 			delete cands[i];
 		}
-		//clean tree remove edges with dummy tails
+		for (int i = 0; i < free.size(); ++i){
+			delete free[i];
+		}
+		//TODO clean tree remove edges with dummy tails
 		//see method in KBest
 	}
 
@@ -880,11 +884,12 @@ private:
 	}
 
 	//order cands and pop best
-	inline GCandidate* PopBest(GCandidateHeap& cands){
+	inline GCandidate* PopBest(GCandidateHeap& cands,GCandidateList& free){
 		make_heap(cands.begin(), cands.end(), HeapCandCompare());
 		pop_heap(cands.begin(), cands.end(), HeapCandCompare());
 		GCandidate* aCand = cands.back(); //accepted cand
 		cands.pop_back();
+		free.push_back(aCand);//TODO ? could free when incorporated?
 #ifdef DEBUG_GP
 		cerr << "PopBest(): " << *aCand << "\n"; 
 #endif

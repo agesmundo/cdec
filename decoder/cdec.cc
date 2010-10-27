@@ -235,6 +235,10 @@ static void ExtractRulesDedupe(const Hypergraph& hg, ostream* os) {
 void register_feature_functions();
 
 int main(int argc, char** argv) {
+	//AS average score of the traslation sentences
+	//AS prob_t sum= prob_t::One();
+	//AS int tut_count =0;
+	
 	global_ff_registry.reset(new FFRegistry);
 	register_feature_functions();
 	ShowBanner();
@@ -434,7 +438,12 @@ int main(int argc, char** argv) {
 						forest.swap(lm_forest);
 						forest.Reweight(feature_weights);
 						trans.clear();
+						
+						//As sum *= 
 						ViterbiESentence(forest, &trans);
+						//AStot_count++;
+						//AS cerr << "Average score of translation sentence: " << log(sum)<<"/"<<tut_count<<" = "<< log(sum)/tut_count<<" = "<< exp(log(sum)/tut_count) << endl;
+						
 						cerr << "  +LM forest (nodes/edges): " << forest.nodes_.size() << '/' << forest.edges_.size() << endl;
 						cerr << "  +LM forest       (paths): " << forest.NumberOfPaths() << endl;
 						cerr << "  +LM Viterbi: " << TD::GetString(trans) << endl;

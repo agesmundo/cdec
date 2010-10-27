@@ -19,7 +19,7 @@
 
 // Define the following macro if you want to see lots of debugging output
 // when you run the GuidedPruning
-#define DEBUG_GP
+//#define DEBUG_GP
 //#undef DEBUG_GP
 
 using namespace std;
@@ -262,7 +262,7 @@ struct GCandidate {
 				prob_t p = prob_t::One();
 				prob_t edge_estimate = prob_t::One();
 
-				// cerr << "\nEstimating application of " << in_edge.rule_->AsString() << endl;
+				// compute vit prob from child
 				for (int i = 0; i < tail.size(); ++i) {
 					if (tail_iterators_[i]){//is not dummy
 						const GCandidate* ant=tail_iterators_[i]->GetCurrent();
@@ -270,13 +270,13 @@ struct GCandidate {
 						p *= ant->vit_prob_;
 					}
 					else{//if no cand mark tail as absent
-						tail[i]=-1;
+						tail[i]=-1;//NB if missing child, is it going to be incorp in +LM? it should not if we want same search space
 						//TODO!! edge_estimate*= <the default prob for the missing link>
 					}
 				}
 
 				//TODO!!
-				//if father link is there add its score to edge_estimate
+				//if father link is there add its vit_prob_ to edge_estimate
 				//else edge_estimate *= <the default prob for the missing head link>
 
 				if (is_goal) {
@@ -285,12 +285,15 @@ struct GCandidate {
 					const string& ant_state = tail_iterators_[0]->GetCurrent()->state_;
 					models.AddFinalFeatures(ant_state, &out_edge_);
 				} else {
+					
+					//collect antecedent states
 					vector<string*> ant_states(tail.size());
 					for (int i = 0; i < tail.size(); ++i) {
 						if (tail_iterators_[i]){
 							ant_states[i]=&tail_iterators_[i]->GetCurrent()->state_;
 						}
 					}
+					
 					models.AddFeaturesToEdgeGP(smeta, out_hg, ant_states, &out_edge_, &state_, &edge_estimate);
 				}
 				vit_prob_ = out_edge_.edge_prob_ * p;
@@ -446,7 +449,6 @@ public:
 		int every = 1;
 		if (num_nodes > 100) every = 10;
 		assert(in.nodes_[pregoal].out_edges_.size() == 1);
-		cerr << "    ";
 		for (int i = 0; i < in.nodes_.size(); ++i) {
 			if (i % every == 0) cerr << '.';
 			if (strategy_==NORMAL_CP){
@@ -801,7 +803,6 @@ public:
 		int goal_id = num_nodes - 1;
 		int pregoal = goal_id - 1;
 		assert(in.nodes_[pregoal].out_edges_.size() == 1);
-		cerr << "    ";
 		GCandidateHeap cands; //contains cands
 		GCandidateList free; //popped cands, to free mem
 		UniqueGCandidateSet unique_cands; //to check that cadidate is unique at insertion in cands TODO shouldn't be needed!!!we use trick of alg2
@@ -986,7 +987,7 @@ private:
 		cerr << "TailPropagation(): \n"; 
 #endif		
 		for(int i=0;i<aCand.TailSize();i++){
-			if(!aCand.tail_iterators_[i]){
+			if(!aCand.tail_iterators_[i]){//TODO double check, do not propagate when have tail, this is not simetric with head
 				int currentTailNodeID = aCand.in_edge_->tail_nodes_[i];
 				const Hypergraph::Node& currentTailNode = in.nodes_[currentTailNodeID];
 				for(int j=0;j<currentTailNode.in_edges_.size();j++){
@@ -1022,7 +1023,7 @@ private:
 				const int tailSize = currentHeadEdge.tail_nodes_.size();
 				SharedArrayIterator** newTailIterators=new SharedArrayIterator*[tailSize];
 
-				//iterate tails of ancestor edge
+				//iterate tails of ancestor edge to compute new tail
 				for(int j=0;j<tailSize;j++){
 					int currentTailNodeID = currentHeadEdge.tail_nodes_[j];
 					if(currentTailNodeID==aCand.in_edge_->head_node_){

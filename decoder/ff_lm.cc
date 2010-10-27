@@ -20,7 +20,7 @@
 #endif
 
 // Define the following macro if you want to see debugging output
-#define DEBUG_FF_LM
+//#define DEBUG_FF_LM
 //#undef DEBUG_FF_LM
 
 using namespace std;
@@ -249,6 +249,8 @@ public:
 	}
 
 	double LookupWords(const TRule& rule, const vector<const void*>& ant_states, void* vstate) {
+		
+		//compute length of state (terminals +antecedent lengths)
 		int len = rule.ELength() - rule.Arity();
 		for (int i = 0; i < ant_states.size(); ++i){
 			if(ant_states[i]==0){// GP handle missing tail
@@ -258,6 +260,10 @@ public:
 				len += StateSize(ant_states[i]);
 			}
 		}
+		
+		//fill buffer with terminals
+		//star is ins for missing child
+		//buffer is right to left
 		buffer_.resize(len + 1);
 		buffer_[len] = kNONE;
 		int i = len - 1;
@@ -277,17 +283,17 @@ public:
 			}
 		}
 
-		//GP_DEBUG
+		//GP_DEBUG print buffer, is right ro left
 #ifdef DEBUG_FF_LM
 		{int k = 0; cerr << "buffer("; while(buffer_[k] > 0) { std::cerr << TD::Convert(buffer_[k++]) << " "; } cerr <<")\n";}
 #endif
 		
+		//score for ngrams of order 3-(max) in buffer
 		double sum = 0.0;
 		int* remnant = reinterpret_cast<int*>(vstate);
 		int j = 0;
 		i = len - 1;
 		int edge = len;
-
 		while (i >= 0) {//TODO should be modif? can it be compatible with old?
 			if (buffer_[i] == kSTAR) {
 				edge = i;
@@ -300,6 +306,8 @@ public:
 		}
 		if (!remnant) return sum;
 
+		//end filling of state of current cand
+		//TODO should split the state filling from the buffer scoring??
 		if (edge != len || len >= order_) {//TODO should be modif? can it be compatible with old?
 			remnant[j++] = kSTAR;
 			if (order_-1 < edge) edge = order_-1;
@@ -307,12 +315,15 @@ public:
 				remnant[j++] = buffer_[i];
 		}
 		
-		//GP_DEBUG
+		//GP_DEBUG print state (left to right)
 #ifdef DEBUG_FF_LM
-		{int k = 0; cerr << "remnant("; while(k<j) { std::cerr << TD::Convert(remnant[k++]) << " "; } cerr <<")\n";}
+		{int k = 0; cerr << "state("; while(k<j) { std::cerr << TD::Convert(remnant[k++]) << " "; } cerr <<")\n";}
 #endif
 		
+		//set state size
 		SetStateSize(j, vstate);
+		
+		//score of max-n-gram for vit_prob
 		return sum;
 	}
 

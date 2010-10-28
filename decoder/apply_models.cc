@@ -198,7 +198,7 @@ struct GCandidate {
 	int node_index_;                     // -1 until incorporated
 	// into the +LM forest
 	const Hypergraph::Edge* in_edge_;    // in -LM forest
-	Hypergraph::Edge out_edge_;
+	Hypergraph::Edge out_edge_; //TODO this is useless, just need the pointer to in_edge, when inc read from in_edge, need to save space!, check if Candidate is used somewhere out this file where is needed this out_edge, anyway for GCand this is useless
 	string state_;
 	prob_t vit_prob_;            // these are fixed until the cand
 	// is popped, then they may be updated
@@ -443,6 +443,19 @@ struct CandidateUniquenessEquals {
 typedef unordered_set<const Candidate*, CandidateUniquenessHash, CandidateUniquenessEquals> UniqueCandidateSet;
 typedef unordered_map<string, Candidate*, boost::hash<string> > State2Node;
 
+//GP version of State2Node
+typedef unordered_map<pair<int,string>, Hypergraph::Node*, boost::hash<pair<int,string> > >InNodeAndState2OutNode;
+/*struct InNodeAndState2OutNode{
+  unordered_map<pair<int,string>, Hypergraph::Node*, boost::hash<pair<int,string> > > map_;
+	
+  inline Hypergraph::Node& getOutNode(int inNodeId, string& state){
+		pair<int, string> query(inNodeId,state);
+		return map_[query];
+	}
+	
+};*/
+
+
 typedef unordered_set<const GCandidate*, CandidateUniquenessHash, CandidateUniquenessEquals> UniqueGCandidateSet;
 
 class CubePruningRescorer {
@@ -525,7 +538,7 @@ private:
 		// note: the difference between the vit score and the estimated
 		// score is the same for all items with a common residual DP
 		// state
-		if (item->vit_prob_ > o_item->vit_prob_) {
+		if (item->vit_prob_ > o_item->vit_prob_) { 
 			assert(o_item->state_ == item->state_);    // sanity check!
 			o_item->est_prob_ = item->est_prob_;
 			o_item->vit_prob_ = item->vit_prob_;
@@ -829,6 +842,7 @@ public:
 		GCandidateHeap cands; //contains cands
 		GCandidateList free; //popped cands, to free mem
 		UniqueGCandidateSet unique_cands; //to check that cadidate is unique at insertion in cands TODO shouldn't be needed!!!we use trick of alg2
+		InNodeAndState2OutNode state2node;//to apply dyn. prog. trik to +LM
 
 		InitCands(cands, unique_cands);
 
@@ -836,8 +850,7 @@ public:
 
 			GCandidate* aCand = PopBest(cands, free);
 			
-			//TODO! incorporate only cands with all tails
-			IncorporateIntoPlusLMForest(aCand);
+			IncorporateIntoPlusLMForest(aCand,&state2node);
 
 			PushSucc(*aCand, cands, unique_cands);
 
@@ -926,7 +939,7 @@ private:
 		D.clear();
 	}
 
-	void IncorporateIntoPlusLMForest(GCandidate* item/*, State2Node* s2n,at moment diff spans and head-tail optional, see later how to handle(dynamic programming trick)*/ /*CandidateList* freelist*/) {
+	void IncorporateIntoPlusLMForest(GCandidate* item,InNodeAndState2OutNode* state2node/*,CandidateList* freelist*/) {
 
 		//do not incorporate if missing any tail
 		if(item->hasDummyTail()){
@@ -936,29 +949,37 @@ private:
 		//create new edge
 		Hypergraph::Edge* new_edge = out.AddEdge(item->out_edge_.rule_, item->out_edge_.tail_nodes_);
 		new_edge->feature_values_ = item->out_edge_.feature_values_;
-		new_edge->edge_prob_ = item->out_edge_.edge_prob_;
+		new_edge->edge_prob_ = item->out_edge_.edge_prob_; //TODO are is this the vit_prob??
 		new_edge->i_ = item->out_edge_.i_;
 		new_edge->j_ = item->out_edge_.j_;
 		new_edge->prev_i_ = item->out_edge_.prev_i_;
 		new_edge->prev_j_ = item->out_edge_.prev_j_;
-		GCandidate*& o_item /*= (*s2n)[item->state_];
-    if (!o_item) o_item*/ = item;
 
-		int& node_id = o_item->node_index_;
-		assert (node_id < 0);//while not using s2n
-		if (node_id < 0) {
-			Hypergraph::Node* new_node = out.AddNode(in.nodes_[item->in_edge_->head_node_].cat_);
-			//node_states_.push_back(item->state_);
-			node_id = new_node->id_;
+		//old GCandidate*& o_item /*= (*s2n)[item->state_];
+    //old if (!o_item) o_item*/ = item;
+		pair<int, string> query(item->in_edge_->id_,item->state_); //new
+		Hypergraph::Node*& out_node = (*state2node)[query];//new
+
+		
+		//old int& node_id = o_item->node_index_;
+
+		//old assert (node_id < 0);//while not using s2n
+		//old if (node_id < 0) {
+		if (out_node) { //new //if there is no out node with this state then create it
+			out_node = out.AddNode(in.nodes_[item->in_edge_->head_node_].cat_); //NB this sould provide insertion in s2n! check!!!!
+			//TODO requery just inserted element to check insertion
+			//node_states_.push_back(item->state_); //TODO what was node2state for in GP??
+			//old node_id = new_node->id_;
 		}
-		Hypergraph::Node* node = &out.nodes_[node_id];
-		out.ConnectEdgeToHeadNode(new_edge, node);
+		//old Hypergraph::Node* node = &out.nodes_[node_id];
+		//old out.ConnectEdgeToHeadNode(new_edge, node);
+		out.ConnectEdgeToHeadNode(new_edge, out_node);
 
 		// update candidate if we have a better derivation
 		// note: the difference between the vit score and the estimated
 		// score is the same for all items with a common residual DP
 		// state
-		/*if (item->vit_prob_ > o_item->vit_prob_) {
+		/*if (item->vit_prob_ > o_item->vit_prob_) {//TODO NB this part is missing in GP should be done when updating D and H
       assert(o_item->state_ == item->state_);    // sanity check!
       o_item->est_prob_ = item->est_prob_;
       o_item->vit_prob_ = item->vit_prob_;
@@ -1131,7 +1152,7 @@ private:
 	const SentenceMetadata& smeta;
 	const Hypergraph& in;
 	int goal_id_;
-	Hypergraph& out;
+	Hypergraph& out; //TODO should end with _ , refactor with eclipse
 
 	vector<GCandidateSmartList> H;//maps (cand head) nodeID to cands with same node as dummy tail for match
 	vector<GCandidateSmartList> D;//maps (cand tail) nodeID to cands with same node as (NB also not dummy!!! check match) head for match//TODO check match

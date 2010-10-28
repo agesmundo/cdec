@@ -227,6 +227,29 @@ struct GCandidate {
 			// used to query uniqueness
 			//GCandidate(const Hypergraph::Edge& e): in_edge_(&e) {} //TODO init iterators
 
+			bool hasDummyTail(){
+				for(int i=0; i<TailSize();i++){
+					if(IsTailDummy(i)){
+						return true;	
+					}
+				}	
+				return false;
+			}
+
+			bool IsTailDummy(int i)const{
+				if(tail_iterators_[i]==DUMMY){
+					return true;
+				}
+				return false;
+			}
+
+			bool IsHeadDummy() const {
+				if(head_iterator_==DUMMY){
+					return true;
+				}
+				return false;
+			}
+
 			GCandidate* GetCurrentTailIterator(int i) const{
 				if(tail_iterators_[i]==DUMMY){
 					return NULL;
@@ -814,10 +837,6 @@ public:
 			GCandidate* aCand = PopBest(cands, free);
 			
 			//TODO! incorporate only cands with all tails
-			//what if they have a head??
-			//ip: do not incorporate when have head,
-			//when no head all tails popped recursively incorporate children (root)
-			//ip2: bottom-up: when have head inc recours heads
 			IncorporateIntoPlusLMForest(aCand);
 
 			PushSucc(*aCand, cands, unique_cands);
@@ -908,6 +927,13 @@ private:
 	}
 
 	void IncorporateIntoPlusLMForest(GCandidate* item/*, State2Node* s2n,at moment diff spans and head-tail optional, see later how to handle(dynamic programming trick)*/ /*CandidateList* freelist*/) {
+
+		//do not incorporate if missing any tail
+		if(item->hasDummyTail()){
+			return;	
+		}
+
+		//create new edge
 		Hypergraph::Edge* new_edge = out.AddEdge(item->out_edge_.rule_, item->out_edge_.tail_nodes_);
 		new_edge->feature_values_ = item->out_edge_.feature_values_;
 		new_edge->edge_prob_ = item->out_edge_.edge_prob_;
@@ -1077,9 +1103,6 @@ private:
 			}
 
 		}
-		/*//TODO this part should be useless if head has no other dummy tail, this is always the case when binary grammar
- * 		    this was supposed to be used to trigger the integration when the rood of subtree popped, but now planning integration from bottom
- * 		    since grammar is binary bottom up integration would follow a linear path not tree
 		else{
 			GCandidate* oldHead= aCand.head_iterator_->GetCurrent();
 			SharedArrayIterator** newTailIterators=CopyTailPTArray(oldHead->tail_iterators_,oldHead->TailSize());
@@ -1101,7 +1124,7 @@ private:
 			}
 			GCandidate* newHeadCand=CreateCandidate(*oldHead->in_edge_,newHeadIterator,newTailIterators);
 			AddCandidate(newHeadCand,cands,unique_cands);
-		}*/
+		}
 	}
 
 	const ModelSet& models;

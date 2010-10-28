@@ -151,7 +151,7 @@ struct SharedArrayIterator{
 
 
 	SharedArrayIterator(const SharedArrayIterator& toCopy){
-		sr_=toCopy.sr_;
+		sr_=toCopy.sr_; //ponit to same dynamic array
 		length_=toCopy.length_;
 		current_id_=toCopy.current_id_;
 	}
@@ -817,6 +817,7 @@ public:
 			//what if they have a head??
 			//ip: do not incorporate when have head,
 			//when no head all tails popped recursively incorporate children (root)
+			//ip2: bottom-up: when have head inc recours heads
 			IncorporateIntoPlusLMForest(aCand);
 
 			PushSucc(*aCand, cands, unique_cands);
@@ -1076,6 +1077,9 @@ private:
 			}
 
 		}
+		/*//TODO this part should be useless if head has no other dummy tail, this is always the case when binary grammar
+ * 		    this was supposed to be used to trigger the integration when the rood of subtree popped, but now planning integration from bottom
+ * 		    since grammar is binary bottom up integration would follow a linear path not tree
 		else{
 			GCandidate* oldHead= aCand.head_iterator_->GetCurrent();
 			SharedArrayIterator** newTailIterators=CopyTailPTArray(oldHead->tail_iterators_,oldHead->TailSize());
@@ -1090,11 +1094,14 @@ private:
 					}
 				}
 			}
-			SharedArrayIterator* newHeadIterator=new SharedArrayIterator(*oldHead->head_iterator_);
-			newHeadIterator->Freeze();
+			SharedArrayIterator* newHeadIterator=DUMMY;
+			if(oldHead->head_iterator_){
+				newHeadIterator = new SharedArrayIterator(*oldHead->head_iterator_);
+				newHeadIterator->Freeze();
+			}
 			GCandidate* newHeadCand=CreateCandidate(*oldHead->in_edge_,newHeadIterator,newTailIterators);
 			AddCandidate(newHeadCand,cands,unique_cands);
-		}
+		}*/
 	}
 
 	const ModelSet& models;

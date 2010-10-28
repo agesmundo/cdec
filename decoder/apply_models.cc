@@ -227,24 +227,17 @@ struct GCandidate {
 			// used to query uniqueness
 			//GCandidate(const Hypergraph::Edge& e): in_edge_(&e) {} //TODO init iterators
 
-			bool hasDummyTail(){
+			bool HasNotIncorporatedTail()const{
 				for(int i=0; i<TailSize();i++){
-					if(IsTailDummy(i)){
+					if(IsTailNotIncororated(i)){
 						return true;	
 					}
 				}	
 				return false;
 			}
 
-			bool IsTailDummy(int i)const{
-				if(tail_iterators_[i]==DUMMY){
-					return true;
-				}
-				return false;
-			}
-
-			bool IsHeadDummy() const {
-				if(head_iterator_==DUMMY){
+			bool IsTailNotIncororated(int i)const{
+				if(tail_iterators_[i]==DUMMY || tail_iterators_[i]->GetCurrent()->node_index_<0){
 					return true;
 				}
 				return false;
@@ -942,7 +935,7 @@ private:
 	void IncorporateIntoPlusLMForest(GCandidate* item,InNodeAndState2OutNode* state2node/*,CandidateList* freelist*/) {
 
 		//do not incorporate if missing any tail
-		if(item->hasDummyTail()){
+		if(item->HasNotIncorporatedTail()){
 			return;	
 		}
 
@@ -973,7 +966,8 @@ private:
 		}
 		//old Hypergraph::Node* node = &out.nodes_[node_id];
 		//old out.ConnectEdgeToHeadNode(new_edge, node);
-		out.ConnectEdgeToHeadNode(new_edge, out_node);
+		out.ConnectEdgeToHeadNode(new_edge, out_node); // new
+		item->node_index_ = out_node->id_;//new
 
 		// update candidate if we have a better derivation
 		// note: the difference between the vit score and the estimated

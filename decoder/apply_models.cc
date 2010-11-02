@@ -142,19 +142,25 @@ struct SharedArrayIterator{
 	//		memcpy(sr_.get(),arr,length);
 	//	}
 
-	SharedArrayIterator(const vector<GCandidate*>& toCopy){
-		length_=toCopy.size();
-		sr_.reset(new GCandidate*[length_]);
-		current_id_=0;
-		copy(toCopy.begin(),toCopy.end(),sr_.get());
-	}
-
+	//	SharedArrayIterator(const vector<GCandidate*>& toCopy){
+	//		length_=toCopy.size();
+	//		sr_.reset(new GCandidate*[length_]);
+	//		current_id_=0;
+	//		copy(toCopy.begin(),toCopy.end(),sr_.get());
+	//	}
 
 	SharedArrayIterator(const SharedArrayIterator& toCopy){
-		sr_=toCopy.sr_; //ponit to same dynamic array
+		sr_=toCopy.sr_; //point to same dynamic array
 		length_=toCopy.length_;
 		current_id_=toCopy.current_id_;
 	}
+	
+	SharedArrayIterator(const	boost::shared_array<GCandidate*> sr, int length){
+		sr_=sr; //point to same dynamic array
+		length_=length;
+		current_id_=0;
+	}
+
 
 	SharedArrayIterator(GCandidate* singleCand){
 		sr_.reset(new GCandidate*[1]);
@@ -163,20 +169,10 @@ struct SharedArrayIterator{
 		current_id_=0;
 	}
 
-	/*	SharedArrayIterator(){
-		length_=0;
-		current_id_=0;
-	}*/
-
 	//avoid future expansion from this iterator
 	void Freeze(){
 		length_=current_id_+1;
 	}
-
-	/*	bool IsActive(){//points to something?
-		if (length_==0)return false;
-		return (sr_.get());
-	}*/
 
 	inline bool HasMore(){
 		return (current_id_+1 < length_);
@@ -234,7 +230,7 @@ struct GCandidate {
 		}
 		delete tail_iterators_;
 	}
-	
+
 	bool HasNotIncorporatedTail()const{
 		for(int i=0; i<TailSize();i++){
 			if(IsTailNotIncororated(i)){
@@ -784,24 +780,24 @@ private:
 struct GCandidateSmartList{
 private:
 	GCandidateList list_;
-	bool isSAIReady_;
-	SharedArrayIterator* sai_;
+	bool needNewSA_; //true if shared array need to be updated
+	boost::shared_array<GCandidate*> sr_;
 
 public:
-	GCandidateSmartList():isSAIReady_(false){};
+	GCandidateSmartList():needNewSA_(true){};
 
 	void push_back(GCandidate* item){
 		list_.push_back(item);
 	}
 
 	SharedArrayIterator* GetTailIterator(){//XX rename GetIterator
-		if(isSAIReady_){
-			return sai_;
+		if(needNewSA_){
+			sort(list_.begin(),list_.end(),EstProbSorter());
+			needNewSA_=false;
+			sr_.reset(new GCandidate*[list_.size()]);
+			copy(list_.begin(),list_.end(),sr_.get());
 		}
-		sort(list_.begin(),list_.end(),EstProbSorter());
-		sai_ = new SharedArrayIterator(list_);
-		isSAIReady_=true;
-		return sai_;
+		return new SharedArrayIterator(sr_,list_.size());
 	}
 
 	size_t size() const {

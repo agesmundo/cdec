@@ -786,29 +786,37 @@ public:
 
 	void push_back(GCandidate* item){
 		list_.push_back(item);
+		needNewSA_=true;
 	}
-
-	SharedArrayIterator* GetIterator(){
+	
+	void SetSA(){
 		if(needNewSA_){
 			sort(list_.begin(),list_.end(),EstProbSorter());
-			needNewSA_=false;
 			sr_.reset(new GCandidate*[list_.size()]);
 			copy(list_.begin(),list_.end(),sr_.get());
+			needNewSA_=false;
 		}
+	}
+	
+	SharedArrayIterator* GetIterator(){
+		SetSA();
 		return new SharedArrayIterator(sr_,list_.size());
 	}
 
-	size_t size() const {
-		return list_.size();
-	}
+//	size_t size() const {
+//		return list_.size();
+//	}
 
 	const GCandidate* operator[](size_t id){
+		if(IsEmpty())return NULL;
+		SetSA();
 		return list_[id];
 	}
 
 	bool IsEmpty(){
 		return list_.size()==0; 
 	}
+	
 };
 
 

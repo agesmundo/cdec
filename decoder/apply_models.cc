@@ -1072,9 +1072,17 @@ private:
 	}
 
 	void HeadPropagation(GCandidate& aCand, GCandidateHeap& cands, UniqueGCandidateSet& unique_cands){
+
 #ifdef DEBUG_GP
 		cerr << "HeadPropagation(): \n"; 
 #endif
+		
+		//do not head propagate if notInc tail
+		//TODO IMP this is first version try variation for improvements
+		if(aCand.HasNotIncorporatedTail()){
+			return;	
+		}
+		
 		if(!aCand.head_iterator_){
 			const Hypergraph::Node& headNode=in.nodes_[aCand.in_edge_->head_node_];
 

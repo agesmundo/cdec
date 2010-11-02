@@ -790,7 +790,7 @@ public:
 		list_.push_back(item);
 	}
 
-	SharedArrayIterator* GetTailIterator(){//XX rename GetIterator
+	SharedArrayIterator* GetIterator(){
 		if(needNewSA_){
 			sort(list_.begin(),list_.end(),EstProbSorter());
 			needNewSA_=false;
@@ -870,7 +870,7 @@ public:
 		//free memory used by cands
 		FreeAll(cands,free);
 
-		cerr << "Best path: " <<(D[goal_id].GetTailIterator());//log (ViterbiESentence(forest, &trans))<<endl;
+		cerr << "Best path: " <<(D[goal_id].GetIterator());//log (ViterbiESentence(forest, &trans))<<endl;
 
 		//TODO clean tree remove edges with dummy tails
 		//see method in KBest
@@ -1052,7 +1052,7 @@ private:
 							newTailIterators[j]=NULL;
 						}
 						else{
-							newTailIterators[j]=D[currentTailNodeID].GetTailIterator();//check head compatibility if we add also not dummy head in D
+							newTailIterators[j]=D[currentTailNodeID].GetIterator();//check head compatibility if we add also not dummy head in D
 						}
 					}
 					SharedArrayIterator* newHeadIterator = new SharedArrayIterator(&aCand);
@@ -1087,7 +1087,7 @@ private:
 						newTailIterators[j]=NULL;
 					}
 					else{
-						newTailIterators[j]=D[currentTailNodeID].GetTailIterator();//check head compatibility if we add also not dummy head in D
+						newTailIterators[j]=D[currentTailNodeID].GetIterator();//check head compatibility if we add also not dummy head in D
 					}
 				}
 
@@ -1105,7 +1105,7 @@ private:
 #ifdef DEBUG_GP
 					cerr << "\tput cand with head:"; 
 #endif
-					newCandWithHead=CreateCandidate(currentHeadEdge,H[currentHeadEdge.head_node_].GetTailIterator(),newTailIterators);
+					newCandWithHead=CreateCandidate(currentHeadEdge,H[currentHeadEdge.head_node_].GetIterator(),newTailIterators);
 					AddCandidate(newCandWithHead,cands,unique_cands);
 				}
 				else{

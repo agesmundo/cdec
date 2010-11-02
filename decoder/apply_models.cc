@@ -195,8 +195,7 @@ struct GCandidate {
 	const Hypergraph::Edge* in_edge_;    // in -LM forest
 	Hypergraph::Edge out_edge_; //TODO can avoid allocate this? allocate few fields?
 	string state_;
-	prob_t vit_prob_;            // these are fixed until the cand
-	// is popped, then they may be updated
+	prob_t vit_prob_;            // these are fixed until the cand is popped, then they may be updated (not true in GP, cause not using dyn prog trick for cands)
 	prob_t est_prob_;
 
 	//always test befor access, if dummy =0 

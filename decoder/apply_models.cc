@@ -191,10 +191,9 @@ struct SharedArrayIterator{
 
 
 struct GCandidate {
-	int node_index_;                     // -1 until incorporated
-	// into the +LM forest
+	int node_index_;                     // -1 until incorporated into the +LM forest
 	const Hypergraph::Edge* in_edge_;    // in -LM forest
-	Hypergraph::Edge out_edge_; //TODO this is useless, just need the pointer to in_edge, when inc read from in_edge, need to save space!, check if Candidate is used somewhere out this file where is needed this out_edge, anyway for GCand this is useless
+	Hypergraph::Edge out_edge_; //TODO can avoid allocate this? allocate few fields?
 	string state_;
 	prob_t vit_prob_;            // these are fixed until the cand
 	// is popped, then they may be updated

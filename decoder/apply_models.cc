@@ -221,112 +221,116 @@ struct GCandidate {
 				head_iterator_(headIterator),
 				tail_iterators_(tailIterators)
 				{
-				InitializeGCandidate(out_hg, smeta, /*node_states,*/ models, is_goal);
+		InitializeGCandidate(out_hg, smeta, /*node_states,*/ models, is_goal);
 				}
 
-			// used to query uniqueness
-			//GCandidate(const Hypergraph::Edge& e): in_edge_(&e) {} //TODO init iterators
+	// used to query uniqueness
+	//GCandidate(const Hypergraph::Edge& e): in_edge_(&e) {} //TODO init iterators
 
-			bool HasNotIncorporatedTail()const{
-				for(int i=0; i<TailSize();i++){
-					if(IsTailNotIncororated(i)){
-						return true;	
-					}
-				}	
-				return false;
+	~GCandidate(){
+		
+	}
+	
+	bool HasNotIncorporatedTail()const{
+		for(int i=0; i<TailSize();i++){
+			if(IsTailNotIncororated(i)){
+				return true;	
 			}
+		}	
+		return false;
+	}
 
-			bool IsTailNotIncororated(int i)const{
-				if(tail_iterators_[i]==DUMMY || tail_iterators_[i]->GetCurrent()->node_index_<0){
-					return true;
+	bool IsTailNotIncororated(int i)const{
+		if(tail_iterators_[i]==DUMMY || tail_iterators_[i]->GetCurrent()->node_index_<0){
+			return true;
+		}
+		return false;
+	}
+
+	GCandidate* GetCurrentTailIterator(int i) const{
+		if(tail_iterators_[i]==DUMMY){
+			return NULL;
+		}
+		return tail_iterators_[i]->GetCurrent();
+	}
+
+	GCandidate* GetCurrentHeadIterator() const {
+		if(head_iterator_==DUMMY){
+			return NULL;
+		}
+		return head_iterator_->GetCurrent();
+	}
+
+	bool IsIncorporatedIntoHypergraph() const {
+		return node_index_ >= 0;
+	}
+
+	void InitializeGCandidate(const Hypergraph& out_hg,
+			const SentenceMetadata& smeta,
+			//const vector<string>& node_states,
+			const ModelSet& models,
+			const bool is_goal) {
+		const Hypergraph::Edge& in_edge = *in_edge_;
+		out_edge_.rule_ = in_edge.rule_;
+		out_edge_.feature_values_ = in_edge.feature_values_;
+		out_edge_.i_ = in_edge.i_;
+		out_edge_.j_ = in_edge.j_;
+		out_edge_.prev_i_ = in_edge.prev_i_;
+		out_edge_.prev_j_ = in_edge.prev_j_;
+		Hypergraph::TailNodeVector& tail = out_edge_.tail_nodes_;
+		tail.resize(in_edge.tail_nodes_.size());
+		prob_t p = prob_t::One();
+		prob_t edge_estimate = prob_t::One();
+
+		// compute vit prob from child
+		for (int i = 0; i < tail.size(); ++i) {
+			if (tail_iterators_[i]){//is not dummy
+				const GCandidate* ant=tail_iterators_[i]->GetCurrent();
+				tail[i] = ant->node_index_;
+				p *= ant->vit_prob_;
+			}
+			else{//if no cand mark tail as absent
+				tail[i]=-1;//NB if missing child, is it going to be incorp in +LM? it should not if we want same search space
+				//TODO!! edge_estimate*= <the default prob for the missing link>
+			}
+		}
+
+		//TODO!!
+		//if father link is there add its vit_prob_ to edge_estimate
+		//else edge_estimate *= <the default prob for the missing head link>
+
+		if (is_goal) {
+			assert(tail.size() == 1);
+			assert(tail_iterators_[0]);
+			const string& ant_state = tail_iterators_[0]->GetCurrent()->state_;
+			models.AddFinalFeatures(ant_state, &out_edge_);
+		} else {
+
+			//collect antecedent states
+			vector<string*> ant_states(tail.size());
+			for (int i = 0; i < tail.size(); ++i) {
+				if (tail_iterators_[i]){
+					ant_states[i]=&tail_iterators_[i]->GetCurrent()->state_;
 				}
-				return false;
 			}
 
-			GCandidate* GetCurrentTailIterator(int i) const{
-				if(tail_iterators_[i]==DUMMY){
-					return NULL;
-				}
-				return tail_iterators_[i]->GetCurrent();
-			}
+			models.AddFeaturesToEdgeGP(smeta, out_hg, ant_states, &out_edge_, &state_, &edge_estimate);
+		}
+		vit_prob_ = out_edge_.edge_prob_ * p;
+		est_prob_ = vit_prob_ * edge_estimate;
+	}
 
-			GCandidate* GetCurrentHeadIterator() const {
-				if(head_iterator_==DUMMY){
-					return NULL;
-				}
-				return head_iterator_->GetCurrent();
-			}
+	int TailSize() const{
+		return in_edge_->tail_nodes_.size();
+	}
 
-			bool IsIncorporatedIntoHypergraph() const {
-				return node_index_ >= 0;
-			}
+	bool HasMoreForTail(int i) const{
+		return tail_iterators_[i] && tail_iterators_[i]->HasMore();
+	}
 
-			void InitializeGCandidate(const Hypergraph& out_hg,
-					const SentenceMetadata& smeta,
-					//const vector<string>& node_states,
-					const ModelSet& models,
-					const bool is_goal) {
-				const Hypergraph::Edge& in_edge = *in_edge_;
-				out_edge_.rule_ = in_edge.rule_;
-				out_edge_.feature_values_ = in_edge.feature_values_;
-				out_edge_.i_ = in_edge.i_;
-				out_edge_.j_ = in_edge.j_;
-				out_edge_.prev_i_ = in_edge.prev_i_;
-				out_edge_.prev_j_ = in_edge.prev_j_;
-				Hypergraph::TailNodeVector& tail = out_edge_.tail_nodes_;
-				tail.resize(in_edge.tail_nodes_.size());
-				prob_t p = prob_t::One();
-				prob_t edge_estimate = prob_t::One();
-
-				// compute vit prob from child
-				for (int i = 0; i < tail.size(); ++i) {
-					if (tail_iterators_[i]){//is not dummy
-						const GCandidate* ant=tail_iterators_[i]->GetCurrent();
-						tail[i] = ant->node_index_;
-						p *= ant->vit_prob_;
-					}
-					else{//if no cand mark tail as absent
-						tail[i]=-1;//NB if missing child, is it going to be incorp in +LM? it should not if we want same search space
-						//TODO!! edge_estimate*= <the default prob for the missing link>
-					}
-				}
-
-				//TODO!!
-				//if father link is there add its vit_prob_ to edge_estimate
-				//else edge_estimate *= <the default prob for the missing head link>
-
-				if (is_goal) {
-					assert(tail.size() == 1);
-					assert(tail_iterators_[0]);
-					const string& ant_state = tail_iterators_[0]->GetCurrent()->state_;
-					models.AddFinalFeatures(ant_state, &out_edge_);
-				} else {
-					
-					//collect antecedent states
-					vector<string*> ant_states(tail.size());
-					for (int i = 0; i < tail.size(); ++i) {
-						if (tail_iterators_[i]){
-							ant_states[i]=&tail_iterators_[i]->GetCurrent()->state_;
-						}
-					}
-					
-					models.AddFeaturesToEdgeGP(smeta, out_hg, ant_states, &out_edge_, &state_, &edge_estimate);
-				}
-				vit_prob_ = out_edge_.edge_prob_ * p;
-				est_prob_ = vit_prob_ * edge_estimate;
-			}
-
-			int TailSize() const{
-				return in_edge_->tail_nodes_.size();
-			}
-			
-			bool HasMoreForTail(int i) const{
-				return tail_iterators_[i] && tail_iterators_[i]->HasMore();
-			}
-			
-			bool HasMoreHead() const{
-				return head_iterator_ && head_iterator_->HasMore();
-			}
+	bool HasMoreHead() const{
+		return head_iterator_ && head_iterator_->HasMore();
+	}
 };
 
 ostream& operator<<(ostream& os, const SharedArrayIterator& sai) {
@@ -440,12 +444,12 @@ typedef unordered_map<string, Candidate*, boost::hash<string> > State2Node;
 typedef unordered_map<pair<int,string>, Hypergraph::Node*, boost::hash<pair<int,string> > >InNodeAndState2OutNode;
 /*struct InNodeAndState2OutNode{
   unordered_map<pair<int,string>, Hypergraph::Node*, boost::hash<pair<int,string> > > map_;
-	
+
   inline Hypergraph::Node& getOutNode(int inNodeId, string& state){
 		pair<int, string> query(inNodeId,state);
 		return map_[query];
 	}
-	
+
 };*/
 
 
@@ -844,7 +848,7 @@ public:
 		for (int pops=0;pops<100&&!cands.empty();pops++) {
 
 			GCandidate* aCand = PopBest(cands, free);
-			
+
 			IncorporateIntoPlusLMForest(aCand,&state2node);
 
 			PushSucc(*aCand, cands, unique_cands);
@@ -865,9 +869,9 @@ public:
 
 		//free memory used by cands
 		FreeAll(cands,free);
-		
-		//cerr << "Best path: " <<log (ViterbiESentence(forest, &trans))<<endl;
-		
+
+		cerr << "Best path: " <<(D[goal_id].GetTailIterator());//log (ViterbiESentence(forest, &trans))<<endl;
+
 		//TODO clean tree remove edges with dummy tails
 		//see method in KBest
 		//out.PruneUnreachable(D[goal_id].front()->node_index_);//put node index of goal
@@ -931,12 +935,12 @@ private:
 		for (int i = 0; i < free.size(); ++i){
 			delete free[i];
 		}
-//		for (int i = 0; i < D.size(); ++i) {
-//			GCandidateSmartList& D_i = D[i];
-//			for (int j = 0; j < D_i.size(); ++j)
-//				delete D_i[j];
-//		}
-//		D.clear();
+		//		for (int i = 0; i < D.size(); ++i) {
+		//			GCandidateSmartList& D_i = D[i];
+		//			for (int j = 0; j < D_i.size(); ++j)
+		//				delete D_i[j];
+		//		}
+		//		D.clear();
 	}
 
 	void IncorporateIntoPlusLMForest(GCandidate* item,InNodeAndState2OutNode* state2node/*,CandidateList* freelist*/) {
@@ -967,7 +971,7 @@ private:
 		out.ConnectEdgeToHeadNode(new_edge, out_node);
 		item->node_index_ = out_node->id_;
 
-		
+
 		//TODO NB the part below is missing in GP should be done when updating D and H
 		//... it's the dyn prog trick at cands level
 		// update candidate if we have a better derivation
@@ -997,7 +1001,14 @@ private:
 
 	inline SharedArrayIterator** CopyTailPTArray(SharedArrayIterator** toCopy, int size){
 		SharedArrayIterator** newTailIterators = new SharedArrayIterator*[size];//or (SharedArrayIterator**) malloc (tailSize * sizeof(SharedArrayIterator*))
-		memcpy(newTailIterators,toCopy,size*sizeof(SharedArrayIterator*));//TODO test
+		for(int i=0; i< size ; i++){
+			if(toCopy[i] == NULL){
+				newTailIterators[i]=NULL;
+			}
+			else{
+				newTailIterators[i]=new SharedArrayIterator(*toCopy[i]);
+			}
+		}
 		return newTailIterators;
 	}
 

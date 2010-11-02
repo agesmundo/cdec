@@ -516,7 +516,9 @@ private:
 		new_edge->prev_i_ = item->out_edge_.prev_i_;
 		new_edge->prev_j_ = item->out_edge_.prev_j_;
 		Candidate*& o_item = (*s2n)[item->state_];
-		if (!o_item) o_item = item;
+		if (!o_item){
+			o_item = item;
+		}
 
 		int& node_id = o_item->node_index_;
 		if (node_id < 0) {
@@ -942,43 +944,37 @@ private:
 		//create new edge
 		Hypergraph::Edge* new_edge = out.AddEdge(item->out_edge_.rule_, item->out_edge_.tail_nodes_);
 		new_edge->feature_values_ = item->out_edge_.feature_values_;
-		new_edge->edge_prob_ = item->out_edge_.edge_prob_; //TODO are is this the vit_prob??
+		new_edge->edge_prob_ = item->out_edge_.edge_prob_;
 		new_edge->i_ = item->out_edge_.i_;
 		new_edge->j_ = item->out_edge_.j_;
 		new_edge->prev_i_ = item->out_edge_.prev_i_;
 		new_edge->prev_j_ = item->out_edge_.prev_j_;
 
-		//old GCandidate*& o_item /*= (*s2n)[item->state_];
-    //old if (!o_item) o_item*/ = item;
-		pair<int, string> query(item->in_edge_->id_,item->state_); //new
-		Hypergraph::Node*& out_node = (*state2node)[query];//new
+		pair<int, string> query(item->in_edge_->id_,item->state_);
+		Hypergraph::Node*& out_node = (*state2node)[query];
+
+		//TEST PASSED assert (!(*state2node)[query]);
+		if (!out_node) { //if there is no out node with this state then create it
+			out_node = out.AddNode(in.nodes_[item->in_edge_->head_node_].cat_); //NB this should provide insertion in s2n! check!!!!
+			//TODO requery just inserted element to check insertion
+			//TEST PASSED assert ((*state2node)[query]);
+		}
+		out.ConnectEdgeToHeadNode(new_edge, out_node);
+		item->node_index_ = out_node->id_;
 
 		
-		//old int& node_id = o_item->node_index_;
-
-		//old assert (node_id < 0);//while not using s2n
-		//old if (node_id < 0) {
-		if (out_node) { //new //if there is no out node with this state then create it
-			out_node = out.AddNode(in.nodes_[item->in_edge_->head_node_].cat_); //NB this sould provide insertion in s2n! check!!!!
-			//TODO requery just inserted element to check insertion
-			//node_states_.push_back(item->state_); //TODO what was node2state for in GP??
-			//old node_id = new_node->id_;
-		}
-		//old Hypergraph::Node* node = &out.nodes_[node_id];
-		//old out.ConnectEdgeToHeadNode(new_edge, node);
-		out.ConnectEdgeToHeadNode(new_edge, out_node); // new
-		item->node_index_ = out_node->id_;//new
-
+		//TODO NB the part below is missing in GP should be done when updating D and H
+		//... it's the dyn prog trick at cands level
 		// update candidate if we have a better derivation
 		// note: the difference between the vit score and the estimated
 		// score is the same for all items with a common residual DP
 		// state
-		/*if (item->vit_prob_ > o_item->vit_prob_) {//TODO NB this part is missing in GP should be done when updating D and H
+		/*if (item->vit_prob_ > o_item->vit_prob_) {
       assert(o_item->state_ == item->state_);    // sanity check!
       o_item->est_prob_ = item->est_prob_;
       o_item->vit_prob_ = item->vit_prob_;
     }
-    if (item != o_item) freelist->push_back(item);*/ // while not using s2n
+    if (item != o_item) freelist->push_back(item);*/
 	}
 
 	inline GCandidate* CreateCandidate(const Hypergraph::Edge& edge,SharedArrayIterator* headIterator,SharedArrayIterator** tailIterators){

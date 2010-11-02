@@ -440,7 +440,6 @@ int main(int argc, char** argv) {
 						trans.clear();
 						
 						//As sum *= 
-						//cerr << "Best path: " <<log (ViterbiESentence(forest, &trans))<<endl;
 						ViterbiESentence(forest, &trans);
 						//AStot_count++;
 						//AS cerr << "Average score of translation sentence: " << log(sum)<<"/"<<tut_count<<" = "<< log(sum)/tut_count<<" = "<< exp(log(sum)/tut_count) << endl;

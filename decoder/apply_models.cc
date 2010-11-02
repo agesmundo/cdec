@@ -864,14 +864,13 @@ public:
 		}
 
 		//free memory used by cands
-		for (int i = 0; i < cands.size(); ++i){
-			delete cands[i];
-		}
-		for (int i = 0; i < free.size(); ++i){
-			delete free[i];
-		}
+		FreeAll(cands,free);
+		
+		//cerr << "Best path: " <<log (ViterbiESentence(forest, &trans))<<endl;
+		
 		//TODO clean tree remove edges with dummy tails
 		//see method in KBest
+		//out.PruneUnreachable(D[goal_id].front()->node_index_);//put node index of goal
 	}
 
 private:
@@ -925,13 +924,19 @@ private:
 		return aCand;
 	}
 
-	void FreeAll() {
-		for (int i = 0; i < D.size(); ++i) {
-			GCandidateSmartList& D_i = D[i];
-			for (int j = 0; j < D_i.size(); ++j)
-				delete D_i[j];
+	void FreeAll(		GCandidateHeap& cands,	GCandidateList& free) {
+		for (int i = 0; i < cands.size(); ++i){
+			delete cands[i];
 		}
-		D.clear();
+		for (int i = 0; i < free.size(); ++i){
+			delete free[i];
+		}
+//		for (int i = 0; i < D.size(); ++i) {
+//			GCandidateSmartList& D_i = D[i];
+//			for (int j = 0; j < D_i.size(); ++j)
+//				delete D_i[j];
+//		}
+//		D.clear();
 	}
 
 	void IncorporateIntoPlusLMForest(GCandidate* item,InNodeAndState2OutNode* state2node/*,CandidateList* freelist*/) {

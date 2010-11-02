@@ -19,7 +19,7 @@
 
 // Define the following macro if you want to see lots of debugging output
 // when you run the GuidedPruning
-//#define DEBUG_GP
+#define DEBUG_GP
 //#undef DEBUG_GP
 
 using namespace std;
@@ -798,6 +798,7 @@ public:
 		}
 	}
 	
+	//Warning, this allocate dyn memory!
 	SharedArrayIterator* GetIterator(){
 		SetSA();
 		return new SharedArrayIterator(sr_,list_.size());
@@ -876,7 +877,7 @@ public:
 		//free memory used by cands
 		FreeAll(cands,free);
 
-		cerr << "Best path: " <<(D[goal_id].GetIterator());//log (ViterbiESentence(forest, &trans))<<endl;
+		cerr << "Best path: " <<log(D[goal_id][0]->vit_prob_)<<endl;
 
 		//TODO clean tree remove edges with dummy tails
 		//see method in KBest

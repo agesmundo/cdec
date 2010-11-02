@@ -20,7 +20,7 @@
 #endif
 
 // Define the following macro if you want to see debugging output
-//#define DEBUG_FF_LM
+#define DEBUG_FF_LM
 //#undef DEBUG_FF_LM
 
 using namespace std;

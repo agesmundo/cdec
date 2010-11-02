@@ -228,7 +228,11 @@ struct GCandidate {
 	//GCandidate(const Hypergraph::Edge& e): in_edge_(&e) {} //TODO init iterators
 
 	~GCandidate(){
-		
+		delete head_iterator_;
+		for (int i=0; i<in_edge_->tail_nodes_.size();i++){
+			delete tail_iterators_[i];
+		}
+		delete tail_iterators_;
 	}
 	
 	bool HasNotIncorporatedTail()const{

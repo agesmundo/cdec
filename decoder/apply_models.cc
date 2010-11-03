@@ -864,14 +864,8 @@ public:
 
 			TailPropagation(*aCand, cands, unique_cands);
 
-			if(!aCand->head_iterator_){//???? should remove and check the compatibility?
-				D[aCand->in_edge_->head_node_].push_back(aCand);
-			}
-			for(int i =0; i <aCand->TailSize();i++){
-				if(!aCand->tail_iterators_[i]){
-					H[aCand->in_edge_->tail_nodes_[i]].push_back(aCand);
-				}
-			}
+			updateSLists(aCand);
+
 		}
 
 		//free memory used by cands
@@ -886,6 +880,17 @@ public:
 
 private:
 
+	void updateSLists(GCandidate* aCand){
+		if(!aCand->head_iterator_){//???? should remove and check the compatibility?
+			D[aCand->in_edge_->head_node_].push_back(aCand);
+		}
+		for(int i =0; i <aCand->TailSize();i++){
+			if(!aCand->tail_iterators_[i]){
+				H[aCand->in_edge_->tail_nodes_[i]].push_back(aCand);
+			}
+		}
+	}
+	
 	bool IsGoal (const Hypergraph::Edge& edge){
 		return (edge.head_node_==goal_id_);
 	}

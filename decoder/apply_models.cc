@@ -835,6 +835,7 @@ public:
 				goal_id_(in.nodes_.size()-1),
 				out(*o),
 				D(in.nodes_.size()),
+				H(in.nodes_.size()),
 				pop_limit_(pop_limit) {
 		cerr << "  Applying feature functions (guided pruning, pop_limit = " << pop_limit_ << ')' << endl;
 		//node_states_.reserve(kRESERVE_NUM_NODES);

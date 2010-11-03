@@ -591,6 +591,7 @@ ostream& operator<<(
 		const Hypergraph::Edge& edge) {
 	os << " Edge[";
 	os << "id_= " << edge.id_ << "; ";
+	os << "head_node_= " << edge.head_node_ << "; ";
 	os << "rule_= " << *(edge.rule_.get()) << "; ";
 	return os << "]";
 }

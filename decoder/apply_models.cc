@@ -883,10 +883,16 @@ private:
 	void updateSLists(GCandidate* aCand){
 		if(!aCand->head_iterator_){//???? should remove and check the compatibility?
 			D[aCand->in_edge_->head_node_].push_back(aCand);
+#ifdef DEBUG_GP
+			cerr << "added in D[" <<aCand->in_edge_->head_node_ <<"]\n";
+#endif
 		}
 		for(int i =0; i <aCand->TailSize();i++){
 			if(!aCand->tail_iterators_[i]){
 				H[aCand->in_edge_->tail_nodes_[i]].push_back(aCand);
+#ifdef DEBUG_GP
+			cerr << "added in H[" << aCand->in_edge_->tail_nodes_[i] <<"]\n";
+#endif
 			}
 		}
 	}

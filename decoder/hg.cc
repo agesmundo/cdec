@@ -593,5 +593,6 @@ ostream& operator<<(
 	os << "id_= " << edge.id_ << "; ";
 	os << "head_node_= " << edge.head_node_ << "; ";
 	os << "rule_= " << *(edge.rule_.get()) << "; ";
+	os << "edge_prob_= " << edge.edge_prob_ << "; ";
 	return os << "]";
 }

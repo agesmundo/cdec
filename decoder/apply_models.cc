@@ -231,14 +231,14 @@ struct GCandidate {
 
 	bool HasNotIncorporatedTail()const{
 		for(int i=0; i<TailSize();i++){
-			if(IsTailNotIncororated(i)){
+			if(IsTailNotIncorporated(i)){
 				return true;	
 			}
 		}	
 		return false;
 	}
 
-	bool IsTailNotIncororated(int i)const{
+	bool IsTailNotIncorporated(int i)const{
 		if(tail_iterators_[i]==DUMMY || tail_iterators_[i]->GetCurrent()->node_index_<0){
 			return true;
 		}
@@ -333,6 +333,9 @@ struct GCandidate {
 
 ostream& operator<<(ostream& os, const SharedArrayIterator& sai) {
 	os << "SharedArrayIterator=[";
+	os << "id:"<<&sai << "|";
+	//os <<sai.current_id_<< "|";
+	//os <<sai.length_<< "|";
 	for (int i=0; i<sai.length_ ; i++){
 		if(i==sai.current_id_){
 			os<< "(( ";
@@ -362,6 +365,7 @@ ostream& operator<<(ostream& os, const GCandidate& cand) {
 		os<< " DUMMY;";
 	}
 
+	os << "\n\t\ttail_iterator_="<<cand.tail_iterators_;
 	for(int i =0; i<cand.TailSize();i++){
 		os << "\n\t\ttail_iterator_["<<i<<"]=";
 		if(cand.tail_iterators_[i]){
@@ -374,8 +378,6 @@ ostream& operator<<(ostream& os, const GCandidate& cand) {
 
 	return os << "]";
 }
-
-
 
 struct HeapCandCompare {
 	bool operator()(const Candidate* l, const Candidate* r) const {
@@ -439,7 +441,8 @@ typedef unordered_set<const Candidate*, CandidateUniquenessHash, CandidateUnique
 typedef unordered_map<string, Candidate*, boost::hash<string> > State2Node;
 
 //GP version of State2Node
-typedef unordered_map<pair<int,string>, Hypergraph::Node*, boost::hash<pair<int,string> > >InNodeAndState2OutNode;
+//in_hg Node_id & state-> GCand
+typedef unordered_map<pair<int,string>, GCandidate*, boost::hash<pair<int,string> > >InNodeAndState2GCand;
 /*struct InNodeAndState2OutNode{
   unordered_map<pair<int,string>, Hypergraph::Node*, boost::hash<pair<int,string> > > map_;
 
@@ -834,8 +837,8 @@ public:
 				in(i),
 				goal_id_(in.nodes_.size()-1),
 				out(*o),
-				D(in.nodes_.size()),
 				H(in.nodes_.size()),
+				D(in.nodes_.size()),
 				pop_limit_(pop_limit) {
 		cerr << "  Applying feature functions (guided pruning, pop_limit = " << pop_limit_ << ')' << endl;
 		//node_states_.reserve(kRESERVE_NUM_NODES);
@@ -849,7 +852,7 @@ public:
 		GCandidateHeap cands; //contains cands
 		GCandidateList free; //popped cands, to free mem
 		UniqueGCandidateSet unique_cands; //to check that cadidate is unique at insertion in cands TODO shouldn't be needed!!!we use trick of alg2
-		InNodeAndState2OutNode state2node;//to apply dyn. prog. trik to +LM
+		InNodeAndState2GCand state2node;//to apply dyn. prog. trik to +LM
 
 		InitCands(cands, unique_cands);
 
@@ -874,6 +877,7 @@ public:
 
 		cerr << "Best path: " <<log(D[goal_id][0]->vit_prob_)<<endl;
 
+		//TODO may need to make the tree in topological order, there should be alreay a method somewhere
 		//TODO clean tree remove edges with dummy tails
 		//see method in KBest
 		//out.PruneUnreachable(D[goal_id].front()->node_index_);//put node index of goal
@@ -962,8 +966,11 @@ private:
 		//		D.clear();
 	}
 
-	void IncorporateIntoPlusLMForest(GCandidate* item,InNodeAndState2OutNode* state2node/*,CandidateList* freelist*/) {
+	void IncorporateIntoPlusLMForest(GCandidate* item,InNodeAndState2GCand* state2node/*,CandidateList* freelist*/) {
 
+#ifdef DEBUG_GP
+		cerr << "Incorporate(): \n"; 
+#endif
 		//do not incorporate if missing any tail
 		if(item->HasNotIncorporatedTail()){
 			return;	
@@ -978,16 +985,53 @@ private:
 		new_edge->prev_i_ = item->out_edge_.prev_i_;
 		new_edge->prev_j_ = item->out_edge_.prev_j_;
 
-		pair<int, string> query(item->in_edge_->id_,item->state_);
-		Hypergraph::Node*& out_node = (*state2node)[query];
-
-		//TEST PASSED assert (!(*state2node)[query]);
-		if (!out_node) { //if there is no out node with this state then create it
-			out_node = out.AddNode(in.nodes_[item->in_edge_->head_node_].cat_); //NB this should provide insertion in s2n! check!!!!
-			//TODO requery just inserted element to check insertion
-			//TEST PASSED assert ((*state2node)[query]);
+		pair<int, string> query(item->in_edge_->head_node_,item->state_);
+		GCandidate*& o_item = (*state2node)[query];
+		if (!o_item){
+			o_item = item;
 		}
-		out.ConnectEdgeToHeadNode(new_edge, out_node);
+		
+		int& node_id = o_item->node_index_;
+		if (node_id < 0) {
+			Hypergraph::Node* new_node = out.AddNode(in.nodes_[item->in_edge_->head_node_].cat_);
+			node_id = new_node->id_;
+		}
+		Hypergraph::Node* node = &out.nodes_[node_id];
+		out.ConnectEdgeToHeadNode(new_edge, node);
+
+		//TODO NB the part below is missing in GP should be done when updating D and H
+		//... it's the dyn prog trick at cands level
+
+		// update candidate if we have a better derivation
+		// note: the difference between the vit score and the estimated
+		// score is the same for all items with a common residual DP
+		// state
+/*		if (item->vit_prob_ > o_item->vit_prob_) { 
+			assert(o_item->state_ == item->state_);    // sanity check!
+			o_item->est_prob_ = item->est_prob_;
+			o_item->vit_prob_ = item->vit_prob_;
+		}
+		if (item != o_item) freelist->push_back(item);*/
+
+/*		if (!out_node) { //if there is no out node with this state then create it
+			 cerr  << "ZZZZ" <<endl;
+			 Hypergraph::Node* x;
+				if(print){
+					Hypergraph::Node*& n = out.nodes_[(*state2node)[q]];
+					x=n;
+				}
+				if(print){
+			out_node = out.AddNode(in.nodes_[item->in_edge_->head_node_].cat_,x); //NB this should provide insertion in s2n! check!!!!
+				}else{
+					out_node = out.AddNode(in.nodes_[item->in_edge_->head_node_].cat_); //NB this should provide insertion in s2n! check!!!!
+				}
+			if(print){
+				Hypergraph::Node*& n = (*state2node)[q];
+			}
+			//TODO requery just inserted element to check insertion
+		}
+		
+    out.ConnectEdgeToHeadNode(new_edge, out_node);
 		item->node_index_ = out_node->id_;
 
 
@@ -997,7 +1041,7 @@ private:
 		// note: the difference between the vit score and the estimated
 		// score is the same for all items with a common residual DP
 		// state
-		/*if (item->vit_prob_ > o_item->vit_prob_) {
+		if (item->vit_prob_ > o_item->vit_prob_) {
       assert(o_item->state_ == item->state_);    // sanity check!
       o_item->est_prob_ = item->est_prob_;
       o_item->vit_prob_ = item->vit_prob_;
@@ -1088,7 +1132,7 @@ private:
 #ifdef DEBUG_GP
 		cerr << "HeadPropagation(): \n"; 
 #endif
-		
+
 		//do not head propagate if notInc tail
 		//TODO IMP this is first version try variation for improvements
 		if(aCand.HasNotIncorporatedTail()){
@@ -1125,14 +1169,13 @@ private:
 				GCandidate* newCandWithDummyHead=CreateCandidate(currentHeadEdge,NULL,newTailIterators);
 				AddCandidate(newCandWithDummyHead,cands,unique_cands);
 
-
 				//link new cand to fathers if are there
 				GCandidate* newCandWithHead;
 				if(currentHeadEdge.head_node_<H.size() && !H[currentHeadEdge.head_node_].IsEmpty()){
 #ifdef DEBUG_GP
-					cerr << "\tput cand with head:"; 
+					cerr << "put cand with head:\n"; 
 #endif
-					newCandWithHead=CreateCandidate(currentHeadEdge,H[currentHeadEdge.head_node_].GetIterator(),newTailIterators);
+					newCandWithHead=CreateCandidate(currentHeadEdge,H[currentHeadEdge.head_node_].GetIterator(),CopyTailPTArray(newTailIterators, tailSize));
 					AddCandidate(newCandWithHead,cands,unique_cands);
 				}
 				else{
@@ -1179,6 +1222,7 @@ private:
 			GCandidate* newHeadCand=CreateCandidate(*oldHead->in_edge_,newHeadIterator,newTailIterators);
 			AddCandidate(newHeadCand,cands,unique_cands);
 		}
+		
 	}
 
 	const ModelSet& models;

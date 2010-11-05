@@ -226,7 +226,7 @@ struct GCandidate {
 		for (int i=0; i<in_edge_->tail_nodes_.size();i++){
 			delete tail_iterators_[i];
 		}
-		delete tail_iterators_;
+		delete[] tail_iterators_;
 	}
 
 	bool HasNotIncorporatedTail()const{
@@ -872,10 +872,11 @@ public:
 
 		}
 
+		cerr << "Best path: " <<log(D[goal_id][0]->vit_prob_)<<endl;
+
 		//free memory used by cands
 		FreeAll(cands,free);
 
-		cerr << "Best path: " <<log(D[goal_id][0]->vit_prob_)<<endl;
 
 		//TODO may need to make the tree in topological order, there should be alreay a method somewhere
 		//TODO clean tree remove edges with dummy tails

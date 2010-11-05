@@ -1000,6 +1000,10 @@ private:
 		Hypergraph::Node* node = &out.nodes_[node_id];
 		out.ConnectEdgeToHeadNode(new_edge, node);
 
+#ifdef DEBUG_GP
+		cerr<<"Added edge: " << *new_edge<<endl;
+#endif
+
 		//TODO NB the part below is missing in GP should be done when updating D and H
 		//... it's the dyn prog trick at cands level
 

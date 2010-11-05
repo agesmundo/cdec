@@ -840,7 +840,8 @@ public:
 				out(*o),
 				H(in.nodes_.size()),
 				D(in.nodes_.size()),
-				pop_limit_(pop_limit) {
+				pop_limit_(pop_limit),
+				node_pop_limit_(in.nodes_.size()) {
 		cerr << "  Applying feature functions (guided pruning, pop_limit = " << pop_limit_ << ')' << endl;
 		//node_states_.reserve(kRESERVE_NUM_NODES);
 	}
@@ -857,11 +858,13 @@ public:
 
 		InitCands(cands, unique_cands);
 
-		for (int pops=0;pops<100&&!cands.empty();pops++) {
+		for (int pops=pop_limit_*in.nodes_.size();pops>=0&&!cands.empty();) {
 
 			GCandidate* aCand = PopBest(cands, free);
 
-			IncorporateIntoPlusLMForest(aCand,&state2node);
+			if(IncorporateIntoPlusLMForest(aCand,&state2node)){
+				pops--;
+			}
 
 			PushSucc(*aCand, cands, unique_cands);
 
@@ -973,14 +976,23 @@ private:
 		//		D.clear();
 	}
 
-	void IncorporateIntoPlusLMForest(GCandidate* item,InNodeAndState2GCand* state2node/*,CandidateList* freelist*/) {
+	inline bool NodePoppable(int node_id){
+		return node_pop_limit_[node_id]<pop_limit_;
+	}
+
+	inline bool NodePoppable(GCandidate* cand){
+		return NodePoppable(cand->in_edge_->head_node_);
+	}
+
+	bool IncorporateIntoPlusLMForest(GCandidate* item, InNodeAndState2GCand* state2node/*,CandidateList* freelist*/) {
 
 #ifdef DEBUG_GP
 		cerr << "Incorporate(): \n"; 
 #endif
+
 		//do not incorporate if missing any tail
-		if(item->HasNotIncorporatedTail()){
-			return;	
+		if(item->HasNotIncorporatedTail() || !NodePoppable(item) ){
+			return false;	
 		}
 
 		//create new edge
@@ -1017,7 +1029,13 @@ private:
 			out_goal_id_=node->id_;
 		}
 
+		//update per node pop counter
+#ifdef DEBUG_GP
+		assert(node_pop_limit_[item->in_edge_->head_node_]<pop_limit_);
+#endif
+		node_pop_limit_[item->in_edge_->head_node_]++;
 
+		return true;
 		//TODO NB the part below is missing in GP should be done when updating D and H
 		//... it's the dyn prog trick at cands level
 
@@ -1039,6 +1057,9 @@ private:
 	}
 
 	inline void AddCandidate( GCandidate* cand,GCandidateHeap& cands, UniqueGCandidateSet& unique_cands){
+		if(!NodePoppable(cand)){
+			return;
+		}
 		cands.push_back(cand);
 		push_heap(cands.begin(), cands.end(), HeapCandCompare());
 		assert(unique_cands.insert(cand).second);  // insert into uniqueness set, sanity check
@@ -1226,8 +1247,8 @@ private:
 	//In GP we don't incorporate all cands, we need state of not-inc. cand. use state stored in cand
 	//vector<string> node_states_;  // for each node in the out-HG what is
 
-	// its q function value?
 	const int pop_limit_;
+	vector<int> node_pop_limit_;
 	
 };
 

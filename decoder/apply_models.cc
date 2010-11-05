@@ -836,6 +836,7 @@ public:
 				smeta(sm),
 				in(i),
 				goal_id_(in.nodes_.size()-1),
+				out_goal_id_(-1),
 				out(*o),
 				H(in.nodes_.size()),
 				D(in.nodes_.size()),
@@ -879,6 +880,11 @@ public:
 
 
 		//TODO may need to make the tree in topological order, there should be alreay a method somewhere
+#ifdef DEBUG_GP
+		assert(out_goal_id_>=0);
+#endif
+		out.TopologicallySortNodesAndEdges(out_goal_id_);
+
 		//TODO clean tree remove edges with dummy tails
 		//see method in KBest
 		//out.PruneUnreachable(D[goal_id].front()->node_index_);//put node index of goal
@@ -903,7 +909,7 @@ private:
 		}
 	}
 	
-	bool IsGoal (const Hypergraph::Edge& edge){
+	inline bool IsGoal (const Hypergraph::Edge& edge){
 		return (edge.head_node_==goal_id_);
 	}
 
@@ -1004,6 +1010,14 @@ private:
 		cerr<<"Added edge: " << *new_edge<<endl;
 #endif
 
+		if(IsGoal(*item)){
+#ifdef DEBUG_GP
+			assert(out_goal_id_==-1 || out_goal_id_==node->id_);	
+#endif
+			out_goal_id_=node->id_;
+		}
+
+
 		//TODO NB the part below is missing in GP should be done when updating D and H
 		//... it's the dyn prog trick at cands level
 
@@ -1018,40 +1032,6 @@ private:
 		}
 		if (item != o_item) freelist->push_back(item);*/
 
-/*		if (!out_node) { //if there is no out node with this state then create it
-			 cerr  << "ZZZZ" <<endl;
-			 Hypergraph::Node* x;
-				if(print){
-					Hypergraph::Node*& n = out.nodes_[(*state2node)[q]];
-					x=n;
-				}
-				if(print){
-			out_node = out.AddNode(in.nodes_[item->in_edge_->head_node_].cat_,x); //NB this should provide insertion in s2n! check!!!!
-				}else{
-					out_node = out.AddNode(in.nodes_[item->in_edge_->head_node_].cat_); //NB this should provide insertion in s2n! check!!!!
-				}
-			if(print){
-				Hypergraph::Node*& n = (*state2node)[q];
-			}
-			//TODO requery just inserted element to check insertion
-		}
-		
-    out.ConnectEdgeToHeadNode(new_edge, out_node);
-		item->node_index_ = out_node->id_;
-
-
-		//TODO NB the part below is missing in GP should be done when updating D and H
-		//... it's the dyn prog trick at cands level
-		// update candidate if we have a better derivation
-		// note: the difference between the vit score and the estimated
-		// score is the same for all items with a common residual DP
-		// state
-		if (item->vit_prob_ > o_item->vit_prob_) {
-      assert(o_item->state_ == item->state_);    // sanity check!
-      o_item->est_prob_ = item->est_prob_;
-      o_item->vit_prob_ = item->vit_prob_;
-    }
-    if (item != o_item) freelist->push_back(item);*/
 	}
 
 	inline GCandidate* CreateCandidate(const Hypergraph::Edge& edge,SharedArrayIterator* headIterator,SharedArrayIterator** tailIterators){
@@ -1234,6 +1214,7 @@ private:
 	const SentenceMetadata& smeta;
 	const Hypergraph& in;
 	int goal_id_;
+	int out_goal_id_;	
 	Hypergraph& out; //TODO should end with _ , refactor with eclipse
 
 	vector<GCandidateSmartList> H;//maps (cand head) nodeID to cands with same node as dummy tail for match
@@ -1247,6 +1228,7 @@ private:
 
 	// its q function value?
 	const int pop_limit_;
+	
 };
 
 struct NoPruningRescorer {

@@ -195,7 +195,7 @@ struct GCandidate {
 	const Hypergraph::Edge* in_edge_;    // in -LM forest
 	Hypergraph::Edge out_edge_; //TODO can avoid allocate this? allocate few fields?
 	string state_;
-	prob_t vit_prob_;            // these are fixed until the cand is popped, then they may be updated (not true in GP, cause not using dyn prog trick for cands)
+	prob_t vit_prob_;          // these are fixed until the cand is popped, then they may be updated (not true in GP, cause not using dyn prog trick for cands)
 	prob_t est_prob_;
 
 	//always test befor access, if dummy =0 
@@ -223,10 +223,12 @@ struct GCandidate {
 
 	~GCandidate(){
 		delete head_iterator_;
-		for (int i=0; i<in_edge_->tail_nodes_.size();i++){
-			delete tail_iterators_[i];
+		if (tail_iterators_){
+			for (int i=0; i<in_edge_->tail_nodes_.size();i++){
+				delete tail_iterators_[i];
+			}
+			delete[] tail_iterators_;
 		}
-		delete[] tail_iterators_;
 	}
 
 	bool HasNotIncorporatedTail()const{
@@ -882,13 +884,12 @@ public:
 		FreeAll(cands,free);
 
 
-		//TODO may need to make the tree in topological order, there should be alreay a method somewhere
+		//need to make the tree nodes in topological order
 #ifdef DEBUG_GP
 		assert(out_goal_id_>=0);
 #endif
 		out.TopologicallySortNodesAndEdges(out_goal_id_);
 
-		//TODO clean tree remove edges with dummy tails
 		//see method in KBest
 		//out.PruneUnreachable(D[goal_id].front()->node_index_);//put node index of goal
 	}
@@ -961,7 +962,7 @@ private:
 		return aCand;
 	}
 
-	void FreeAll(		GCandidateHeap& cands,	GCandidateList& free) {
+	void FreeAll(GCandidateHeap& cands, GCandidateList& free) {
 		for (int i = 0; i < cands.size(); ++i){
 			delete cands[i];
 		}
@@ -1115,13 +1116,20 @@ private:
 				const Hypergraph::Node& currentTailNode = in.nodes_[currentTailNodeID];
 				for(int j=0;j<currentTailNode.in_edges_.size();j++){
 					const Hypergraph::Edge& currentTailEdge = in.edges_[currentTailNode.in_edges_[j]];
-					SharedArrayIterator** newTailIterators = new SharedArrayIterator*[TailSize(currentTailEdge)];
-					for(int k=0;k<TailSize(currentTailEdge);k++){
-						if(D[currentTailNodeID].IsEmpty()){
-							newTailIterators[j]=NULL;
-						}
-						else{
-							newTailIterators[j]=D[currentTailNodeID].GetIterator();//check head compatibility if we add also not dummy head in D
+					int tailSize = TailSize(currentTailEdge);
+					SharedArrayIterator** newTailIterators;
+					if(tailSize==0){
+						newTailIterators=DUMMY;
+					}	
+					else{
+						newTailIterators = new SharedArrayIterator*[tailSize];
+						for(int k=0;k<tailSize;k++){
+							if(D[currentTailNodeID].IsEmpty()){
+								newTailIterators[j]=NULL;
+							}
+							else{
+								newTailIterators[j]=D[currentTailNodeID].GetIterator();//check head compatibility if we add also not dummy head in D
+							}
 						}
 					}
 					SharedArrayIterator* newHeadIterator = new SharedArrayIterator(&aCand);

@@ -843,7 +843,8 @@ public:
 				H(in.nodes_.size()),
 				D(in.nodes_.size()),
 				pop_limit_(pop_limit),
-				node_pop_limit_(in.nodes_.size()) {
+				node_pop_limit_(in.nodes_.size()),
+				free_(in.nodes_.size()*pop_limit_) { //TODO try to change init size for performances //TODO try to put it back a s meth variable for per, if getworst move cands to class variable
 		cerr << "  Applying feature functions (guided pruning, pop_limit = " << pop_limit_ << ')' << endl;
 		//node_states_.reserve(kRESERVE_NUM_NODES);
 	}
@@ -854,7 +855,6 @@ public:
 		int pregoal = goal_id - 1;
 		assert(in.nodes_[pregoal].out_edges_.size() == 1);
 		GCandidateHeap cands; //contains cands
-		GCandidateList free; //popped cands, to free mem
 		UniqueGCandidateSet unique_cands; //to check that cadidate is unique at insertion in cands TODO shouldn't be needed!!!we use trick of alg2
 		InNodeAndState2GCand state2node;//to apply dyn. prog. trik to +LM
 
@@ -862,7 +862,7 @@ public:
 
 		for (int pops=pop_limit_*in.nodes_.size();pops>=0&&!cands.empty();) {
 
-			GCandidate* aCand = PopBest(cands, free);
+			GCandidate* aCand = PopBest(cands);
 
 			if(IncorporateIntoPlusLMForest(aCand,&state2node)){
 				pops--;
@@ -881,7 +881,7 @@ public:
 		cerr << "Best path: " <<log(D[goal_id][0]->vit_prob_)<<endl;
 
 		//free memory used by cands
-		FreeAll(cands,free);
+		FreeAll(cands);
 
 
 		//need to make the tree nodes in topological order
@@ -950,31 +950,25 @@ private:
 	}
 
 	//order cands and pop best
-	inline GCandidate* PopBest(GCandidateHeap& cands,GCandidateList& free){
+	inline GCandidate* PopBest(GCandidateHeap& cands){
 		make_heap(cands.begin(), cands.end(), HeapCandCompare());
 		pop_heap(cands.begin(), cands.end(), HeapCandCompare());
 		GCandidate* aCand = cands.back(); //accepted cand
 		cands.pop_back();
-		free.push_back(aCand);//TODO ? could free when incorporated?
+		free_.push_back(aCand);
 #ifdef DEBUG_GP
 		cerr << "PopBest(): " << *aCand << "\n"; 
 #endif
 		return aCand;
 	}
 
-	void FreeAll(GCandidateHeap& cands, GCandidateList& free) {
+	void FreeAll(GCandidateHeap& cands) {
 		for (int i = 0; i < cands.size(); ++i){
 			delete cands[i];
 		}
-		for (int i = 0; i < free.size(); ++i){
-			delete free[i];
+		for (int i = 0; i < free_.size(); ++i){
+			delete free_[i];
 		}
-		//		for (int i = 0; i < D.size(); ++i) {
-		//			GCandidateSmartList& D_i = D[i];
-		//			for (int j = 0; j < D_i.size(); ++j)
-		//				delete D_i[j];
-		//		}
-		//		D.clear();
 	}
 
 	inline bool NodePoppable(int node_id){
@@ -1073,10 +1067,10 @@ private:
 #endif
 	}
 
-	inline SharedArrayIterator** CopyTailPTArray(SharedArrayIterator** toCopy, int size){
+	inline SharedArrayIterator** CopyTailPTArray(SharedArrayIterator** toCopy, int size, int dummyId=-1){
 		SharedArrayIterator** newTailIterators = new SharedArrayIterator*[size];//or (SharedArrayIterator**) malloc (tailSize * sizeof(SharedArrayIterator*))
 		for(int i=0; i< size ; i++){
-			if(toCopy[i] == NULL){
+			if(toCopy[i] == NULL || i==dummyId){
 				newTailIterators[i]=NULL;
 			}
 			else{
@@ -1205,11 +1199,11 @@ private:
 				for(int j=0;j<tailSize;j++){
 					if(newCandWithHead->tail_iterators_[j] &&
 							currentHeadEdge.tail_nodes_[j]!= aCand.in_edge_->head_node_){//*
+						newTailIterators=CopyTailPTArray(newCandWithHead->tail_iterators_,tailSize,j);
 #ifdef DEBUG_GP
 						cerr << "\tput cand with dummy tail "<< j<<" :\n"; 
+						assert (newTailIterators[j]==NULL);
 #endif
-						newTailIterators=CopyTailPTArray(newCandWithHead->tail_iterators_,tailSize);
-						newTailIterators[j]=NULL;
 						GCandidate* newCandWithHeadAndADummyTail=CreateCandidate(currentHeadEdge,newCandWithHead->head_iterator_,newTailIterators);
 						AddCandidate(newCandWithHeadAndADummyTail,cands,unique_cands);
 					}
@@ -1262,6 +1256,7 @@ private:
 	const int pop_limit_;
 	vector<int> node_pop_limit_;
 	
+	GCandidateList free_; //store GCands pointer to free mem
 };
 
 struct NoPruningRescorer {

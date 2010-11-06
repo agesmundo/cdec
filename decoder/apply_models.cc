@@ -236,7 +236,7 @@ struct GCandidate {
 			if(IsTailNotIncorporated(i)){
 				return true;	
 			}
-		}	
+		}
 		return false;
 	}
 
@@ -1016,11 +1016,15 @@ private:
 			Hypergraph::Node* new_node = out.AddNode(in.nodes_[item->in_edge_->head_node_].cat_);
 			node_id = new_node->id_;
 		}
+		else{
+			item->node_index_ = node_id;
+		}
 		Hypergraph::Node* node = &out.nodes_[node_id];
 		out.ConnectEdgeToHeadNode(new_edge, node);
 
 #ifdef DEBUG_GP
-		cerr<<"Added edge: " << *new_edge<<endl;
+		cerr<<"Added edge in +LM: " << *new_edge<<endl;
+		//cerr<<"Updated cand     : " << *item;
 #endif
 
 		if(IsGoal(*item)){

@@ -888,6 +888,13 @@ public:
 #ifdef DEBUG_GP
 		assert(out_goal_id_>=0);
 #endif
+
+#ifdef DEBUG_GP
+		for (int i=0;i<out.edges_.size();i++){
+			cerr << i << ": " << out.edges_[i] << endl;
+		}
+#endif
+
 		out.TopologicallySortNodesAndEdges(out_goal_id_);
 
 		//see method in KBest
@@ -991,6 +998,7 @@ private:
 			){
 #ifdef DEBUG_GP
 				assert(new_edge.edge_prob_ == edge.edge_prob_);
+				cerr << "Not Added Matched with: " << edge;
 #endif
 				return true;
 			}	
@@ -1012,21 +1020,23 @@ private:
 		pair<int, string> query(item->in_edge_->head_node_,item->state_);
 		GCandidate*& o_item = (*state2node)[query];
 		if (!o_item){
+#ifdef DEBUG_GP
+			assert( item->node_index_ <0);
+#endif
+			Hypergraph::Node* new_node = out.AddNode(in.nodes_[item->in_edge_->head_node_].cat_);
 			o_item = item;
+			o_item->node_index_= new_node->id_;
 		}
-		else if(AlreadyIncorporated(o_item->node_index_,item->out_edge_)){
-			return false;
+		else {
+#ifdef DEBUG_GP
+			assert( o_item->node_index_ >=0);
+#endif
+			item->node_index_ = o_item->node_index_;
+			if(AlreadyIncorporated(o_item->node_index_,item->out_edge_)){
+				return false;
+			}
 		}
 		
-		int& node_id = o_item->node_index_;
-		if (node_id < 0) {
-			Hypergraph::Node* new_node = out.AddNode(in.nodes_[item->in_edge_->head_node_].cat_);
-			node_id = new_node->id_;
-		}
-		else{
-			item->node_index_ = node_id;
-		}
-
 		//create new edge
 		Hypergraph::Edge* new_edge = out.AddEdge(item->out_edge_.rule_, item->out_edge_.tail_nodes_);
 		new_edge->feature_values_ = item->out_edge_.feature_values_;
@@ -1036,7 +1046,7 @@ private:
 		new_edge->prev_i_ = item->out_edge_.prev_i_;
 		new_edge->prev_j_ = item->out_edge_.prev_j_;
 
-		Hypergraph::Node* node = &out.nodes_[node_id];
+		Hypergraph::Node* node = &out.nodes_[o_item->node_index_];
 		out.ConnectEdgeToHeadNode(new_edge, node);
 
 #ifdef DEBUG_GP
@@ -1204,7 +1214,9 @@ private:
 					}
 					else{
 						newTailIterators[j]=D[currentTailNodeID].GetIterator();//check head compatibility if we add also not dummy head in D
-						//cerr<< "Get D[" << currentTailNodeID << "]" << *newTailIterators[j];
+#ifdef DEBUG_GP
+						cerr<< "Get D[" << currentTailNodeID << "]" << *newTailIterators[j];
+#endif
 					}
 				}
 

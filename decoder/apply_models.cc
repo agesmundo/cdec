@@ -939,7 +939,7 @@ private:
 			const Hypergraph::Edge& currentEdge= in.edges_.at(i);
 			if(currentEdge.tail_nodes_.size()==0){//leafs
 				GCandidate* new_cand = CreateCandidate(currentEdge, DUMMY, DUMMY);
-				AddCandidate(new_cand,cands,unique_cands);
+				AddGCandidate(new_cand,cands,unique_cands);
 			}
 		}
 
@@ -975,8 +975,26 @@ private:
 		return node_pop_limit_[node_id]<pop_limit_;
 	}
 
-	inline bool NodePoppable(GCandidate* cand){
-		return NodePoppable(cand->in_edge_->head_node_);
+	inline bool NodePoppable(const GCandidate& cand){
+		return NodePoppable(cand.in_edge_->head_node_);
+	}
+
+	bool AlreadyIncorporated(int out_node_id,Hypergraph::Edge& new_edge){
+		Hypergraph::Node& n = out.nodes_[out_node_id];
+		const vector<int>& in_edges = n.in_edges_;
+		for (int i = 0; i < in_edges.size(); ++i) {
+			const Hypergraph::Edge& edge = in.edges_[in_edges[i]];
+			if(
+				new_edge.rule_ == edge.rule_ &&
+				new_edge.tail_nodes_ == edge.tail_nodes_ 
+			){
+#ifdef DEBUG_GP
+				assert(new_edge.edge_prob_ == edge.edge_prob_);
+#endif
+				return true;
+			}	
+		}
+		return false;
 	}
 
 	bool IncorporateIntoPlusLMForest(GCandidate* item, InNodeAndState2GCand* state2node/*,CandidateList* freelist*/) {
@@ -986,8 +1004,26 @@ private:
 #endif
 
 		//do not incorporate if missing any tail
-		if(item->HasNotIncorporatedTail() || !NodePoppable(item) ){
-			return false;	
+		if(item->HasNotIncorporatedTail() || !NodePoppable(*item) ){
+			return false;
+		}
+
+		pair<int, string> query(item->in_edge_->head_node_,item->state_);
+		GCandidate*& o_item = (*state2node)[query];
+		if (!o_item){
+			o_item = item;
+		}
+		else if(AlreadyIncorporated(o_item->node_index_,item->out_edge_)){
+			return false;
+		}
+		
+		int& node_id = o_item->node_index_;
+		if (node_id < 0) {
+			Hypergraph::Node* new_node = out.AddNode(in.nodes_[item->in_edge_->head_node_].cat_);
+			node_id = new_node->id_;
+		}
+		else{
+			item->node_index_ = node_id;
 		}
 
 		//create new edge
@@ -999,20 +1035,6 @@ private:
 		new_edge->prev_i_ = item->out_edge_.prev_i_;
 		new_edge->prev_j_ = item->out_edge_.prev_j_;
 
-		pair<int, string> query(item->in_edge_->head_node_,item->state_);
-		GCandidate*& o_item = (*state2node)[query];
-		if (!o_item){
-			o_item = item;
-		}
-		
-		int& node_id = o_item->node_index_;
-		if (node_id < 0) {
-			Hypergraph::Node* new_node = out.AddNode(in.nodes_[item->in_edge_->head_node_].cat_);
-			node_id = new_node->id_;
-		}
-		else{
-			item->node_index_ = node_id;
-		}
 		Hypergraph::Node* node = &out.nodes_[node_id];
 		out.ConnectEdgeToHeadNode(new_edge, node);
 
@@ -1055,8 +1077,8 @@ private:
 		return new GCandidate(edge,out,/*node_states_,*/ smeta, models,IsGoal(edge),headIterator,tailIterators);
 	}
 
-	inline void AddCandidate( GCandidate* cand,GCandidateHeap& cands, UniqueGCandidateSet& unique_cands){
-		if(!NodePoppable(cand)){
+	inline void AddGCandidate( GCandidate* cand,GCandidateHeap& cands, UniqueGCandidateSet& unique_cands){
+		if(!NodePoppable(*cand)){
 			return;
 		}
 		cands.push_back(cand);
@@ -1064,6 +1086,7 @@ private:
 		assert(unique_cands.insert(cand).second);  // insert into uniqueness set, sanity check
 #ifdef DEBUG_GP
 		cerr << "\tAddCandidate(): " << *cand << "\n"; 
+		assert(NodePoppable(*cand)); //TODO for complex cases assertion may be false, but better keep it untill tested 
 #endif
 	}
 
@@ -1084,6 +1107,9 @@ private:
 #ifdef DEBUG_GP
 		cerr << "PushSucc(): \n"; 
 #endif
+		if(!NodePoppable(aCand)){
+			return;
+		}
 		int tailSize =aCand.TailSize();
 		SharedArrayIterator** newTailIterators;
 		for (int i = 0; i < tailSize; ++i) {//tail nodes
@@ -1093,14 +1119,14 @@ private:
 				assert(newTailIterators[i]->Advance());//and advance
 				//TODO check compatibility of child's head if has any... while not compatible advance... IF we add all in D and not just dummy
 				GCandidate* new_cand = CreateCandidate(*aCand.in_edge_,aCand.head_iterator_,newTailIterators);
-				AddCandidate(new_cand,cands,unique_cands);
+				AddGCandidate(new_cand,cands,unique_cands);
 			}
 		}
 		if(aCand.HasMoreHead()){//head 
 			SharedArrayIterator* newHeadIterator=new SharedArrayIterator(*aCand.head_iterator_);
 			assert(newHeadIterator->Advance());
 			GCandidate* new_cand = CreateCandidate(*aCand.in_edge_,newHeadIterator,aCand.tail_iterators_);
-			AddCandidate(new_cand,cands,unique_cands);
+			AddGCandidate(new_cand,cands,unique_cands);
 		}
 	}
 
@@ -1111,6 +1137,9 @@ private:
 		for(int i=0;i<aCand.TailSize();i++){
 			if(!aCand.tail_iterators_[i]){//TODO double check, do not propagate when have tail, this is not simetric with head
 				int currentTailNodeID = aCand.in_edge_->tail_nodes_[i];
+				if(!NodePoppable(currentTailNodeID)){
+					continue;
+				}
 				const Hypergraph::Node& currentTailNode = in.nodes_[currentTailNodeID];
 				for(int j=0;j<currentTailNode.in_edges_.size();j++){
 					const Hypergraph::Edge& currentTailEdge = in.edges_[currentTailNode.in_edges_[j]];
@@ -1132,7 +1161,7 @@ private:
 					}
 					SharedArrayIterator* newHeadIterator = new SharedArrayIterator(&aCand);
 					GCandidate* newTailCand = CreateCandidate(currentTailEdge ,newHeadIterator ,newTailIterators);
-					AddCandidate(newTailCand,cands,unique_cands);
+					AddGCandidate(newTailCand,cands,unique_cands);
 					//add cands with one dummy tails??
 				}
 			}
@@ -1157,6 +1186,9 @@ private:
 			//iterate ancestor edges
 			for (int i=0;i<headNode.out_edges_.size();i++){
 				const Hypergraph::Edge& currentHeadEdge = in.edges_[headNode.out_edges_[i]];
+				if(!NodePoppable(currentHeadEdge.head_node_)){
+					continue;
+				}
 				const int tailSize = currentHeadEdge.tail_nodes_.size();
 				SharedArrayIterator** newTailIterators=new SharedArrayIterator*[tailSize];
 
@@ -1179,7 +1211,7 @@ private:
 				cerr << "\tput dummy head cand:\n"; 
 #endif
 				GCandidate* newCandWithDummyHead=CreateCandidate(currentHeadEdge,NULL,newTailIterators);
-				AddCandidate(newCandWithDummyHead,cands,unique_cands);
+				AddGCandidate(newCandWithDummyHead,cands,unique_cands);
 
 				//link new cand to fathers if are there
 				GCandidate* newCandWithHead;
@@ -1188,7 +1220,7 @@ private:
 					cerr << "put cand with head:\n"; 
 #endif
 					newCandWithHead=CreateCandidate(currentHeadEdge,H[currentHeadEdge.head_node_].GetIterator(),CopyTailPTArray(newTailIterators, tailSize));
-					AddCandidate(newCandWithHead,cands,unique_cands);
+					AddGCandidate(newCandWithHead,cands,unique_cands);
 				}
 				else{
 					newCandWithHead=newCandWithDummyHead;//use dummy head if no head
@@ -1205,7 +1237,7 @@ private:
 						assert (newTailIterators[j]==NULL);
 #endif
 						GCandidate* newCandWithHeadAndADummyTail=CreateCandidate(currentHeadEdge,newCandWithHead->head_iterator_,newTailIterators);
-						AddCandidate(newCandWithHeadAndADummyTail,cands,unique_cands);
+						AddGCandidate(newCandWithHeadAndADummyTail,cands,unique_cands);
 					}
 				}
 
@@ -1214,6 +1246,9 @@ private:
 		}
 		else{
 			GCandidate* oldHead= aCand.head_iterator_->GetCurrent();
+			if(!NodePoppable(*oldHead)){
+				return;
+			}
 			SharedArrayIterator** newTailIterators=CopyTailPTArray(oldHead->tail_iterators_,oldHead->TailSize());
 			for(int i=0;i<oldHead->TailSize();i++){
 				if(oldHead->in_edge_->tail_nodes_[i]==aCand.in_edge_->head_node_){
@@ -1232,7 +1267,7 @@ private:
 				newHeadIterator->Freeze();
 			}
 			GCandidate* newHeadCand=CreateCandidate(*oldHead->in_edge_,newHeadIterator,newTailIterators);
-			AddCandidate(newHeadCand,cands,unique_cands);
+			AddGCandidate(newHeadCand,cands,unique_cands);
 		}
 		
 	}

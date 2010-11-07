@@ -980,11 +980,12 @@ private:
 	}
 
 	bool AlreadyIncorporated(int out_node_id,Hypergraph::Edge& new_edge){
+	
 		Hypergraph::Node& n = out.nodes_[out_node_id];
 		const vector<int>& in_edges = n.in_edges_;
 		for (int i = 0; i < in_edges.size(); ++i) {
-			const Hypergraph::Edge& edge = in.edges_[in_edges[i]];
-			if(
+			const Hypergraph::Edge& edge = out.edges_[in_edges[i]];
+			if( 
 				new_edge.rule_ == edge.rule_ &&
 				new_edge.tail_nodes_ == edge.tail_nodes_ 
 			){
@@ -1203,6 +1204,7 @@ private:
 					}
 					else{
 						newTailIterators[j]=D[currentTailNodeID].GetIterator();//check head compatibility if we add also not dummy head in D
+						//cerr<< "Get D[" << currentTailNodeID << "]" << *newTailIterators[j];
 					}
 				}
 

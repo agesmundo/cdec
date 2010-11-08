@@ -154,7 +154,7 @@ struct SharedArrayIterator{
 		length_=toCopy.length_;
 		current_id_=toCopy.current_id_;
 	}
-	
+
 	SharedArrayIterator(const	boost::shared_array<GCandidate*> sr, int length){
 		sr_=sr; //point to same dynamic array
 		length_=length;
@@ -793,7 +793,7 @@ public:
 		list_.push_back(item);
 		needNewSA_=true;
 	}
-	
+
 	void SetSA(){
 		if(needNewSA_){
 			sort(list_.begin(),list_.end(),EstProbSorter());
@@ -802,16 +802,16 @@ public:
 			needNewSA_=false;
 		}
 	}
-	
+
 	//Warning, this allocate dyn memory!
 	SharedArrayIterator* GetIterator(){
 		SetSA();
 		return new SharedArrayIterator(sr_,list_.size());
 	}
 
-//	size_t size() const {
-//		return list_.size();
-//	}
+	//	size_t size() const {
+	//		return list_.size();
+	//	}
 
 	const GCandidate* operator[](size_t id){
 		if(IsEmpty())return NULL;
@@ -822,7 +822,7 @@ public:
 	bool IsEmpty(){
 		return list_.size()==0; 
 	}
-	
+
 };
 
 
@@ -894,7 +894,7 @@ public:
 			cerr << i << ": " << out.edges_[i] << endl;
 		}
 #endif
-		
+
 		out.TopologicallySortNodesAndEdges(out_goal_id_);
 
 		//Not needed if Topo.Sort is called already 
@@ -914,12 +914,12 @@ private:
 			if(!aCand->tail_iterators_[i]){
 				H[aCand->in_edge_->tail_nodes_[i]].push_back(aCand);
 #ifdef DEBUG_GP
-			cerr << "added in H[" << aCand->in_edge_->tail_nodes_[i] <<"]\n";
+				cerr << "added in H[" << aCand->in_edge_->tail_nodes_[i] <<"]\n";
 #endif
 			}
 		}
 	}
-	
+
 	inline bool IsGoal (const Hypergraph::Edge& edge){
 		return (edge.head_node_==goal_id_);
 	}
@@ -987,14 +987,14 @@ private:
 	}
 
 	bool AlreadyIncorporated(int out_node_id,Hypergraph::Edge& new_edge){
-	
+
 		Hypergraph::Node& n = out.nodes_[out_node_id];
 		const vector<int>& in_edges = n.in_edges_;
 		for (int i = 0; i < in_edges.size(); ++i) {
 			const Hypergraph::Edge& edge = out.edges_[in_edges[i]];
 			if( 
-				new_edge.rule_ == edge.rule_ &&
-				new_edge.tail_nodes_ == edge.tail_nodes_ 
+					new_edge.rule_ == edge.rule_ &&
+					new_edge.tail_nodes_ == edge.tail_nodes_ 
 			){
 #ifdef DEBUG_GP
 				assert(new_edge.edge_prob_ == edge.edge_prob_);
@@ -1036,7 +1036,7 @@ private:
 				return false;
 			}
 		}
-		
+
 		//create new edge
 		Hypergraph::Edge* new_edge = out.AddEdge(item->out_edge_.rule_, item->out_edge_.tail_nodes_);
 		new_edge->feature_values_ = item->out_edge_.feature_values_;
@@ -1075,7 +1075,7 @@ private:
 		// note: the difference between the vit score and the estimated
 		// score is the same for all items with a common residual DP
 		// state
-/*		if (item->vit_prob_ > o_item->vit_prob_) { 
+		/*		if (item->vit_prob_ > o_item->vit_prob_) { 
 			assert(o_item->state_ == item->state_);    // sanity check!
 			o_item->est_prob_ = item->est_prob_;
 			o_item->vit_prob_ = item->vit_prob_;
@@ -1158,15 +1158,18 @@ private:
 					SharedArrayIterator** newTailIterators;
 					if(tailSize==0){
 						newTailIterators=DUMMY;
-					}	
+					}
 					else{
 						newTailIterators = new SharedArrayIterator*[tailSize];
 						for(int k=0;k<tailSize;k++){
 							if(D[currentTailNodeID].IsEmpty()){
-								newTailIterators[j]=NULL;
+								newTailIterators[k]=NULL;
 							}
 							else{
-								newTailIterators[j]=D[currentTailNodeID].GetIterator();//check head compatibility if we add also not dummy head in D
+								newTailIterators[k]=D[currentTailNodeID].GetIterator();//check head compatibility if we add also not dummy head in D
+#ifdef DEBUG_GP
+								cerr<< "Get D[" << currentTailNodeID << "]" << *newTailIterators[k] << endl;
+#endif
 							}
 						}
 					}
@@ -1188,7 +1191,7 @@ private:
 		//do not head propagate if notInc tail
 		//TODO IMP this is first version try variation for improvements
 		if(aCand.HasNotIncorporatedTail()){
-			return;	
+			return;
 		}
 		
 		if(!aCand.head_iterator_){
@@ -1215,7 +1218,7 @@ private:
 					else{
 						newTailIterators[j]=D[currentTailNodeID].GetIterator();//check head compatibility if we add also not dummy head in D
 #ifdef DEBUG_GP
-						cerr<< "Get D[" << currentTailNodeID << "]" << *newTailIterators[j];
+						cerr<< "Get D[" << currentTailNodeID << "]" << *newTailIterators[j] << endl;
 #endif
 					}
 				}
@@ -1259,6 +1262,9 @@ private:
 
 		}
 		else{
+#ifdef DEBUG_GP
+				cerr << "\tput updated head:\n"; 
+#endif
 			GCandidate* oldHead= aCand.head_iterator_->GetCurrent();
 			if(!NodePoppable(*oldHead)){
 				return;
@@ -1283,7 +1289,7 @@ private:
 			GCandidate* newHeadCand=CreateCandidate(*oldHead->in_edge_,newHeadIterator,newTailIterators);
 			AddGCandidate(newHeadCand,cands,unique_cands);
 		}
-		
+
 	}
 
 	const ModelSet& models;
@@ -1304,7 +1310,7 @@ private:
 
 	const int pop_limit_;
 	vector<int> node_pop_limit_;
-	
+
 	GCandidateList free_; //store GCands pointer to free mem
 };
 

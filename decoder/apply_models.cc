@@ -894,11 +894,11 @@ public:
 			cerr << i << ": " << out.edges_[i] << endl;
 		}
 #endif
-
+		
 		out.TopologicallySortNodesAndEdges(out_goal_id_);
 
-		//see method in KBest
-		//out.PruneUnreachable(D[goal_id].front()->node_index_);//put node index of goal
+		//Not needed if Topo.Sort is called already 
+		//out.PruneUnreachable(out_goal_id_);
 	}
 
 private:

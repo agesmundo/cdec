@@ -236,8 +236,8 @@ void register_feature_functions();
 
 int main(int argc, char** argv) {
 	//AS average score of the traslation sentences
-	//AS prob_t sum= prob_t::One();
-	//AS int tut_count =0;
+	prob_t sum= prob_t::One();//AS 
+	int tot_count =0;//AS 
 	
 	global_ff_registry.reset(new FFRegistry);
 	register_feature_functions();
@@ -439,11 +439,11 @@ int main(int argc, char** argv) {
 						forest.Reweight(feature_weights);
 						trans.clear();
 						
-						//As sum *= 
+						sum *= ViterbiESentence(forest, &trans); //AS
 						cerr << "Best path: " <<log (ViterbiESentence(forest, &trans))<<endl;
 						ViterbiESentence(forest, &trans);
-						//AStot_count++;
-						//AS cerr << "Average score of translation sentence: " << log(sum)<<"/"<<tut_count<<" = "<< log(sum)/tut_count<<" = "<< exp(log(sum)/tut_count) << endl;
+						tot_count++;//AS 
+						cerr << "Average score of translation sentence : " << log(sum)<<"/"<<tot_count<<" = "<< log(sum)/tot_count<<" = "<< exp(log(sum)/tot_count) << endl;//AS
 						
 						cerr << "  +LM forest (nodes/edges): " << forest.nodes_.size() << '/' << forest.edges_.size() << endl;
 						cerr << "  +LM forest       (paths): " << forest.NumberOfPaths() << endl;

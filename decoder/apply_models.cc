@@ -295,6 +295,9 @@ struct GCandidate {
 		for (int i = 0; i < tail.size(); ++i) {
 			if (tail_iterators_[i]){//is not dummy
 				const GCandidate* ant=tail_iterators_[i]->GetCurrent();
+#ifdef DEBUG_GP
+				assert(ant->node_index_>=0);
+#endif
 				tail[i] = ant->node_index_;
 				p *= ant->vit_prob_;
 			}
@@ -933,6 +936,16 @@ public:
 		//XXX cerr << "======" << list_[0];
 		return list_[0]->est_prob_ < cand->est_prob_;
 	}
+	
+	bool IsInKBest(GCandidate* cand){
+		if(IsEmpty()) return true;
+		sort(list_.begin(),list_.end(),EstProbSorter());
+		//XXX cerr << "======" << list_[0];
+		if (list_.size() <= GCandidateSmartList::pop_limit_ )	{//TODO loop to avoid doubles
+			return list_.back()->est_prob_ < cand->est_prob_;
+		}
+		return list_[GCandidateSmartList::pop_limit_-1]->est_prob_ < cand->est_prob_;
+	}
 
 };
 int GCandidateSmartList::pop_limit_;
@@ -1261,7 +1274,8 @@ private:
 				return Hc[cand->in_edge_->tail_nodes_[i]].IsNewBest(cand);
 			}
 		}
-		return Dc[cand->in_edge_->head_node_].IsNewBest(cand);
+		return Dc[cand->in_edge_->head_node_].IsInKBest(cand);
+		//return Dc[cand->in_edge_->head_node_].IsNewBest(cand);
 	}
 
 	inline void AddGCandidate( GCandidate* cand,GCandidateHeap& cands/*, UniqueGCandidateSet& unique_cands*/){

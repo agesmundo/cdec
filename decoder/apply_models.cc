@@ -231,14 +231,14 @@ struct GCandidate {
 		}
 	}
 
-	/*	bool HasDummyTail()const{
+		bool HasDummyTail()const{
 		for(int i=0; i<TailSize();i++){
 			if(tail_iterators_[i]==DUMMY){
-				return false;	
+				return true;	
 			}
 		}
-		return true;
-	}*/
+		return false;
+	}
 
 	bool HasNotIncorporatedTail()const{
 		for(int i=0; i<TailSize();i++){
@@ -954,6 +954,8 @@ public:
 				out(*o),
 				H(in.nodes_.size()),
 				D(in.nodes_.size()),
+				Hc(in.nodes_.size()),
+				Dc(in.nodes_.size()),
 				pop_limit_(pop_limit),
 				free_(in.nodes_.size()*pop_limit_) { //TODO speed+-
 		GCandidateSmartList::pop_limit_=pop_limit;
@@ -980,6 +982,9 @@ public:
 			GCandidate* aCand = PopBest(cands);
 
 			if(!GCandPoppable(*aCand) && !IsNewBest(aCand)){//TODO comment out not poppable here (and in add GCand) and compare number of nodes that arrived at the beam size, make sure has same performances
+#ifdef DEBUG_GP
+				cerr << "NotPoppable and NotNewBest" << endl;
+#endif
 				continue;
 			}
 
@@ -1016,7 +1021,7 @@ public:
 private:
 
 	void UpdateSLists(GCandidate* aCand){
-		if(!aCand->head_iterator_ && !aCand->HasNotIncorporatedTail()){
+		if(!aCand->head_iterator_ && !aCand->HasDummyTail()){
 			D[aCand->in_edge_->head_node_].push_back(aCand);
 #ifdef DEBUG_GP
 			cerr << "added in D[" <<aCand->in_edge_->head_node_ <<"] | size = " << D[aCand->in_edge_->head_node_].size() << endl;
@@ -1028,6 +1033,25 @@ private:
 					H[aCand->in_edge_->tail_nodes_[i]].push_back(aCand);
 #ifdef DEBUG_GP
 					cerr << "added in H[" << aCand->in_edge_->tail_nodes_[i] <<"] | size = " << H[aCand->in_edge_->tail_nodes_[i]].size() << endl;
+#endif
+				}
+			}
+		}
+	}
+	
+	void UpdateSListsC(GCandidate* aCand){
+		if(!aCand->head_iterator_ && !aCand->HasDummyTail()){
+			Dc[aCand->in_edge_->head_node_].push_back(aCand);
+#ifdef DEBUG_GP
+			cerr << "added in Dc[" <<aCand->in_edge_->head_node_ <<"] | size = " << Dc[aCand->in_edge_->head_node_].size() << endl;
+#endif
+		}
+		if(!aCand->head_iterator_){
+			for(int i =0; i <aCand->TailSize();i++){
+				if(!aCand->tail_iterators_[i]){
+					Hc[aCand->in_edge_->tail_nodes_[i]].push_back(aCand);
+#ifdef DEBUG_GP
+					cerr << "added in Hc[" << aCand->in_edge_->tail_nodes_[i] <<"] | size = " << Hc[aCand->in_edge_->tail_nodes_[i]].size() << endl;
 #endif
 				}
 			}
@@ -1101,6 +1125,16 @@ private:
 		if(D[cand.in_edge_->head_node_].size()>=pop_limit_) return false;
 		for(int i=0; i<cand.TailSize();i++){
 			if(cand.tail_iterators_[i]==DUMMY && H[cand.in_edge_->tail_nodes_[i]].size()>=pop_limit_){
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	inline bool GCandPoppableC(const GCandidate& cand){
+		if(Dc[cand.in_edge_->head_node_].size()>=pop_limit_) return false;
+		for(int i=0; i<cand.TailSize();i++){
+			if(cand.tail_iterators_[i]==DUMMY && Hc[cand.in_edge_->tail_nodes_[i]].size()>=pop_limit_){
 				return false;
 			}
 		}
@@ -1220,6 +1254,15 @@ private:
 		}
 		return D[cand->in_edge_->head_node_].IsNewBest(cand);
 	}
+	
+	bool IsNewBestC(GCandidate* cand){
+		for(int i=0; i<cand->TailSize();i++){
+			if(cand->tail_iterators_[i]==DUMMY){
+				return Hc[cand->in_edge_->tail_nodes_[i]].IsNewBest(cand);
+			}
+		}
+		return Dc[cand->in_edge_->head_node_].IsNewBest(cand);
+	}
 
 	inline void AddGCandidate( GCandidate* cand,GCandidateHeap& cands/*, UniqueGCandidateSet& unique_cands*/){
 //		if(!unique_cands.insert(cand).second){
@@ -1229,7 +1272,7 @@ private:
 //			free_.push_back(cand);
 //			return;
 //		}
-		if(!GCandPoppable(*cand) && !IsNewBest(cand)){
+		if(!GCandPoppableC(*cand) && !IsNewBestC(cand)){
 #ifdef DEBUG_GP
 			cerr << " NotPop and NotNewBest"<< endl;
 #endif
@@ -1242,6 +1285,9 @@ private:
 
 		cands.push_back(cand);
 		push_heap(cands.begin(), cands.end(), HeapCandCompare());
+		
+		UpdateSListsC(cand);
+		
 		//assert(unique_cands.insert(cand).second);  // insert into uniqueness set, sanity check
 #ifdef DEBUG_GP
 		cerr << "\tAddCandidate(): " << *cand << "\n"; 
@@ -1476,6 +1522,8 @@ private:
 
 	vector<GCandidateSmartList> H;//maps (cand head) nodeID to cands with same node as dummy tail for match
 	vector<GCandidateSmartList> D;//maps (cand tail) nodeID to cands with same node as (NB also not dummy!!! check match) head for match//TODO check match
+	vector<GCandidateSmartList> Hc;
+	vector<GCandidateSmartList> Dc;
 	// maps nodes in in-HG to the
 	// equivalent nodes (many due to state
 	// splits) in the out-HG.

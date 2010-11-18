@@ -19,7 +19,7 @@
 
 // Define the following macro if you want to see lots of debugging output
 // when you run the GuidedPruning
-#define DEBUG_GP
+//#define DEBUG_GP
 //#undef DEBUG_GP
 
 using namespace std;
@@ -439,6 +439,7 @@ struct CandidateUniquenessEquals {
 
 	bool operator()(const GCandidate* a, const GCandidate* b) const {
 		if (a->in_edge_ != b->in_edge_) return false;
+		if (a->vit_prob_ != b->vit_prob_) return false;
 		//if (a->GetCurrentHeadIterator() != b->GetCurrentHeadIterator())return false;
 		if (a->TailSize()!=b->TailSize()) return false;
 		for (int i =0; i<a->TailSize();i++){
@@ -505,9 +506,9 @@ public:
 		out.PruneUnreachable(D[goal_id].front()->node_index_);
 		FreeAll();
 
-//		for (int i=0;i<out.edges_.size();i++){
-//			cerr << i << ": " << out.edges_[i] << endl;
-//		}
+		//		for (int i=0;i<out.edges_.size();i++){
+		//			cerr << i << ": " << out.edges_[i] << endl;
+		//		}
 	}
 
 private:
@@ -929,7 +930,7 @@ public:
 	bool IsNewBest(GCandidate* cand){
 		if(IsEmpty()) return true;
 		sort(list_.begin(),list_.end(),EstProbSorter());
-		cerr << "======" << list_[0];
+		//XXX cerr << "======" << list_[0];
 		return list_[0]->est_prob_ < cand->est_prob_;
 	}
 
@@ -966,10 +967,10 @@ public:
 		int pregoal = goal_id - 1;
 		assert(in.nodes_[pregoal].out_edges_.size() == 1);
 		GCandidateHeap cands; //contains cands
-		UniqueGCandidateSet unique_cands; //to check that cadidate is unique at insertion in cands TODO shouldn't be needed!!!we use trick of alg2
+		//UniqueGCandidateSet unique_cands; //to check that cadidate is unique at insertion in cands TODO shouldn't be needed!!!we use trick of alg2
 		InNodeAndState2GCand state2node;//to apply dyn. prog. trik to +LM
 
-		InitCands(cands, unique_cands);
+		InitCands(cands/*, unique_cands*/);
 
 		int count =0;
 		for (;!cands.empty();) {
@@ -981,19 +982,22 @@ public:
 
 			IncorporateIntoPlusLMForest(aCand,&state2node);
 
-			if(IsNewBest(aCand)){
-				cerr << "Y" ;
-			}
-			if(!GCandPoppable(*aCand) /*&& !IsNewBest(aCand)*/){
-				cerr << "X" ;
+//			if(IsNewBest(aCand)){
+//				//XXX cerr << "Y" ;
+//			}
+			if(!GCandPoppable(*aCand) && !IsNewBest(aCand)){ //TODO move this up
+				//XXX cerr << "X" ;
 				continue;
 			}
+			if(!GCandPoppable(*aCand)){
+				count++;
+			}
 
-			PushSucc(*aCand, cands, unique_cands);
+			PushSucc(*aCand, cands/*, unique_cands*/);
 
-			HeadPropagation(*aCand, cands, unique_cands);
+			HeadPropagation(*aCand, cands/*, unique_cands*/);
 
-			//TailPropagation(*aCand, cands, unique_cands);
+			//TailPropagation(*aCand, cands/*, unique_cands*/);
 
 			UpdateSLists(aCand);
 
@@ -1010,10 +1014,10 @@ public:
 			cerr << i << ": " << out.edges_[i] << endl;
 		}
 #endif
-		
-		out.TopologicallySortNodesAndEdges(out_goal_id_);
 
-		cerr << "EEE : " << count << endl;
+		out.TopologicallySortNodesAndEdges(out_goal_id_);
+		
+		cerr << "E : " << count << endl;
 		//Not needed if Topo.Sort is called already 
 		//out.PruneUnreachable(out_goal_id_);
 	}
@@ -1056,7 +1060,7 @@ private:
 	}
 
 	//initialize candidate heap with leafs
-	void InitCands(GCandidateHeap& cands, UniqueGCandidateSet& unique_cands)
+	void InitCands(GCandidateHeap& cands/*, UniqueGCandidateSet& unique_cands*/)
 	{
 #ifdef DEBUG_GP
 		cerr << "InintCands(): " << "\n"; 
@@ -1065,7 +1069,7 @@ private:
 			const Hypergraph::Edge& currentEdge= in.edges_.at(i);
 			if(currentEdge.tail_nodes_.size()==0){//leafs
 				GCandidate* new_cand = CreateCandidate(currentEdge, DUMMY, DUMMY);
-				AddGCandidate(new_cand,cands,unique_cands);
+				AddGCandidate(new_cand,cands/*,unique_cands*/);
 			}
 		}
 
@@ -1098,9 +1102,9 @@ private:
 		}
 	}
 
-//	inline bool NodePoppable(int node_id){
-//		return D[node_id].size()>=pop_limit_;
-//	}
+	//	inline bool NodePoppable(int node_id){
+	//		return D[node_id].size()>=pop_limit_;
+	//	}
 
 	inline bool GCandPoppable(const GCandidate& cand){
 		if(D[cand.in_edge_->head_node_].size()>=pop_limit_) return false;
@@ -1226,14 +1230,14 @@ private:
 		return D[cand->in_edge_->head_node_].IsNewBest(cand);
 	}
 
-	inline void AddGCandidate( GCandidate* cand,GCandidateHeap& cands, UniqueGCandidateSet& unique_cands){
-		if(!unique_cands.insert(cand).second){
-			//#ifdef DEBUG_GP
-			cerr << "Not unique GCand: "<< *cand <<endl;
-			//#endif
-			free_.push_back(cand);
-			return;
-		}
+	inline void AddGCandidate( GCandidate* cand,GCandidateHeap& cands/*, UniqueGCandidateSet& unique_cands*/){
+//		if(!unique_cands.insert(cand).second){
+//#ifdef DEBUG_GP
+//			cerr << "Not unique GCand: "<< *cand <<endl;
+//#endif
+//			free_.push_back(cand);
+//			return;
+//		}
 		if(!GCandPoppable(*cand) && !IsNewBest(cand)){
 #ifdef DEBUG_GP
 			cerr << " NotPop and NotNewBest"<< endl;
@@ -1274,7 +1278,7 @@ private:
 		return new SharedArrayIterator(*toCopy);
 	}
 
-	void PushSucc(const GCandidate& aCand, GCandidateHeap& cands, UniqueGCandidateSet& unique_cands) {
+	void PushSucc(const GCandidate& aCand, GCandidateHeap& cands/*, UniqueGCandidateSet& unique_cands*/) {
 #ifdef DEBUG_GP
 		cerr << "PushSucc(): \n"; 
 #endif
@@ -1293,7 +1297,7 @@ private:
 				assert(newTailIterators[i]->Advance());//and advance
 				//TODO check compatibility of child's head if has any... while not compatible advance... IF we add all in D and not just dummy
 				GCandidate* new_cand = CreateCandidate(*aCand.in_edge_,CopyHeadPT(aCand.head_iterator_),newTailIterators);
-				AddGCandidate(new_cand,cands,unique_cands);
+				AddGCandidate(new_cand,cands/*,unique_cands*/);
 			}
 		}
 		if(aCand.HasMoreHead()){//head
@@ -1303,11 +1307,11 @@ private:
 			SharedArrayIterator* newHeadIterator=new SharedArrayIterator(*aCand.head_iterator_);
 			assert(newHeadIterator->Advance());
 			GCandidate* new_cand = CreateCandidate(*aCand.in_edge_,newHeadIterator,CopyTailPTArray(aCand.tail_iterators_,tailSize));
-			AddGCandidate(new_cand,cands,unique_cands);
+			AddGCandidate(new_cand,cands/*,unique_cands*/);
 		}
 	}
 
-	void TailPropagation(GCandidate& aCand, GCandidateHeap& cands, UniqueGCandidateSet& unique_cands){
+	void TailPropagation(GCandidate& aCand, GCandidateHeap& cands/*, UniqueGCandidateSet& unique_cands*/){
 #ifdef DEBUG_GP
 		cerr << "TailPropagation(): \n"; 
 #endif		
@@ -1341,14 +1345,14 @@ private:
 					}
 					SharedArrayIterator* newHeadIterator = new SharedArrayIterator(&aCand);
 					GCandidate* newTailCand = CreateCandidate(currentTailEdge ,newHeadIterator ,newTailIterators);
-					AddGCandidate(newTailCand,cands,unique_cands);
+					AddGCandidate(newTailCand,cands/*,unique_cands*/);
 					//add cands with one dummy tails??
 				}
 			}
 		}
 	}
 
-	void HeadPropagation(GCandidate& aCand, GCandidateHeap& cands, UniqueGCandidateSet& unique_cands){
+	void HeadPropagation(GCandidate& aCand, GCandidateHeap& cands/*, UniqueGCandidateSet& unique_cands*/){
 
 #ifdef DEBUG_GP
 		cerr << "HeadPropagation(): \n"; 
@@ -1361,114 +1365,114 @@ private:
 		}
 
 		assert (!aCand.head_iterator_);
-//		if(!aCand.head_iterator_){
-			const Hypergraph::Node& headNode=in.nodes_[aCand.in_edge_->head_node_];
+		//		if(!aCand.head_iterator_){
+		const Hypergraph::Node& headNode=in.nodes_[aCand.in_edge_->head_node_];
 
-			//iterate ancestor edges
-			for (int i=0;i<headNode.out_edges_.size();i++){
-				const Hypergraph::Edge& currentHeadEdge = in.edges_[headNode.out_edges_[i]];
-				const int tailSize = currentHeadEdge.tail_nodes_.size();
+		//iterate ancestor edges
+		for (int i=0;i<headNode.out_edges_.size();i++){
+			const Hypergraph::Edge& currentHeadEdge = in.edges_[headNode.out_edges_[i]];
+			const int tailSize = currentHeadEdge.tail_nodes_.size();
 
-//				if(!NodePoppable(currentHeadEdge.head_node_)){
-//					continue;
-//				}
+			//				if(!NodePoppable(currentHeadEdge.head_node_)){
+			//					continue;
+			//				}
 
-//				bool hasDummyTail = false;
-//				//iterate tails of ancestor edge to compute new tail
-//				for(int j=0;j<tailSize;j++){
-//					int currentTailNodeID = currentHeadEdge.tail_nodes_[j];
-//					if(currentTailNodeID!=aCand.in_edge_->head_node_ && D[currentTailNodeID].IsEmpty()){
-//						hasDummyTail=true;
-//						break;
-//					}
-//				}
-				//				if(hasDummyTail)continue;
-
-				SharedArrayIterator** newTailIterators=new SharedArrayIterator*[tailSize];
-
-				//iterate tails of ancestor edge to compute new tail
-				for(int j=0;j<tailSize;j++){
-					int currentTailNodeID = currentHeadEdge.tail_nodes_[j];
-					if(currentTailNodeID==aCand.in_edge_->head_node_){
-						newTailIterators[j]=new SharedArrayIterator(&aCand);
-					}
-					else if(D[currentTailNodeID].IsEmpty()){
-						newTailIterators[j]=NULL;
-					}
-					else{
-						newTailIterators[j]=D[currentTailNodeID].GetTailIterator();//check head compatibility if we add also not dummy head in D
-#ifdef DEBUG_GP
-						cerr<< "Get D[" << currentTailNodeID << "]" << *newTailIterators[j] << endl;
-#endif
-					}
+			bool hasDummyTail = false;
+			//iterate tails of ancestor edge to compute new tail
+			for(int j=0;j<tailSize;j++){
+				int currentTailNodeID = currentHeadEdge.tail_nodes_[j];
+				if(currentTailNodeID!=aCand.in_edge_->head_node_ && D[currentTailNodeID].IsEmpty()){
+					hasDummyTail=true;
+					break;
 				}
+			}
+			//				if(hasDummyTail)continue;
 
-				//put dummy head cand
-#ifdef DEBUG_GP
-				cerr << "\tput dummy head cand:\n"; 
-#endif
-				GCandidate* newCandWithDummyHead=CreateCandidate(currentHeadEdge,NULL,newTailIterators);
-				AddGCandidate(newCandWithDummyHead,cands,unique_cands);
+			SharedArrayIterator** newTailIterators=new SharedArrayIterator*[tailSize];
 
-				//				if(!hasDummyTail){
-				//					//link new cand to fathers if are there
-				//					GCandidate* newCandWithHead;
-				//					if(currentHeadEdge.head_node_<H.size() && !H[currentHeadEdge.head_node_].IsEmpty()){
-				//#ifdef DEBUG_GP
-				//cerr << "put cand with head:\n"; 
-				//cerr<< "Get H[" << currentHeadEdge.head_node_ << "]\n";
-				//#endif
-				//newCandWithHead=CreateCandidate(currentHeadEdge,H[currentHeadEdge.head_node_].GetHeadIterator(),CopyTailPTArray(newTailIterators, tailSize));
-				//AddGCandidate(newCandWithHead,cands,unique_cands);
-				//}
-				//}
-
-				//add cands with dummy tails
-				//* NB tail that ref to propagating node cannot be dummy!
-				for(int j=0;j<tailSize;j++){
-					if(newTailIterators[j] &&
-							currentHeadEdge.tail_nodes_[j]!= aCand.in_edge_->head_node_){//*
-						newTailIterators=CopyTailPTArray(newTailIterators,tailSize,j);
-#ifdef DEBUG_GP
-						cerr << "\tput cand with dummy tail "<< j<<" :\n"; 
-						assert (newTailIterators[j]==NULL);
-#endif
-						GCandidate* newCandWithHeadAndADummyTail=CreateCandidate(currentHeadEdge,DUMMY/*CopyHeadPT(newCandWithHead->head_iterator_)*/,newTailIterators);
-						AddGCandidate(newCandWithHeadAndADummyTail,cands,unique_cands);
-					}
+			//iterate tails of ancestor edge to compute new tail
+			for(int j=0;j<tailSize;j++){
+				int currentTailNodeID = currentHeadEdge.tail_nodes_[j];
+				if(currentTailNodeID==aCand.in_edge_->head_node_){
+					newTailIterators[j]=new SharedArrayIterator(&aCand);
 				}
-
+				else if(D[currentTailNodeID].IsEmpty()){
+					newTailIterators[j]=NULL;
+				}
+				else{
+					newTailIterators[j]=D[currentTailNodeID].GetTailIterator();//check head compatibility if we add also not dummy head in D
+#ifdef DEBUG_GP
+					cerr<< "Get D[" << currentTailNodeID << "]" << *newTailIterators[j] << endl;
+#endif
+				}
 			}
 
-//		}
-//		else{
+			//put dummy head cand
+#ifdef DEBUG_GP
+			cerr << "\tput dummy head cand:\n"; 
+#endif
+			GCandidate* newCandWithDummyHead=CreateCandidate(currentHeadEdge,NULL,newTailIterators);
+			AddGCandidate(newCandWithDummyHead,cands/*,unique_cands*/);
+
+//			if(!hasDummyTail){
+//				//link new cand to fathers if are there
+//				GCandidate* newCandWithHead;
+//				if(currentHeadEdge.head_node_<H.size() && !H[currentHeadEdge.head_node_].IsEmpty()){
 //#ifdef DEBUG_GP
-//			cerr << "\tput updated head:\n"; 
+//					cerr << "put cand with head:\n"; 
+//					cerr<< "Get H[" << currentHeadEdge.head_node_ << "]\n";
 //#endif
-//			GCandidate* oldHead= aCand.head_iterator_->GetCurrent();
-//			//			if(!NodePoppable(*oldHead)){
-//			//				return;
-//			//			}
-//			SharedArrayIterator** newTailIterators=CopyTailPTArray(oldHead->tail_iterators_,oldHead->TailSize());
-//			for(int i=0;i<oldHead->TailSize();i++){
-//				if(oldHead->in_edge_->tail_nodes_[i]==aCand.in_edge_->head_node_){
-//					assert(!newTailIterators[i]);
-//					newTailIterators[i]=new SharedArrayIterator(&aCand);
-//				}
-//				else{
-//					if(newTailIterators[i]){
-//						newTailIterators[i]->Freeze(); //stop iterator to children saw by aCand
-//					}
+//					newCandWithHead=CreateCandidate(currentHeadEdge,H[currentHeadEdge.head_node_].GetHeadIterator(),CopyTailPTArray(newTailIterators, tailSize));
+//					AddGCandidate(newCandWithHead,cands/*,unique_cands*/);
 //				}
 //			}
-//			SharedArrayIterator* newHeadIterator=DUMMY;
-//			if(oldHead->head_iterator_){
-//				newHeadIterator = new SharedArrayIterator(*oldHead->head_iterator_);
-//				newHeadIterator->Freeze();
-//			}
-//			GCandidate* newHeadCand=CreateCandidate(*oldHead->in_edge_,newHeadIterator,newTailIterators);
-//			AddGCandidate(newHeadCand,cands,unique_cands);
-//		}
+
+			//add cands with dummy tails
+			//* NB tail that ref to propagating node cannot be dummy!
+			for(int j=0;j<tailSize;j++){
+				if(newTailIterators[j] &&
+						currentHeadEdge.tail_nodes_[j]!= aCand.in_edge_->head_node_){//*
+					SharedArrayIterator** newTailIteratorsWithDummy=CopyTailPTArray(newTailIterators,tailSize,j);
+#ifdef DEBUG_GP
+					cerr << "\tput cand with dummy tail "<< j<<" :\n"; 
+					assert (newTailIteratorsWithDummy[j]==NULL);
+#endif
+					GCandidate* newCandWithHeadAndADummyTail=CreateCandidate(currentHeadEdge,DUMMY,newTailIteratorsWithDummy);
+					AddGCandidate(newCandWithHeadAndADummyTail,cands/*,unique_cands*/);
+				}
+			}
+
+		}
+
+		//		}
+		//		else{
+		//#ifdef DEBUG_GP
+		//			cerr << "\tput updated head:\n"; 
+		//#endif
+		//			GCandidate* oldHead= aCand.head_iterator_->GetCurrent();
+		//			//			if(!NodePoppable(*oldHead)){
+		//			//				return;
+		//			//			}
+		//			SharedArrayIterator** newTailIterators=CopyTailPTArray(oldHead->tail_iterators_,oldHead->TailSize());
+		//			for(int i=0;i<oldHead->TailSize();i++){
+		//				if(oldHead->in_edge_->tail_nodes_[i]==aCand.in_edge_->head_node_){
+		//					assert(!newTailIterators[i]);
+		//					newTailIterators[i]=new SharedArrayIterator(&aCand);
+		//				}
+		//				else{
+		//					if(newTailIterators[i]){
+		//						newTailIterators[i]->Freeze(); //stop iterator to children saw by aCand
+		//					}
+		//				}
+		//			}
+		//			SharedArrayIterator* newHeadIterator=DUMMY;
+		//			if(oldHead->head_iterator_){
+		//				newHeadIterator = new SharedArrayIterator(*oldHead->head_iterator_);
+		//				newHeadIterator->Freeze();
+		//			}
+		//			GCandidate* newHeadCand=CreateCandidate(*oldHead->in_edge_,newHeadIterator,newTailIterators);
+		//			AddGCandidate(newHeadCand,cands/*,unique_cands*/);
+		//		}
 
 	}
 

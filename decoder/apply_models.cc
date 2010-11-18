@@ -972,7 +972,6 @@ public:
 
 		InitCands(cands/*, unique_cands*/);
 
-		int count =0;
 		for (;!cands.empty();) {
 #ifdef DEBUG_GP
 			cerr<< "/////////////////////////////////////////////////////////////////////\n";
@@ -980,18 +979,11 @@ public:
 #endif
 			GCandidate* aCand = PopBest(cands);
 
-			IncorporateIntoPlusLMForest(aCand,&state2node);
-
-//			if(IsNewBest(aCand)){
-//				//XXX cerr << "Y" ;
-//			}
-			if(!GCandPoppable(*aCand) && !IsNewBest(aCand)){ //TODO move this up
-				//XXX cerr << "X" ;
+			if(!GCandPoppable(*aCand) && !IsNewBest(aCand)){//TODO comment out not poppable here (and in add GCand) and compare number of nodes that arrived at the beam size, make sure has same performances
 				continue;
 			}
-			if(!GCandPoppable(*aCand)){
-				count++;
-			}
+
+			IncorporateIntoPlusLMForest(aCand,&state2node);
 
 			PushSucc(*aCand, cands/*, unique_cands*/);
 
@@ -1017,7 +1009,6 @@ public:
 
 		out.TopologicallySortNodesAndEdges(out_goal_id_);
 		
-		cerr << "E : " << count << endl;
 		//Not needed if Topo.Sort is called already 
 		//out.PruneUnreachable(out_goal_id_);
 	}

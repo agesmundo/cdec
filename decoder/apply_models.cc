@@ -792,13 +792,10 @@ private:
 
 struct GCandidateSmartList{
 
-private:
-	GCandidateList list_;
-	bool needNewSA_; //true if shared array need to be updated
-	boost::shared_array<GCandidate*> sr_;
 
 public:
 	static int pop_limit_;
+	static int head_pop_limit_;
 
 	GCandidateSmartList():needNewSA_(true){};
 
@@ -860,7 +857,7 @@ public:
 #endif
 
 			sort(list_.begin(),list_.end(),EstProbSorter());
-			for(int i=0; i<list_.size() && new_list.size()<GCandidateSmartList::pop_limit_;i++){
+			for(int i=0; i<list_.size() && new_list.size()<GCandidateSmartList::head_pop_limit_;i++){
 				GCandidate* gc=list_[i];
 
 				string sibling_state;
@@ -937,18 +934,33 @@ public:
 		return list_[0]->est_prob_ < cand->est_prob_;
 	}
 	
-	bool IsInKBest(GCandidate* cand){
+	bool IsInKBestHead(GCandidate* cand){
+		return IsInKBest(cand,GCandidateSmartList::head_pop_limit_);
+	}
+	
+	bool IsInKBestTail(GCandidate* cand){
+		return IsInKBest(cand,GCandidateSmartList::pop_limit_);
+	}
+	
+private:
+	
+	bool IsInKBest(GCandidate* cand, int k){
 		if(IsEmpty()) return true;
 		sort(list_.begin(),list_.end(),EstProbSorter());
 		//XXX cerr << "======" << list_[0];
-		if (list_.size() <= GCandidateSmartList::pop_limit_ )	{//TODO loop to avoid doubles
+		if (list_.size() <= k )	{//TODO loop to avoid doubles
 			return list_.back()->est_prob_ < cand->est_prob_;
 		}
-		return list_[GCandidateSmartList::pop_limit_-1]->est_prob_ < cand->est_prob_;
+		return list_[k-1]->est_prob_ < cand->est_prob_;
 	}
 
+
+	GCandidateList list_;
+	bool needNewSA_; //true if shared array need to be updated
+	boost::shared_array<GCandidate*> sr_;
 };
 int GCandidateSmartList::pop_limit_;
+int GCandidateSmartList::head_pop_limit_;
 
 
 class GuidedPruningRescorer {
@@ -972,6 +984,7 @@ public:
 				pop_limit_(pop_limit),
 				free_(in.nodes_.size()*pop_limit_) { //TODO speed+-
 		GCandidateSmartList::pop_limit_=pop_limit;
+		GCandidateSmartList::head_pop_limit_=1; //TODO read from parameter
 		cerr << "  Applying feature functions (guided pruning, pop_limit = " << pop_limit_ << ')' << endl;
 		//node_states_.reserve(kRESERVE_NUM_NODES);
 	}
@@ -1271,10 +1284,10 @@ private:
 	bool IsNewBestC(GCandidate* cand){
 		for(int i=0; i<cand->TailSize();i++){
 			if(cand->tail_iterators_[i]==DUMMY){
-				return Hc[cand->in_edge_->tail_nodes_[i]].IsNewBest(cand);
+				return Hc[cand->in_edge_->tail_nodes_[i]].IsInKBestHead(cand);
 			}
 		}
-		return Dc[cand->in_edge_->head_node_].IsInKBest(cand);
+		return Dc[cand->in_edge_->head_node_].IsInKBestTail(cand);
 		//return Dc[cand->in_edge_->head_node_].IsNewBest(cand);
 	}
 
@@ -1286,13 +1299,15 @@ private:
 //			free_.push_back(cand);
 //			return;
 //		}
+
 		if(!GCandPoppableC(*cand) && !IsNewBestC(cand)){
 #ifdef DEBUG_GP
 			cerr << " NotPop and NotNewBest"<< endl;
 #endif
-			delete cand; //TODO delete here and avoid copy of delete in caller 
+			delete cand;
 			return;
 		}
+
 		//		if(!NodePoppable(*cand)){
 		//			cerr << "Not Poppable but added since new best"<< endl;;
 		//		}

@@ -1290,7 +1290,7 @@ private:
 #ifdef DEBUG_GP
 			cerr << " NotPop and NotNewBest"<< endl;
 #endif
-			free_.push_back(cand); //TODO delete here and avoid copy of delete in caller 
+			delete cand; //TODO delete here and avoid copy of delete in caller 
 			return;
 		}
 		//		if(!NodePoppable(*cand)){
@@ -1428,15 +1428,15 @@ private:
 			//					continue;
 			//				}
 
-			bool hasDummyTail = false;
-			//iterate tails of ancestor edge to compute new tail
-			for(int j=0;j<tailSize;j++){
-				int currentTailNodeID = currentHeadEdge.tail_nodes_[j];
-				if(currentTailNodeID!=aCand.in_edge_->head_node_ && D[currentTailNodeID].IsEmpty()){
-					hasDummyTail=true;
-					break;
-				}
-			}
+//			bool hasDummyTail = false;
+//			//iterate tails of ancestor edge to compute new tail
+//			for(int j=0;j<tailSize;j++){
+//				int currentTailNodeID = currentHeadEdge.tail_nodes_[j];
+//				if(currentTailNodeID!=aCand.in_edge_->head_node_ && D[currentTailNodeID].IsEmpty()){
+//					hasDummyTail=true;
+//					break;
+//				}
+//			}
 			//				if(hasDummyTail)continue;
 
 			SharedArrayIterator** newTailIterators=new SharedArrayIterator*[tailSize];
@@ -1462,7 +1462,7 @@ private:
 #ifdef DEBUG_GP
 			cerr << "\tput dummy head cand:\n"; 
 #endif
-			GCandidate* newCandWithDummyHead=CreateCandidate(currentHeadEdge,NULL,newTailIterators);
+			GCandidate* newCandWithDummyHead=CreateCandidate(currentHeadEdge,NULL,CopyTailPTArray(newTailIterators,tailSize));
 			AddGCandidate(newCandWithDummyHead,cands/*,unique_cands*/);
 
 //			if(!hasDummyTail){
@@ -1493,6 +1493,12 @@ private:
 				}
 			}
 
+			//Free tail iterator
+			for (int i=0; i<tailSize;i++){
+				delete newTailIterators[i];
+			}
+			delete[] newTailIterators;
+			
 		}
 
 		//		}

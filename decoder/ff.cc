@@ -143,7 +143,7 @@ void ModelSet::AddFeaturesToEdgeGP(const SentenceMetadata& smeta,
 			int spos = model_state_pos_[i];
 			cur_ff_context = &(*context)[spos];
 			for (int i = 0; i < ants.size(); ++i) {
-				if(edge->tail_nodes_[i]>=0){ //GP this test is needed for guided pruning, irrelevant otherwise
+				if(edge->tail_nodes_[i]!=-2){ //GP this test is needed for guided pruning, irrelevant otherwise
 					ants[i] = &(*ant_states[i])[spos];
 				}
 			}

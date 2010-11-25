@@ -149,6 +149,10 @@ struct SharedArrayIterator{
 	//		copy(toCopy.begin(),toCopy.end(),sr_.get());
 	//	}
 
+	int Size(){
+		return length_;
+	}
+
 	SharedArrayIterator(const SharedArrayIterator& toCopy){
 		sr_=toCopy.sr_; //point to same dynamic array
 		length_=toCopy.length_;
@@ -231,7 +235,7 @@ struct GCandidate {
 		}
 	}
 
-		bool HasDummyTail()const{
+	bool HasDummyTail()const{
 		for(int i=0; i<TailSize();i++){
 			if(tail_iterators_[i]==DUMMY){
 				return true;	
@@ -295,21 +299,13 @@ struct GCandidate {
 		for (int i = 0; i < tail.size(); ++i) {
 			if (tail_iterators_[i]){//is not dummy
 				const GCandidate* ant=tail_iterators_[i]->GetCurrent();
-#ifdef DEBUG_GP
-				assert(ant->node_index_>=0);
-#endif
-				tail[i] = ant->node_index_;
+				tail[i] = ant->node_index_; //it is going to be -1 if not incorporated
 				p *= ant->vit_prob_;
 			}
 			else{//if no cand mark tail as absent
-				tail[i]=-1;//NB if missing child, is it going to be incorp in +LM? it should not if we want same search space
-				//TODO!! edge_estimate*= <the default prob for the missing link>
+				tail[i]=-2;
 			}
 		}
-
-		//TODO!!
-		//if father link is there add its vit_prob_ to edge_estimate
-		//else edge_estimate *= <the default prob for the missing head link>
 
 		if (is_goal) {
 			assert(tail.size() == 1);
@@ -328,6 +324,7 @@ struct GCandidate {
 
 			models.AddFeaturesToEdgeGP(smeta, out_hg, ant_states, &out_edge_, &state_, &edge_estimate);
 		}
+		//cerr << "edge_estimate "<< edge_estimate  << endl;
 		vit_prob_ = out_edge_.edge_prob_ * p;
 		est_prob_ = vit_prob_ * edge_estimate;
 	}
@@ -933,17 +930,17 @@ public:
 		//XXX cerr << "======" << list_[0];
 		return list_[0]->est_prob_ < cand->est_prob_;
 	}
-	
+
 	bool IsInKBestHead(GCandidate* cand){
 		return IsInKBest(cand,GCandidateSmartList::head_pop_limit_);
 	}
-	
+
 	bool IsInKBestTail(GCandidate* cand){
 		return IsInKBest(cand,GCandidateSmartList::pop_limit_);
 	}
-	
+
 private:
-	
+
 	bool IsInKBest(GCandidate* cand, int k){
 		if(IsEmpty()) return true;
 		sort(list_.begin(),list_.end(),EstProbSorter());
@@ -984,12 +981,17 @@ public:
 				pop_limit_(pop_limit),
 				free_(in.nodes_.size()*pop_limit_) { //TODO speed+-
 		GCandidateSmartList::pop_limit_=pop_limit;
-		GCandidateSmartList::head_pop_limit_=1; //TODO read from parameter
+		GCandidateSmartList::head_pop_limit_=4; //TODO read from parameter
+		default_head_estimate_ = 0.1;//TODO read from parameter
+		head_estimate_proportion_ = 0.1;//TODO read from parameter
 		cerr << "  Applying feature functions (guided pruning, pop_limit = " << pop_limit_ << ')' << endl;
+		cerr << "  default_head_estimate = " << default_head_estimate_ << "| head_estimate_proportion_ = " << head_estimate_proportion_ << endl;
 		//node_states_.reserve(kRESERVE_NUM_NODES);
 	}
 
 	void Apply() {
+		sumProportion=0;
+		count_sum=0;
 		int num_nodes = in.nodes_.size();
 		int goal_id = num_nodes - 1;
 		int pregoal = goal_id - 1;
@@ -1039,7 +1041,7 @@ public:
 #endif
 
 		out.TopologicallySortNodesAndEdges(out_goal_id_);
-		
+
 		//Not needed if Topo.Sort is called already 
 		//out.PruneUnreachable(out_goal_id_);
 	}
@@ -1064,7 +1066,7 @@ private:
 			}
 		}
 	}
-	
+
 	void UpdateSListsC(GCandidate* aCand){
 		if(!aCand->head_iterator_ && !aCand->HasDummyTail()){
 			Dc[aCand->in_edge_->head_node_].push_back(aCand);
@@ -1156,7 +1158,7 @@ private:
 		}
 		return true;
 	}
-	
+
 	inline bool GCandPoppableC(const GCandidate& cand){
 		if(Dc[cand.in_edge_->head_node_].size()>=pop_limit_) return false;
 		for(int i=0; i<cand.TailSize();i++){
@@ -1280,7 +1282,7 @@ private:
 		}
 		return D[cand->in_edge_->head_node_].IsNewBest(cand);
 	}
-	
+
 	bool IsNewBestC(GCandidate* cand){
 		for(int i=0; i<cand->TailSize();i++){
 			if(cand->tail_iterators_[i]==DUMMY){
@@ -1292,13 +1294,13 @@ private:
 	}
 
 	inline void AddGCandidate( GCandidate* cand,GCandidateHeap& cands/*, UniqueGCandidateSet& unique_cands*/){
-//		if(!unique_cands.insert(cand).second){
-//#ifdef DEBUG_GP
-//			cerr << "Not unique GCand: "<< *cand <<endl;
-//#endif
-//			free_.push_back(cand);
-//			return;
-//		}
+		//		if(!unique_cands.insert(cand).second){
+		//#ifdef DEBUG_GP
+		//			cerr << "Not unique GCand: "<< *cand <<endl;
+		//#endif
+		//			free_.push_back(cand);
+		//			return;
+		//		}
 
 		if(!GCandPoppableC(*cand) && !IsNewBestC(cand)){
 #ifdef DEBUG_GP
@@ -1314,9 +1316,9 @@ private:
 
 		cands.push_back(cand);
 		push_heap(cands.begin(), cands.end(), HeapCandCompare());
-		
+
 		UpdateSListsC(cand);
-		
+
 		//assert(unique_cands.insert(cand).second);  // insert into uniqueness set, sanity check
 #ifdef DEBUG_GP
 		cerr << "\tAddCandidate(): " << *cand << "\n"; 
@@ -1418,6 +1420,9 @@ private:
 		}
 	}
 
+	double sumProportion;
+	int count_sum;
+
 	void HeadPropagation(GCandidate& aCand, GCandidateHeap& cands/*, UniqueGCandidateSet& unique_cands*/){
 
 #ifdef DEBUG_GP
@@ -1443,16 +1448,17 @@ private:
 			//					continue;
 			//				}
 
-//			bool hasDummyTail = false;
-//			//iterate tails of ancestor edge to compute new tail
-//			for(int j=0;j<tailSize;j++){
-//				int currentTailNodeID = currentHeadEdge.tail_nodes_[j];
-//				if(currentTailNodeID!=aCand.in_edge_->head_node_ && D[currentTailNodeID].IsEmpty()){
-//					hasDummyTail=true;
-//					break;
-//				}
-//			}
-			//				if(hasDummyTail)continue;
+			//integrate with next loop
+			bool hasDummyTail = false;
+			//iterate tails of ancestor edge to compute new tail
+			for(int j=0;j<tailSize;j++){
+				int currentTailNodeID = currentHeadEdge.tail_nodes_[j];
+				if(currentTailNodeID!=aCand.in_edge_->head_node_ && D[currentTailNodeID].IsEmpty()){
+					hasDummyTail=true;
+					break;
+				}
+			}
+			//							if(hasDummyTail)continue;
 
 			SharedArrayIterator** newTailIterators=new SharedArrayIterator*[tailSize];
 
@@ -1478,20 +1484,57 @@ private:
 			cerr << "\tput dummy head cand:\n"; 
 #endif
 			GCandidate* newCandWithDummyHead=CreateCandidate(currentHeadEdge,NULL,CopyTailPTArray(newTailIterators,tailSize));
-			AddGCandidate(newCandWithDummyHead,cands/*,unique_cands*/);
+			prob_t head_estimate = prob_t(default_head_estimate_);
 
-//			if(!hasDummyTail){
-//				//link new cand to fathers if are there
-//				GCandidate* newCandWithHead;
-//				if(currentHeadEdge.head_node_<H.size() && !H[currentHeadEdge.head_node_].IsEmpty()){
-//#ifdef DEBUG_GP
-//					cerr << "put cand with head:\n"; 
-//					cerr<< "Get H[" << currentHeadEdge.head_node_ << "]\n";
-//#endif
-//					newCandWithHead=CreateCandidate(currentHeadEdge,H[currentHeadEdge.head_node_].GetHeadIterator(),CopyTailPTArray(newTailIterators, tailSize));
-//					AddGCandidate(newCandWithHead,cands/*,unique_cands*/);
-//				}
-//			}
+			//XX
+			if(!hasDummyTail){
+
+				if(currentHeadEdge.head_node_<H.size() && !H[currentHeadEdge.head_node_].IsEmpty()){
+#ifdef DEBUG_GP
+					cerr << "computing head estimate:\n"; 
+					cerr<< "Get H[" << currentHeadEdge.head_node_ << "]\n";
+#endif
+					SharedArrayIterator* head_iterator = H[currentHeadEdge.head_node_].GetHeadIterator();
+					if(head_iterator->Size()==GCandidateSmartList::head_pop_limit_){
+						int ccc=0;
+						double sum_head_estimate=0;
+						do{
+
+							GCandidate* curr= head_iterator->GetCurrent();
+							int TI_size=curr->in_edge_->tail_nodes_.size();
+							SharedArrayIterator** head_cand_estimate_TI = CopyTailPTArray(curr->tail_iterators_,TI_size);
+							for(int k=0; k< TI_size ; k++){
+								if(head_cand_estimate_TI[k] == NULL){
+									//								assert(curr->in_edge_->tail_nodes_[k]==newCandWithDummyHead->in_edge_->head_node_);
+									head_cand_estimate_TI[k] = new SharedArrayIterator(newCandWithDummyHead);
+								}
+								//							else{
+								//								assert(head_cand_estimate_TI[k]->GetCurrent()==curr->tail_iterators_[k]->GetCurrent());
+								//							}
+							}
+							GCandidate* head_cand_estimate=CreateCandidate(*curr->in_edge_,DUMMY,head_cand_estimate_TI);
+							sum_head_estimate+= double(head_cand_estimate->est_prob_/newCandWithDummyHead->est_prob_);
+							ccc++;
+							//						head_estimate= prob_t(double(head_cand_estimate->est_prob_/head_cand_estimate->vit_prob_));
+							//cerr << "ret " << head_cand_estimate->est_prob_/head_cand_estimate->vit_prob_ <<endl;
+//							sumProportion+=head_estimate;
+//							count_sum++;
+							//						cerr << sumProportion << " / " << count_sum << " = " << sumProportion/count_sum << endl;
+							//						cerr << "------\nproportion " << newCandWithDummyHead->est_prob_/head_cand_estimate->est_prob_<<endl;
+							//						cerr << "H estimate " << head_cand_estimate->est_prob_ <<endl;
+							//						cerr << "cand est " << newCandWithDummyHead->est_prob_<<endl;
+							delete head_cand_estimate;
+						}while(head_iterator->Advance());
+						assert(ccc=GCandidateSmartList::head_pop_limit_);
+						head_estimate=prob_t(sum_head_estimate/GCandidateSmartList::head_pop_limit_);
+					}
+					delete head_iterator;
+				}
+			}
+
+			newCandWithDummyHead->est_prob_ += newCandWithDummyHead->est_prob_ * head_estimate * prob_t(head_estimate_proportion_);//(newCandWithDummyHead->est_prob_ * head_estimate * 0);
+//X//
+			AddGCandidate(newCandWithDummyHead,cands/*,unique_cands*/);
 
 			//add cands with dummy tails
 			//* NB tail that ref to propagating node cannot be dummy!
@@ -1513,7 +1556,7 @@ private:
 				delete newTailIterators[i];
 			}
 			delete[] newTailIterators;
-			
+
 		}
 
 		//		}
@@ -1568,6 +1611,8 @@ private:
 
 	int pop_limit_;
 	GCandidateList free_; //store GCands pointer to free mem
+	double default_head_estimate_;
+	double head_estimate_proportion_;
 };
 
 struct NoPruningRescorer {

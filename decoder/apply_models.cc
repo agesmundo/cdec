@@ -19,7 +19,7 @@
 
 // Define the following macro if you want to see lots of debugging output
 // when you run the GuidedPruning
-//#define DEBUG_GP
+#define DEBUG_GP
 //#undef DEBUG_GP
 
 using namespace std;

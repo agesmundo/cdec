@@ -19,7 +19,7 @@
 
 // Define the following macro if you want to see lots of debugging output
 // when you run the GuidedPruning
-#define DEBUG_GP
+//#define DEBUG_GP
 //#undef DEBUG_GP
 
 using namespace std;
@@ -974,7 +974,7 @@ public:
 				goal_id_(in.nodes_.size()-1),
 				out_goal_id_(-1),
 				out(*o),
-				H(in.nodes_.size()),
+				//H(in.nodes_.size()),
 				D(in.nodes_.size()),
 				Hc(in.nodes_.size()),
 				Dc(in.nodes_.size()),
@@ -1055,16 +1055,17 @@ private:
 			cerr << "added in D[" <<aCand->in_edge_->head_node_ <<"] | size = " << D[aCand->in_edge_->head_node_].size() << endl;
 #endif
 		}
+#ifdef DEBUG_GP
 		if(!aCand->head_iterator_){
 			for(int i =0; i <aCand->TailSize();i++){
 				if(!aCand->tail_iterators_[i]){
-					H[aCand->in_edge_->tail_nodes_[i]].push_back(aCand);
-#ifdef DEBUG_GP
-					cerr << "added in H[" << aCand->in_edge_->tail_nodes_[i] <<"] | size = " << H[aCand->in_edge_->tail_nodes_[i]].size() << endl;
-#endif
+					assert(false); //removed H using Hc heads don't need to go through queue
+	//				H[aCand->in_edge_->tail_nodes_[i]].push_back(aCand);
+	//				cerr << "added in H[" << aCand->in_edge_->tail_nodes_[i] <<"] | size = " << H[aCand->in_edge_->tail_nodes_[i]].size() << endl;
 				}
 			}
 		}
+#endif
 	}
 
 	void UpdateSListsC(GCandidate* aCand){
@@ -1151,11 +1152,16 @@ private:
 
 	inline bool GCandPoppable(const GCandidate& cand){
 		if(D[cand.in_edge_->head_node_].size()>=pop_limit_) return false;
+#ifdef DEBUG_GP
 		for(int i=0; i<cand.TailSize();i++){
-			if(cand.tail_iterators_[i]==DUMMY && H[cand.in_edge_->tail_nodes_[i]].size()>=pop_limit_){
-				return false;
-			}
+						if(cand.tail_iterators_[i]==DUMMY){
+							assert(false); //removed H using Hc heads don't need to go through queue
+						}
+//			if(cand.tail_iterators_[i]==DUMMY && H[cand.in_edge_->tail_nodes_[i]].size()>=pop_limit_){
+//				return false;
+//			}
 		}
+#endif
 		return true;
 	}
 
@@ -1275,11 +1281,14 @@ private:
 	}
 
 	bool IsNewBest(GCandidate* cand){
+#ifdef DEBUG_GP
 		for(int i=0; i<cand->TailSize();i++){
 			if(cand->tail_iterators_[i]==DUMMY){
-				return H[cand->in_edge_->tail_nodes_[i]].IsNewBest(cand);
+				assert(false); //removed H using Hc heads don't need to go through queue
+				//return H[cand->in_edge_->tail_nodes_[i]].IsNewBest(cand);
 			}
 		}
+#endif
 		return D[cand->in_edge_->head_node_].IsNewBest(cand);
 	}
 
@@ -1314,8 +1323,10 @@ private:
 		//			cerr << "Not Poppable but added since new best"<< endl;;
 		//		}
 
-		cands.push_back(cand);
-		push_heap(cands.begin(), cands.end(), HeapCandCompare());
+		if(!cand->HasDummyTail()){
+			cands.push_back(cand);
+			push_heap(cands.begin(), cands.end(), HeapCandCompare());
+		}
 
 		UpdateSListsC(cand);
 
@@ -1489,12 +1500,12 @@ private:
 			//XX
 			if(!hasDummyTail){
 
-				if(currentHeadEdge.head_node_<H.size() && !H[currentHeadEdge.head_node_].IsEmpty()){
+				if(currentHeadEdge.head_node_<Hc.size() && !Hc[currentHeadEdge.head_node_].IsEmpty()){
 #ifdef DEBUG_GP
 					cerr << "computing head estimate:\n"; 
 					cerr<< "Get H[" << currentHeadEdge.head_node_ << "]\n";
 #endif
-					SharedArrayIterator* head_iterator = H[currentHeadEdge.head_node_].GetHeadIterator();
+					SharedArrayIterator* head_iterator = Hc[currentHeadEdge.head_node_].GetHeadIterator();
 					if(head_iterator->Size()==GCandidateSmartList::head_pop_limit_){
 						int ccc=0;
 						double sum_head_estimate=0;
@@ -1598,7 +1609,7 @@ private:
 	int out_goal_id_;	
 	Hypergraph& out; //TODO should end with _ , refactor with eclipse
 
-	vector<GCandidateSmartList> H;//maps (cand head) nodeID to cands with same node as dummy tail for match
+	//vector<GCandidateSmartList> H;//maps (cand head) nodeID to cands with same node as dummy tail for match
 	vector<GCandidateSmartList> D;//maps (cand tail) nodeID to cands with same node as (NB also not dummy!!! check match) head for match//TODO check match
 	vector<GCandidateSmartList> Hc;
 	vector<GCandidateSmartList> Dc;

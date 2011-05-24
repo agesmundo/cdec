@@ -759,6 +759,11 @@ bool DecoderImpl::Decode(const string& input, DecoderObserver* o) {
     return false;
   }
 
+  if (has_ref) {
+	  vector<bool> correct_edges_mask(forest.edges_.size(), false);
+	  HG::HighlightIntersection(ref, forest, &correct_edges_mask);
+  }
+
   const bool show_tree_structure=conf.count("show_tree_structure");
   if (!SILENT) forest_stats(forest,"  Init. forest",show_tree_structure,oracle.show_derivation);
   if (conf.count("show_expected_length")) {
@@ -942,7 +947,7 @@ bool DecoderImpl::Decode(const string& input, DecoderObserver* o) {
     } else if (csplit_output_plf) {
       cout << HypergraphIO::AsPLF(forest, false) << endl;
     } else {
-      if (!graphviz && !has_ref && !joshua_viz && !SILENT) {
+      if (!graphviz /*&& !has_ref*/ && !joshua_viz && !SILENT) {
         vector<WordID> trans;
         ViterbiESentence(forest, &trans);
         cout << TD::GetString(trans) << endl << flush;

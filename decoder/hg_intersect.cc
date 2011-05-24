@@ -16,6 +16,12 @@ using boost::lexical_cast;
 using namespace std::tr1;
 using namespace std;
 
+
+// Define the following macro if you want to see lots of debugging output
+// when you run the LG
+#define DEBUG_LG
+//#undef DEBUG_LG
+
 struct RuleFilter {
   unordered_map<vector<WordID>, bool, boost::hash<vector<WordID> > > exists_;
   bool true_lattice;
@@ -160,3 +166,106 @@ bool HG::Intersect(const Lattice& target, Hypergraph* hg) {
   return true;
 }
 
+bool HG::HighlightIntersection(const Lattice& target, const Hypergraph& hg, vector<bool>* c_edges) {
+	// there are a number of faster algorithms available for restricted
+	// classes of hypergraph and/or target.
+	//  if (hg->IsLinearChain() && target.IsSentence())
+	//    return FastLinearIntersect(target, hg);
+	//
+	//  vector<bool> rem(hg->edges_.size(), false);
+	//  const RuleFilter filter(target, 15);   // TODO make configurable
+	//  for (int i = 0; i < rem.size(); ++i)
+	//    rem[i] = filter(*hg->edges_[i].rule_);
+	//  hg->PruneEdges(rem, true);
+
+	vector<bool>& correct_edges_mask = *c_edges;
+	assert (hg.edges_.size()==correct_edges_mask.size());
+
+	const int nedges = hg.edges_.size();
+	const int nnodes = hg.nodes_.size();
+
+	TextGrammar* g = new TextGrammar;
+	GrammarPtr gp(g);
+	vector<int> cats(nnodes);
+	// each node in the translation forest becomes a "non-terminal" in the new
+	// grammar, create the labels here
+	const string kSEP = "_";
+	for (int i = 0; i < nnodes; ++i) {
+		const char* pstr = "CAT";
+		if (hg.nodes_[i].cat_ < 0)
+			pstr = TD::Convert(-hg.nodes_[i].cat_);
+		cats[i] = TD::Convert(pstr + kSEP + lexical_cast<string>(i)) * -1;
+	}
+
+	// construct the grammar
+	for (int i = 0; i < nedges; ++i) {
+		const Hypergraph::Edge& edge = hg.edges_[i];
+		const vector<WordID>& tgt = edge.rule_->e();
+		const vector<WordID>& src = edge.rule_->f();
+		TRulePtr rule(new TRule);
+		rule->prev_i = edge.i_;
+		rule->prev_j = edge.j_;
+		rule->lhs_ = cats[edge.head_node_];
+		vector<WordID>& f = rule->f_;
+		vector<WordID>& e = rule->e_;
+		f.resize(tgt.size());   // swap source and target, since the parser
+		e.resize(src.size());   // parses using the source side!
+		Hypergraph::TailNodeVector tn(edge.tail_nodes_.size());
+		int ntc = 0;
+		for (int j = 0; j < tgt.size(); ++j) {
+			const WordID& cur = tgt[j];
+			if (cur > 0) {
+				f[j] = cur;
+			} else {
+				tn[-cur] = -ntc;
+				++ntc;
+				f[j] = cats[edge.tail_nodes_[-cur]];
+			}
+		}
+		ntc = 0;
+		for (int j = 0; j < src.size(); ++j) {
+			const WordID& cur = src[j];
+			if (cur > 0) {
+				e[j] = cur;
+			} else {
+				e[j] = tn[ntc++];
+			}
+		}
+		rule->scores_ = edge.feature_values_;
+		rule->parent_rule_ = edge.rule_;
+
+#ifdef DEBUG_LG
+		assert (rule->parent_edge_id_ ==-1);
+#endif
+		rule->parent_edge_id_=edge.id_;
+		rule->ComputeArity();
+		//cerr << "ADD: " << rule->AsString() << endl;
+
+		g->AddRule(rule);
+	}
+	g->SetMaxSpan(target.size() + 1);
+	const string& new_goal = TD::Convert(cats.back() * -1);
+	vector<GrammarPtr> grammars(1, gp);
+	Hypergraph tforest;
+	ExhaustiveBottomUpParser parser(new_goal, grammars);
+	bool found = parser.Parse(target, &tforest);
+	for(int i=0; i<tforest.edges_.size();i++){
+		int corr_edge_id = tforest.edges_[i].rule_->parent_edge_id_;
+#ifdef DEBUG_LG
+//		cerr<<TD::Convert(tforest.edges_[i].rule_->lhs_ * -1	) <<endl;
+		assert(corr_edge_id>-1 || tforest.edges_[i].rule_->lhs_==(TD::Convert("Goal") * -1));
+		assert(corr_edge_id==-1 ||corr_edge_id<correct_edges_mask.size());
+//		cerr << corr_edge_id << endl;
+//		assert(correct_edges_mask[corr_edge_id]==false);
+#endif
+		if (corr_edge_id>=0) correct_edges_mask[corr_edge_id]=true;
+	}
+#ifdef DEBUG_LG
+	if (found) cerr << "FOUND_";
+	cerr << "Amount: corr_edges / tot_edges: "<< tforest.edges_.size() << " / " <<  correct_edges_mask.size() << " = " << (tforest.edges_.size() *100.0 / correct_edges_mask.size() ) <<endl;
+#endif
+
+	return found;
+}
+
+//#undef DEBUG_LG

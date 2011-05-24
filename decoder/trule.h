@@ -30,9 +30,9 @@ inline std::ostream& operator<<(std::ostream& os, const AlignmentPoint& p) {
 // Translation rule
 class TRule {
  public:
-  TRule() : lhs_(0), prev_i(-1), prev_j(-1) { }
+  TRule() : lhs_(0), prev_i(-1), prev_j(-1), parent_edge_id_(-1) { }
   TRule(WordID lhs, const WordID* src, int src_size, const WordID* trg, int trg_size, const int* feat_ids, const double* feat_vals, int feat_size, int arity, const AlignmentPoint* als, int alsnum) :
-      e_(trg, trg + trg_size), f_(src, src + src_size), lhs_(lhs), arity_(arity), prev_i(-1), prev_j(-1),
+      e_(trg, trg + trg_size), f_(src, src + src_size), lhs_(lhs), arity_(arity), prev_i(-1), prev_j(-1), parent_edge_id_(-1),
       a_(als, als + alsnum) {
     for (int i = 0; i < feat_size; ++i)
       scores_.set_value(feat_ids[i], feat_vals[i]);
@@ -40,15 +40,15 @@ class TRule {
 
   bool IsGoal() const;
 
-  explicit TRule(const std::vector<WordID>& e) : e_(e), lhs_(0), prev_i(-1), prev_j(-1) {}
+  explicit TRule(const std::vector<WordID>& e) : e_(e), lhs_(0), prev_i(-1), prev_j(-1), parent_edge_id_(-1) {}
   TRule(const std::vector<WordID>& e, const std::vector<WordID>& f, const WordID& lhs) :
-    e_(e), f_(f), lhs_(lhs), prev_i(-1), prev_j(-1) {}
+    e_(e), f_(f), lhs_(lhs), prev_i(-1), prev_j(-1), parent_edge_id_(-1) {}
 
   TRule(const TRule& other) :
-    e_(other.e_), f_(other.f_), lhs_(other.lhs_), scores_(other.scores_), arity_(other.arity_), prev_i(-1), prev_j(-1), a_(other.a_) {}
+    e_(other.e_), f_(other.f_), lhs_(other.lhs_), scores_(other.scores_), arity_(other.arity_), prev_i(-1), prev_j(-1), a_(other.a_), parent_edge_id_(-1) {}
 
   // if mono or strict is true, then lexer won't be used, and //FIXME: > 9 variables won't work
-  explicit TRule(const std::string& text, bool strict = false, bool mono = false) : prev_i(-1), prev_j(-1) {
+  explicit TRule(const std::string& text, bool strict = false, bool mono = false) : prev_i(-1), prev_j(-1), parent_edge_id_(-1) {
     ReadFromString(text, strict, mono);
   }
 
@@ -147,6 +147,7 @@ class TRule {
 
   // these attributes are application-specific and should probably be refactored
   TRulePtr parent_rule_;  // usually NULL, except when doing constrained decoding
+  int parent_edge_id_;   //used for HG highlight-intersection
 
   // this is only used when doing synchronous parsing
   short int prev_i;
@@ -158,7 +159,7 @@ class TRule {
   boost::shared_ptr<std::vector<TRulePtr> > fine_rules_;
 
  private:
-  TRule(const WordID& src, const WordID& trg) : e_(1, trg), f_(1, src), lhs_(), arity_(), prev_i(), prev_j() {}
+  TRule(const WordID& src, const WordID& trg) : e_(1, trg), f_(1, src), lhs_(), arity_(), prev_i(), prev_j(), parent_edge_id_(-1) {}
   bool SanityCheck() const;
 };
 

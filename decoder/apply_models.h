@@ -13,6 +13,7 @@ struct IntersectionConfiguration {
 enum {
   FULL,
   CUBE,
+  GREEDY_UNDIRECTED,
   N_ALGORITHMS
 };
 

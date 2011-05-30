@@ -157,6 +157,162 @@ struct CandidateUniquenessEquals {
 typedef unordered_set<const Candidate*, CandidateUniquenessHash, CandidateUniquenessEquals> UniqueCandidateSet;
 typedef unordered_map<FFState, Candidate*, boost::hash<FFState> > State2Node;
 
+class GreedyUndirectedRescorer {
+
+public:
+	GreedyUndirectedRescorer(const ModelSet& m,
+                      const SentenceMetadata& sm,
+                      const Hypergraph& i,
+                      int pop_limit,
+                      Hypergraph* o) :
+      models(m),
+      smeta(sm),
+      in(i),
+      out(*o),
+      D(in.nodes_.size()),
+      pop_limit_(pop_limit) {
+    if (!SILENT) cerr << "  Applying feature functions (cube pruning, pop_limit = " << pop_limit_ << ')' << endl;
+    node_states_.reserve(kRESERVE_NUM_NODES);
+  }
+
+  void Apply() {
+    int num_nodes = in.nodes_.size();
+    assert(num_nodes >= 2);
+    int goal_id = num_nodes - 1;
+    int pregoal = goal_id - 1;
+    int every = 1;
+    if (num_nodes > 100) every = 10;
+    assert(in.nodes_[pregoal].out_edges_.size() == 1);
+    if (!SILENT) cerr << "    ";
+    for (int i = 0; i < in.nodes_.size(); ++i) {
+      if (!SILENT && i % every == 0) cerr << '.';
+      KBest(i, i == goal_id);
+    }
+    if (!SILENT) {
+      cerr << endl;
+      cerr << "  Best path: " << log(D[goal_id].front()->vit_prob_)
+           << "\t" << log(D[goal_id].front()->est_prob_) << endl;
+    }
+    out.PruneUnreachable(D[goal_id].front()->node_index_);
+    FreeAll();
+  }
+
+ private:
+  void FreeAll() {
+    for (int i = 0; i < D.size(); ++i) {
+      CandidateList& D_i = D[i];
+      for (int j = 0; j < D_i.size(); ++j)
+        delete D_i[j];
+    }
+    D.clear();
+  }
+
+  void IncorporateIntoPlusLMForest(Candidate* item, State2Node* s2n, CandidateList* freelist) {
+    Hypergraph::Edge* new_edge = out.AddEdge(item->out_edge_);
+    new_edge->edge_prob_ = item->out_edge_.edge_prob_;
+    Candidate*& o_item = (*s2n)[item->state_];
+    if (!o_item) o_item = item;
+
+    int& node_id = o_item->node_index_;
+    if (node_id < 0) {
+      Hypergraph::Node* new_node = out.AddNode(in.nodes_[item->in_edge_->head_node_].cat_);
+      node_states_.push_back(item->state_);
+      node_id = new_node->id_;
+    }
+#if 0
+    Hypergraph::Node* node = &out.nodes_[node_id];
+    out.ConnectEdgeToHeadNode(new_edge, node);
+#else
+    out.ConnectEdgeToHeadNode(new_edge, node_id);
+#endif
+    // update candidate if we have a better derivation
+    // note: the difference between the vit score and the estimated
+    // score is the same for all items with a common residual DP
+    // state
+    if (item->vit_prob_ > o_item->vit_prob_) {
+      assert(o_item->state_ == item->state_);    // sanity check!
+      o_item->est_prob_ = item->est_prob_;
+      o_item->vit_prob_ = item->vit_prob_;
+    }
+    if (item != o_item) freelist->push_back(item);
+  }
+
+  void KBest(const int vert_index, const bool is_goal) {
+    // cerr << "KBest(" << vert_index << ")\n";
+    CandidateList& D_v = D[vert_index];
+    assert(D_v.empty());
+    const Hypergraph::Node& v = in.nodes_[vert_index];
+    // cerr << "  has " << v.in_edges_.size() << " in-coming edges\n";
+    const vector<int>& in_edges = v.in_edges_;
+    CandidateHeap cand;
+    CandidateList freelist;
+    cand.reserve(in_edges.size());
+    UniqueCandidateSet unique_cands;
+    for (int i = 0; i < in_edges.size(); ++i) {
+      const Hypergraph::Edge& edge = in.edges_[in_edges[i]];
+      const JVector j(edge.tail_nodes_.size(), 0);
+      cand.push_back(new Candidate(edge, j, out, D, node_states_, smeta, models, is_goal));
+      assert(unique_cands.insert(cand.back()).second);  // these should all be unique!
+    }
+//    cerr << "  making heap of " << cand.size() << " candidates\n";
+    make_heap(cand.begin(), cand.end(), HeapCandCompare());
+    State2Node state2node;   // "buf" in Figure 2
+    int pops = 0;
+    int pop_limit_eff=max(1,int(v.promise*pop_limit_));
+    while(!cand.empty() && pops < pop_limit_eff) {
+      pop_heap(cand.begin(), cand.end(), HeapCandCompare());
+      Candidate* item = cand.back();
+      cand.pop_back();
+      // cerr << "POPPED: " << *item << endl;
+      PushSucc(*item, is_goal, &cand, &unique_cands);
+      IncorporateIntoPlusLMForest(item, &state2node, &freelist);
+      ++pops;
+    }
+    D_v.resize(state2node.size());
+    int c = 0;
+    for (State2Node::iterator i = state2node.begin(); i != state2node.end(); ++i)
+      D_v[c++] = i->second;
+    sort(D_v.begin(), D_v.end(), EstProbSorter());
+    // cerr << "  expanded to " << D_v.size() << " nodes\n";
+
+    for (int i = 0; i < cand.size(); ++i)
+      delete cand[i];
+    // freelist is necessary since even after an item merged, it still stays in
+    // the unique set so it can't be deleted til now
+    for (int i = 0; i < freelist.size(); ++i)
+      delete freelist[i];
+  }
+
+  void PushSucc(const Candidate& item, const bool is_goal, CandidateHeap* pcand, UniqueCandidateSet* cs) {
+    CandidateHeap& cand = *pcand;
+    for (int i = 0; i < item.j_.size(); ++i) {
+      JVector j = item.j_;
+      ++j[i];
+      if (j[i] < D[item.in_edge_->tail_nodes_[i]].size()) {
+        Candidate query_unique(*item.in_edge_, j);
+        if (cs->count(&query_unique) == 0) {
+          Candidate* new_cand = new Candidate(*item.in_edge_, j, out, D, node_states_, smeta, models, is_goal);
+          cand.push_back(new_cand);
+          push_heap(cand.begin(), cand.end(), HeapCandCompare());
+          assert(cs->insert(new_cand).second);  // insert into uniqueness set, sanity check
+        }
+      }
+    }
+  }
+
+  const ModelSet& models;
+  const SentenceMetadata& smeta;
+  const Hypergraph& in;
+  Hypergraph& out;
+
+  vector<CandidateList> D;   // maps nodes in in-HG to the
+                             // equivalent nodes (many due to state
+                             // splits) in the out-HG.
+  FFStates node_states_;  // for each node in the out-HG what is
+                             // its q function value?
+  const int pop_limit_;
+};
+
 class CubePruningRescorer {
 
 public:
@@ -421,6 +577,11 @@ void ApplyModelSet(const Hypergraph& in,
     }
     CubePruningRescorer ma(models, smeta, in, pl, out);
     ma.Apply();
+  } else if (config.algorithm == IntersectionConfiguration::GREEDY_UNDIRECTED) {
+  	int pl = config.pop_limit;
+  	const int max_pl_for_large=50;
+  	GreedyUndirectedRescorer ma(models, smeta, in, pl, out);
+  	ma.Apply();
   } else {
     cerr << "Don't understand intersection algorithm " << config.algorithm << endl;
     exit(1);

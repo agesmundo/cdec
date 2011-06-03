@@ -784,12 +784,6 @@ bool DecoderImpl::Decode(const string& input, DecoderObserver* o) {
     abort();
   }
 
-  vector<bool> correct_edges_mask(forest.edges_.size(), false);
-  if (conf.count("gl_training")) {
-	  assert(has_ref);
-	  HG::HighlightIntersection(ref, forest, &correct_edges_mask);//TODO test with simple example?
-  }
-
   for (int pass = 0; pass < rescoring_passes.size(); ++pass) {
     const RescoringPass& rp = rescoring_passes[pass];
     const vector<double>& cur_weights = rp.weight_vector;

@@ -16,6 +16,8 @@
 #include "verbose.h"
 #include "hg.h"
 #include "ff.h"
+#include "hg_intersect.h"
+#include "sentence_metadata.h"
 
 // Define the following macro if you want to see lots of debugging output
 // when running Guided Undirected Greedy decofing
@@ -283,7 +285,17 @@ public:
     if (num_nodes > 100) every = 10;
     assert(in.nodes_[pregoal].out_edges_.size() == 1);
     CandidateHeap cands; //unique queue/heap of candidates
+
+
+    //find nodes that intersect with reference lattice
+    vector<bool> correct_edges_mask(in.edges_.size(), false);
+    //if (conf.count("gl_training")) {TODO this should be done only when training, add swtich and param in inter conf?
+  	  //assert(smeta.HasReference()==true);
+    HG::HighlightIntersection(smeta.GetReference(), in, &correct_edges_mask);//TODO test with simple example?
+    //}
+
     InitCands(cands);     //put leafs candidates in the queue
+
     if (!SILENT) cerr << "    ";
     for (int i = 0; i < in.nodes_.size(); ++i) {
       if (!SILENT && i % every == 0) cerr << '.';

@@ -17,6 +17,11 @@
 #include "hg.h"
 #include "ff.h"
 
+// Define the following macro if you want to see lots of debugging output
+// when running Guided Undirected Greedy decofing
+#define DEBUG_GU
+//#undef DEBUG_GU
+
 using namespace std;
 using namespace std::tr1;
 
@@ -277,7 +282,8 @@ public:
     int every = 1;
     if (num_nodes > 100) every = 10;
     assert(in.nodes_[pregoal].out_edges_.size() == 1);
-    UCandidateHeap cands; //unique queue/heap of candidates
+    CandidateHeap cands; //unique queue/heap of candidates
+    InitCands(cands);     //put leafs candidates in the queue
     if (!SILENT) cerr << "    ";
     for (int i = 0; i < in.nodes_.size(); ++i) {
       if (!SILENT && i % every == 0) cerr << '.';
@@ -290,6 +296,28 @@ public:
     }
     out.PruneUnreachable(D[goal_id].front()->node_index_);
     FreeAll();
+  }
+
+private:
+  //initialize candidate heap with leafs
+  void InitCands(CandidateHeap& cands/*, UniqueGCandidateSet& unique_cands*/)
+  {
+#ifdef DEBUG_GU
+          cerr << "InintCands(): " << "\n";
+#endif
+          for (int i = 0; i < in.edges_.size(); ++i) {//loop edges
+          	const Hypergraph::Edge& currentEdge= in.edges_.at(i);
+          	if(currentEdge.tail_nodes_.size()==0){//leafs
+          		const Hypergraph::Edge& edge = in.edges_[i];
+          		const JVector j(edge.tail_nodes_.size(), 0);
+          		cands.push_back(new Candidate(edge, j, out, D, node_states_, smeta, models, false));
+          	}
+          }
+          make_heap(cands.begin(), cands.end(), HeapCandCompare());
+#ifdef DEBUG_GU
+          cerr << "cands.size(): "<< cands.size()<<"\n";
+#endif
+
   }
 
  private:
@@ -685,3 +713,4 @@ void ApplyModelSet(const Hypergraph& in,
                                                 // automatically
 }
 
+#undef DEBUG_GU

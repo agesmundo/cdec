@@ -44,15 +44,15 @@ struct UCandidate {
   int node_index_;                     // -1 until incorporated
                                        // into the +LM forest
   const Hypergraph::Edge* in_edge_;    // in -LM forest
-  //Hypergraph::Edge out_edge_;				 //out-hg is assembled at the end of decoding
-  //FFState state_;
-  //const JVector j_; //not needed in GU since should store ids in D[node][]
+  Hypergraph::Edge out_edge_;
+  FFState state_;
+  const JVector j_;
   prob_t vit_prob_;            // these are fixed until the cand
                                // is popped, then they may be updated
   prob_t est_prob_;
 
   UCandidate(const Hypergraph::Edge& e,
-            //const JVector& j,
+            const JVector& j,
             const Hypergraph& out_hg,
             const vector<UCandidateList>& D,
             const FFStates& node_states,
@@ -60,14 +60,14 @@ struct UCandidate {
             const ModelSet& models,
             bool is_goal) :
       node_index_(-1),
-      in_edge_(&e)//,
-      //j_(j)
-  {
+      in_edge_(&e),
+      j_(j) {
     InitializeUCandidate(out_hg, smeta, D, node_states, models, is_goal);
   }
 
   // used to query uniqueness
-  UCandidate(const Hypergraph::Edge& e/*,const JVector& j*/) : in_edge_(&e)/*, j_(j)*/ {}
+  UCandidate(const Hypergraph::Edge& e,
+            const JVector& j) : in_edge_(&e), j_(j) {}
 
   bool IsIncorporatedIntoHypergraph() const {
     return node_index_ >= 0;
@@ -79,48 +79,48 @@ struct UCandidate {
                            const FFStates& node_states,
                            const ModelSet& models,
                            const bool is_goal) {
-//    const Hypergraph::Edge& in_edge = *in_edge_;
-//    out_edge_.rule_ = in_edge.rule_;
-//    out_edge_.feature_values_ = in_edge.feature_values_;
-//    out_edge_.i_ = in_edge.i_;
-//    out_edge_.j_ = in_edge.j_;
-//    out_edge_.prev_i_ = in_edge.prev_i_;
-//    out_edge_.prev_j_ = in_edge.prev_j_;
-//    Hypergraph::TailNodeVector& tail = out_edge_.tail_nodes_;
-//    tail.resize(j_.size());
-//    prob_t p = prob_t::One();
+    const Hypergraph::Edge& in_edge = *in_edge_;
+    out_edge_.rule_ = in_edge.rule_;
+    out_edge_.feature_values_ = in_edge.feature_values_;
+    out_edge_.i_ = in_edge.i_;
+    out_edge_.j_ = in_edge.j_;
+    out_edge_.prev_i_ = in_edge.prev_i_;
+    out_edge_.prev_j_ = in_edge.prev_j_;
+    Hypergraph::TailNodeVector& tail = out_edge_.tail_nodes_;
+    tail.resize(j_.size());
+    prob_t p = prob_t::One();
     // cerr << "\nEstimating application of " << in_edge.rule_->AsString() << endl;
-//    for (int i = 0; i < tail.size(); ++i) {
-//      const UCandidate& ant = *D[in_edge.tail_nodes_[i]][j_[i]];
-//      assert(ant.IsIncorporatedIntoHypergraph());
-//      tail[i] = ant.node_index_;
-//      p *= ant.vit_prob_;
-//    }
-//    prob_t edge_estimate = prob_t::One();
-//    if (is_goal) {
-//      assert(tail.size() == 1);
-//      const FFState& ant_state = node_states[tail.front()];
-//      models.AddFinalFeatures(ant_state, &out_edge_, smeta);
-//    } else {
-//      models.AddFeaturesToEdge(smeta, out_hg, node_states, &out_edge_, &state_, &edge_estimate);
-//    }
-//    vit_prob_ = out_edge_.edge_prob_ * p;
-//    est_prob_ = vit_prob_ * edge_estimate;
+    for (int i = 0; i < tail.size(); ++i) {
+      const UCandidate& ant = *D[in_edge.tail_nodes_[i]][j_[i]];
+      assert(ant.IsIncorporatedIntoHypergraph());
+      tail[i] = ant.node_index_;
+      p *= ant.vit_prob_;
+    }
+    prob_t edge_estimate = prob_t::One();
+    if (is_goal) {
+      assert(tail.size() == 1);
+      const FFState& ant_state = node_states[tail.front()];
+      models.AddFinalFeatures(ant_state, &out_edge_, smeta);
+    } else {
+      models.AddFeaturesToEdge(smeta, out_hg, node_states, &out_edge_, &state_, &edge_estimate);
+    }
+    vit_prob_ = out_edge_.edge_prob_ * p;
+    est_prob_ = vit_prob_ * edge_estimate;
   }
 };
 
-//ostream& operator<<(ostream& os, const UCandidate& cand) {
-//  os << "CAND[";
-//  if (!cand.IsIncorporatedIntoHypergraph()) { os << "PENDING "; }
-//  else { os << "+LM_node=" << cand.node_index_; }
-//  os << " edge=" << cand.in_edge_->id_;
-//  os << " j=<";
-//  for (int i = 0; i < cand.j_.size(); ++i)
-//    os << (i==0 ? "" : " ") << cand.j_[i];
-//  os << "> vit=" << log(cand.vit_prob_);
-//  os << " est=" << log(cand.est_prob_);
-//  return os << ']';
-//}
+ostream& operator<<(ostream& os, const UCandidate& cand) {
+  os << "CAND[";
+  if (!cand.IsIncorporatedIntoHypergraph()) { os << "PENDING "; }
+  else { os << "+LM_node=" << cand.node_index_; }
+  os << " edge=" << cand.in_edge_->id_;
+  os << " j=<";
+  for (int i = 0; i < cand.j_.size(); ++i)
+    os << (i==0 ? "" : " ") << cand.j_[i];
+  os << "> vit=" << log(cand.vit_prob_);
+  os << " est=" << log(cand.est_prob_);
+  return os << ']';
+}
 
 
 // life cycle: candidates are created, placed on the heap
@@ -248,15 +248,33 @@ struct CandidateUniquenessHash {
     return x;
   }
 };
+struct UCandidateUniquenessHash {
+  size_t operator()(const UCandidate* c) const {
+    size_t x = 5381;
+    x = ((x << 5) + x) ^ c->in_edge_->id_;
+    for (int i = 0; i < c->j_.size(); ++i)
+      x = ((x << 5) + x) ^ c->j_[i];
+    return x;
+  }
+};
 
 struct CandidateUniquenessEquals {
   bool operator()(const Candidate* a, const Candidate* b) const {
     return (a->in_edge_ == b->in_edge_) && (a->j_ == b->j_);
   }
 };
+struct UCandidateUniquenessEquals {
+  bool operator()(const UCandidate* a, const UCandidate* b) const {
+    return (a->in_edge_ == b->in_edge_) && (a->j_ == b->j_);
+  }
+};
 
 typedef unordered_set<const Candidate*, CandidateUniquenessHash, CandidateUniquenessEquals> UniqueCandidateSet;
 typedef unordered_map<FFState, Candidate*, boost::hash<FFState> > State2Node;
+
+//TODO remove later, not merging states in GU
+typedef unordered_set<const UCandidate*, UCandidateUniquenessHash, UCandidateUniquenessEquals> UniqueUCandidateSet;
+typedef unordered_map<FFState, UCandidate*, boost::hash<FFState> > UState2Node;
 
 class GreedyUndirectedRescorer {
 
@@ -284,7 +302,7 @@ public:
     int every = 1;
     if (num_nodes > 100) every = 10;
     assert(in.nodes_[pregoal].out_edges_.size() == 1);
-    CandidateHeap cands; //unique queue/heap of candidates
+    UCandidateHeap cands; //unique queue/heap of candidates
 
 
     //find nodes that intersect with reference lattice
@@ -298,7 +316,7 @@ public:
 
     //pop best cand from queue
     pop_heap(cands.begin(), cands.end(), HeapCandCompare());
-    Candidate* item = cands.back();
+    UCandidate* item = cands.back();
     cands.pop_back();
     cerr << "POPPED: " << *item << endl;
     cerr << "is correct? : ";
@@ -326,7 +344,7 @@ public:
 
 private:
   //initialize candidate heap with leafs
-  void InitCands(CandidateHeap& cands/*, UniqueGCandidateSet& unique_cands*/)
+  void InitCands(UCandidateHeap& cands/*, UniqueGCandidateSet& unique_cands*/)
   {
 #ifdef DEBUG_GU
           cerr << "InintCands(): " << "\n";
@@ -336,7 +354,7 @@ private:
           	if(currentEdge.tail_nodes_.size()==0){//leafs
           		const Hypergraph::Edge& edge = in.edges_[i];
           		const JVector j(edge.tail_nodes_.size(), 0);
-          		cands.push_back(new Candidate(edge, j, out, D, node_states_, smeta, models, false));
+          		cands.push_back(new UCandidate(edge, j, out, D, node_states_, smeta, models, false));
           	}
           }
           make_heap(cands.begin(), cands.end(), HeapCandCompare());
@@ -349,17 +367,17 @@ private:
  private:
   void FreeAll() {
     for (int i = 0; i < D.size(); ++i) {
-      CandidateList& D_i = D[i];
+      UCandidateList& D_i = D[i];
       for (int j = 0; j < D_i.size(); ++j)
         delete D_i[j];
     }
     D.clear();
   }
 
-  void IncorporateIntoPlusLMForest(Candidate* item, State2Node* s2n, CandidateList* freelist) {
+  void IncorporateIntoPlusLMForest(UCandidate* item, UState2Node* s2n, UCandidateList* freelist) {
     Hypergraph::Edge* new_edge = out.AddEdge(item->out_edge_);
     new_edge->edge_prob_ = item->out_edge_.edge_prob_;
-    Candidate*& o_item = (*s2n)[item->state_];
+    UCandidate*& o_item = (*s2n)[item->state_];
     if (!o_item) o_item = item;
 
     int& node_id = o_item->node_index_;
@@ -388,29 +406,29 @@ private:
 
   void KBest(const int vert_index, const bool is_goal) {
     // cerr << "KBest(" << vert_index << ")\n";
-    CandidateList& D_v = D[vert_index];
+    UCandidateList& D_v = D[vert_index];
     assert(D_v.empty());
     const Hypergraph::Node& v = in.nodes_[vert_index];
     // cerr << "  has " << v.in_edges_.size() << " in-coming edges\n";
     const vector<int>& in_edges = v.in_edges_;
-    CandidateHeap cand;
-    CandidateList freelist;
+    UCandidateHeap cand;
+    UCandidateList freelist;
     cand.reserve(in_edges.size());
-    UniqueCandidateSet unique_cands;
+    UniqueUCandidateSet unique_cands;
     for (int i = 0; i < in_edges.size(); ++i) {
       const Hypergraph::Edge& edge = in.edges_[in_edges[i]];
       const JVector j(edge.tail_nodes_.size(), 0);
-      cand.push_back(new Candidate(edge, j, out, D, node_states_, smeta, models, is_goal));
+      cand.push_back(new UCandidate(edge, j, out, D, node_states_, smeta, models, is_goal));
       assert(unique_cands.insert(cand.back()).second);  // these should all be unique!
     }
 //    cerr << "  making heap of " << cand.size() << " candidates\n";
     make_heap(cand.begin(), cand.end(), HeapCandCompare());
-    State2Node state2node;   // "buf" in Figure 2
+    UState2Node state2node;   // "buf" in Figure 2
     int pops = 0;
     int pop_limit_eff=max(1,int(v.promise*pop_limit_));
     while(!cand.empty() && pops < pop_limit_eff) {
       pop_heap(cand.begin(), cand.end(), HeapCandCompare());
-      Candidate* item = cand.back();
+      UCandidate* item = cand.back();
       cand.pop_back();
       // cerr << "POPPED: " << *item << endl;
       PushSucc(*item, is_goal, &cand, &unique_cands);
@@ -419,7 +437,7 @@ private:
     }
     D_v.resize(state2node.size());
     int c = 0;
-    for (State2Node::iterator i = state2node.begin(); i != state2node.end(); ++i)
+    for (UState2Node::iterator i = state2node.begin(); i != state2node.end(); ++i)
       D_v[c++] = i->second;
     sort(D_v.begin(), D_v.end(), EstProbSorter());
     // cerr << "  expanded to " << D_v.size() << " nodes\n";
@@ -432,15 +450,15 @@ private:
       delete freelist[i];
   }
 
-  void PushSucc(const Candidate& item, const bool is_goal, CandidateHeap* pcand, UniqueCandidateSet* cs) {
-    CandidateHeap& cand = *pcand;
+  void PushSucc(const UCandidate& item, const bool is_goal, UCandidateHeap* pcand, UniqueUCandidateSet* cs) {
+    UCandidateHeap& cand = *pcand;
     for (int i = 0; i < item.j_.size(); ++i) {
       JVector j = item.j_;
       ++j[i];
       if (j[i] < D[item.in_edge_->tail_nodes_[i]].size()) {
-        Candidate query_unique(*item.in_edge_, j);
+        UCandidate query_unique(*item.in_edge_, j);
         if (cs->count(&query_unique) == 0) {
-          Candidate* new_cand = new Candidate(*item.in_edge_, j, out, D, node_states_, smeta, models, is_goal);
+          UCandidate* new_cand = new UCandidate(*item.in_edge_, j, out, D, node_states_, smeta, models, is_goal);
           cand.push_back(new_cand);
           push_heap(cand.begin(), cand.end(), HeapCandCompare());
           assert(cs->insert(new_cand).second);  // insert into uniqueness set, sanity check
@@ -454,7 +472,7 @@ private:
   const Hypergraph& in;
   Hypergraph& out;
 
-  vector<CandidateList> D;   // maps nodes in in-HG to the
+  vector<UCandidateList> D;   // maps nodes in in-HG to the
                              // equivalent nodes (many due to state
                              // splits) in the out-HG.
   FFStates node_states_;  // for each node in the out-HG what is

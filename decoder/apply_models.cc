@@ -315,17 +315,28 @@ public:
 
     InitCands(cands);     //put leafs candidates in the queue
 
-    //pop best cand from queue
-    pop_heap(cands.begin(), cands.end(), HeapCandCompare());
-    UCandidate* item = cands.back();
-    cands.pop_back();
-    cerr << "POPPED: " << *item << endl;
-    cerr << "is correct? : ";
-    if(correct_edges_mask[item->in_edge_->id_]){
-    	cerr << " true" <<endl;
-    }
-    else{
-    	cerr << " false" <<endl;
+    bool found=false;
+    UCandidate* item;
+    int c=0;
+
+    //loop until first wrong edge is found
+    while(!found){
+    	c++;
+
+    	//pop best cand from queue
+    	pop_heap(cands.begin(), cands.end(), HeapCandCompare());
+
+    	item = cands.back();
+    	cands.pop_back();
+    	cerr << "POPPED: " << *item << endl;
+    	cerr << "is correct? : ";
+    	if(correct_edges_mask[item->in_edge_->id_]){
+    		cerr << " true" <<endl;
+    	}
+    	else{
+    		cerr << " false" <<endl;
+    		found = true;
+    	}
     }
 
 

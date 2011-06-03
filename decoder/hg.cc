@@ -7,8 +7,6 @@
 #include <numeric>
 #include <set>
 #include <map>
-#include <iostream>
-#include <sstream>
 
 #include "viterbi.h"
 #include "inside_outside.h"
@@ -836,5 +834,21 @@ HypergraphP Hypergraph::CreateViterbiHypergraph(const vector<bool>* edges) const
   }
   return ret;
 #endif
+}
+
+ostream& operator<<(
+                ostream& os,
+                const Hypergraph::Edge& edge) {
+        os << " Edge[";
+        os << "id_= " << edge.id_ << "; ";
+        os << "head_node_= " << edge.head_node_ << "; ";
+        os << "tail_nodes_= ( ";
+        for (int i=0; i < edge.tail_nodes_.size();i++){
+                os << (i==0 ? "" : " ") << edge.tail_nodes_[i] ;
+        }
+        os << ") ";
+        os << "rule_= " << *(edge.rule_.get()) << "; ";
+        os << "edge_prob_= " << edge.edge_prob_ << "; ";
+        return os << "]";
 }
 

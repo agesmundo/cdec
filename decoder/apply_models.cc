@@ -113,12 +113,13 @@ ostream& operator<<(ostream& os, const UCandidate& cand) {
   os << "CAND[";
   if (!cand.IsIncorporatedIntoHypergraph()) { os << "PENDING "; }
   else { os << "+LM_node=" << cand.node_index_; }
-  os << " edge=" << cand.in_edge_->id_;
+  //os << " edge=" << cand.in_edge_->id_; //printed by Edge<<
   os << " j=<";
   for (int i = 0; i < cand.j_.size(); ++i)
     os << (i==0 ? "" : " ") << cand.j_[i];
   os << "> vit=" << log(cand.vit_prob_);
   os << " est=" << log(cand.est_prob_);
+  os << " in_edge_= " << *(cand.in_edge_)<< "; ";
   return os << ']';
 }
 

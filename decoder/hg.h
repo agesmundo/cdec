@@ -544,6 +544,7 @@ private:
   static TRulePtr kUnaryRule;
 };
 
+std::ostream& operator<<(std::ostream& os, const Hypergraph::Edge& edge);
 
 // common WeightFunctions, map an edge -> WeightType
 // for generic Viterbi/Inside algorithms

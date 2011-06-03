@@ -296,18 +296,32 @@ public:
 
     InitCands(cands);     //put leafs candidates in the queue
 
-    if (!SILENT) cerr << "    ";
-    for (int i = 0; i < in.nodes_.size(); ++i) {
-      if (!SILENT && i % every == 0) cerr << '.';
-      KBest(i, i == goal_id);
+    //pop best cand from queue
+    pop_heap(cands.begin(), cands.end(), HeapCandCompare());
+    Candidate* item = cands.back();
+    cands.pop_back();
+    cerr << "POPPED: " << *item << endl;
+    cerr << "is correct? : ";
+    if(correct_edges_mask[item->in_edge_->id_]){
+    	cerr << " true" <<endl;
     }
-    if (!SILENT) {
-      cerr << endl;
-      cerr << "  Best path: " << log(D[goal_id].front()->vit_prob_)
-           << "\t" << log(D[goal_id].front()->est_prob_) << endl;
+    else{
+    	cerr << " false" <<endl;
     }
-    out.PruneUnreachable(D[goal_id].front()->node_index_);
-    FreeAll();
+
+
+//    if (!SILENT) cerr << "    ";
+//    for (int i = 0; i < in.nodes_.size(); ++i) {
+//      if (!SILENT && i % every == 0) cerr << '.';
+//      KBest(i, i == goal_id);
+//    }
+//    if (!SILENT) {
+//      cerr << endl;
+//      cerr << "  Best path: " << log(D[goal_id].front()->vit_prob_)
+//           << "\t" << log(D[goal_id].front()->est_prob_) << endl;
+//    }
+//    out.PruneUnreachable(D[goal_id].front()->node_index_);
+//    FreeAll();
   }
 
 private:

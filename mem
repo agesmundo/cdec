@@ -43,7 +43,7 @@ Build
 :!git branch <branch_name> 
 :!git checkout <branch_name> 
 :!git remote add origin git@github.com:agesmundo/cdec.git
-:!git remote add cdec git@github.com:redpony/cdec.git
+:!git remote add redpony git@github.com:redpony/cdec.git
 :!git push origin <branch_name> 
 
 %launch first test

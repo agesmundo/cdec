@@ -1,0 +1,116 @@
+%install build cdec
+%http://cdec-decoder.org/index.php?title=Building_cdec_from_source
+mkdir cdec
+cd cdec
+:!git init
+:!git pull git://github.com/redpony/cdec.git
+:!autoreconf -ifv
+apt-get install flex //if problems wiht rule_lexr.cc
+:!./configure --with-boost=/home/l711unige/work/mt/boost_1_42_0 --enable-gtest
+DEPRECATED NO SRILM :!./configure --with-srilm=/home/l711unige/work/mt/srilm/ --with-boost=/home/l711unige/work/mt/boost_1_42_0 --enable-gtest
+:!make
+:!./tests/run-system-tests.pl
+
+
+%gtest compile
+autoreconf -ifv
+./configure
+make
+%add ../gtest-.../scripts in $PATH
+%move the file "gtest-../lib/.lib/libgtest.a" to "gtest-../lib/libgtest.a" (up one folder
+
+%google sparse hash
+sudo dpkg -i sparsehash_1.7-1_i386.deb 
+
+%put on eclipseCDT (in place)
+create (empty) project
+NOT use default location
+Next
+Avanced setting
+enter Build
+de-select "Generate Makefiles .." 
+change "build directory:" to ${workspace_loc:/<projectName>/}
+
+%put on eclipseCDT (with copy of files)
+create project
+import cdec/ from file system
+right clk on proj -> properties -> Build
+de-select "Generate Makefiles .."
+change "build directory:" to <projectName>/
+Build
+
+%conf git hub
+:!git branch <branch_name> 
+:!git checkout <branch_name> 
+:!git remote add origin git@github.com:agesmundo/cdec.git
+:!git remote add cdec git@github.com:redpony/cdec.git
+:!git push origin <branch_name> 
+
+%launch first test
+:cd /home/l711unige/work/mt/cdec/tests/system_tests/ftrans/
+:cd /home/l711unige/work/mt/cdec/tests/system_tests/australia/
+:cd /home/l711unige/work/mt/cdec/tests/system_tests/australiaLin/
+:cd /home/l711unige/workspacesCDT/cdec/cdec/tests/system_tests/australiaLin/
+:!cdec -c cdec.ini -w weights -i input.txt -F "LanguageModel -o 3 /home/l711unige/workspacesCDT/cdec/cdec/tests/system_tests/australiaLin/europarl.srilm.gz" -I Full
+:!cdec -c cdec.ini -w weights -i input.txt
+:!gdb  --args cdec -c cdec.ini -w weights -i input.txt
+:!ddd  --args cdec -c cdec.ini -w weights -i input.txt
+
+%backup on github ==
+:!git push origin LG 
+:!git push origin GGL 
+:!git push origin GD2 
+:!git push origin guidedPruning
+:!git push origin master 
+
+
+%backup on clcl4
+:!ssh gesmundo@cui.unige.ch
+:!git pull ssh://l711unige@129.194.69.81/~/work/mt/cdec
+
+:!ssh andrea@129.194.18.5
+:!git push ssh://andrea@129.194.18.5/~/cdecBkp.git
+:!git pull ssh://andrea@129.194.18.5/~/cdecBkp.git
+
+%update from repony keeping local changes
+:!git git branch bkp //save backup
+:!git stash
+:!git pull git://github.com/redpony/cdec.git
+:!git stash apply
+:!git branch -d bkp //delete backup merging was successfull 
+
+%mod & res conflicts
+<edit>
+:!git commit -a
+:!git mergetool --tool=vimdiff
+use "[c ]c" to navige differences
+stay in middle window and use <:diffget 1> and <diffget 3> or close window in the middle and use commands "do dp" to unify versions, and then copy to central copy
+
+%git commands
+//del local changes
+:!git reset --hard HEAD  
+git branch <-d> <name> //used to create delete and view branches
+git commit -a          //used to commit local changes
+
+
+%cdemo
+:cd /home/l711unige/workspacesCDT/cdec/cdec/cdemo/cdec-demo/
+:!gdb --args cdec -c cdec-mt03.ini -w weights.tuned -i mt03.src.txt 
+:!gdb --args cdec -c cdec-mt03.ini -w weights.tuned -i mt03.src.txt --mbr
+:!cdec -c cdec-mt03.ini -w weights.tuned -i mt03.src.txt > mt03.trans
+:!cdec -c cdec-mt03.ini -w weights.tuned -i mt03.src.txt > mt03.2f.trans
+:!/home/l711unige/workspacesCDT/cdec/cdec/vest/fast_score -r mt03.ref.0 -r mt03.ref.1 -r mt03.ref.2 -r mt03.ref.3 -i mt03.trans
+
+%autraliaLin
+:cd /home/l711unige/workspacesCDT/cdec/cdec/tests/system_tests/australiaLin
+:!cdec -c cdec.ini -w weights -i input.txt -F "LanguageModel -o 3 /home/l711unige/workspacesCDT/cdec/cdec/tests/system_tests/australiaLin/europarl.srilm.gz" --mbr  2>xxx 
+
+
+
+%dbug wiht gdb 
+(c,s)
+
+->go to KBest()
+b 415
+b 233
+

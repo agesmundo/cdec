@@ -7,6 +7,7 @@ cd cdec
 :!autoreconf -ifv
 apt-get install flex //if problems wiht rule_lexr.cc
 :!./configure --with-boost=/home/l711unige/work/mt/boost_1_42_0 --enable-gtest
+apt-get install libboost-dev libboost-doc libboost-program-options-dev //to install boost 
 DEPRECATED NO SRILM :!./configure --with-srilm=/home/l711unige/work/mt/srilm/ --with-boost=/home/l711unige/work/mt/boost_1_42_0 --enable-gtest
 :!make
 :!./tests/run-system-tests.pl

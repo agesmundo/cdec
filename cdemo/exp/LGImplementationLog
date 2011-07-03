@@ -7,10 +7,9 @@ GL S1)
 	pass hg edges mask OK!
 	pop best scoring leaf OK!
 	check if leaf is has correct edge OK!
-	if not (loop until the first false) OK!
 	update weigths with PA 
 	rescore queue
-	new top must be correct
 
 TODO
 	must try LG with no context features if it is able to learn to find the best or something good
+

@@ -1,0 +1,8 @@
+WordPenalty -4.26118563607693
+Number 0.1
+PassThrough -1
+LanguageModel 1.11652878876722
+LanguageModel_OOV -1
+PhraseModel_0 0.963947019887798
+PhraseModel_1 0.653540274649144
+PhraseModel_2 0.772506977548816

@@ -1,0 +1,12 @@
+
+LG cdemo
+args:
+-c cdec-mt03Tst.ini -w weights.tuned -i mt03.src_lat -I Greedy_Undirected
+dir:
+${workspace_loc:LG/cdemo/cdec-demo}
+
+LG quick
+args:
+-c conf.ini -w weights -i in.txt -I Greedy_Undirected
+dir:
+${workspace_loc:LG/cdemo/quick}

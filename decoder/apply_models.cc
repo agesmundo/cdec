@@ -113,7 +113,7 @@ struct UCandidate {
 };
 
 ostream& operator<<(ostream& os, const UCandidate& cand) {
-  os << "CAND[";
+  os << "UCAND[";
   if (!cand.IsIncorporatedIntoHypergraph()) { os << "PENDING "; }
   else { os << "+LM_node=" << cand.node_index_; }
   //os << " edge=" << cand.in_edge_->id_; //printed by Edge<<
@@ -319,19 +319,21 @@ public:
 
     InitCands(cands);     //put leafs candidates in the queue
 
-    bool found=false;
+    bool foundWrong=false;
+    UCandidate* candWrong;
+    UCandidate* candRight;
     UCandidate* item;
     int c=0;
 
     //loop until first wrong edge is found
-    while(!found){
+    while(!foundWrong){
     	c++;
 
     	//pop best cand from queue
     	pop_heap(cands.begin(), cands.end(), HeapCandCompare());
-
     	item = cands.back();
     	cands.pop_back();
+
     	cerr << "POPPED: " << *item << endl;
     	cerr << "is correct? : ";
     	if(correct_edges_mask[item->in_edge_->id_]){
@@ -339,9 +341,44 @@ public:
     	}
     	else{
     		cerr << " false" <<endl;
-    		found = true;
+    		foundWrong = true;
+    		candWrong = item;
     	}
     }
+
+    //pop next
+	pop_heap(cands.begin(), cands.end(), HeapCandCompare());
+	candRight = cands.back();
+	cands.pop_back();
+
+	cerr << "POPPED NEXT: " << *candRight << endl;
+	cerr << "is correct? : ";
+	if(correct_edges_mask[item->in_edge_->id_]){
+		cerr << " true" <<endl;
+	}
+	else{
+		cerr << " false" <<endl;
+	}
+
+	double margin = 1;
+	double loss = log(candWrong->action_prob_) - log(candRight->action_prob_) + margin;
+	assert(loss>=0);
+	cerr << " Loss " << loss << endl;
+
+	SparseVector<Featval> diff (candRight->out_edge_.feature_values_);
+	diff +=candRight->out_edge_.est_vals;
+	diff -=candWrong->out_edge_.feature_values_;
+	diff -=candWrong->out_edge_.est_vals;
+
+	double norm = diff.l2norm_sq();
+	double factor =  loss / norm;
+
+	//TODO
+//models.weights_;
+//    for (size_t i = 0; i < fv.size(); i++){
+//      if (models.size() <= fv[i].first) v.resize(fv[i].first+1);
+//      v[fv[i].first] += fv[i].second * alpha;
+//    }
 
 
 //    if (!SILENT) cerr << "    ";

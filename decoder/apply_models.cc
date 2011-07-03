@@ -51,6 +51,8 @@ struct UCandidate {
                                // is popped, then they may be updated
   prob_t est_prob_;
 
+  prob_t action_prob_;
+
   UCandidate(const Hypergraph::Edge& e,
             const JVector& j,
             const Hypergraph& out_hg,
@@ -106,6 +108,7 @@ struct UCandidate {
     }
     vit_prob_ = out_edge_.edge_prob_ * p;
     est_prob_ = vit_prob_ * edge_estimate;
+    action_prob_ = out_edge_.edge_prob_ * edge_estimate;
   }
 };
 
@@ -119,6 +122,7 @@ ostream& operator<<(ostream& os, const UCandidate& cand) {
     os << (i==0 ? "" : " ") << cand.j_[i];
   os << "> vit=" << log(cand.vit_prob_);
   os << " est=" << log(cand.est_prob_);
+  os << " act=" << log(cand.action_prob_);
   os << " in_edge_= " << *(cand.in_edge_)<< "; ";
   return os << ']';
 }
@@ -222,7 +226,7 @@ struct HeapCandCompare {
     return l->est_prob_ < r->est_prob_;
   }
   bool operator()(const UCandidate* l, const UCandidate* r) const {
-    return l->est_prob_ < r->est_prob_;
+    return l->action_prob_ < r->action_prob_;
   }
 };
 
@@ -231,7 +235,7 @@ struct EstProbSorter {
     return l->est_prob_ > r->est_prob_;
   }
   bool operator()(const UCandidate* l, const UCandidate* r) const {
-    return l->est_prob_ > r->est_prob_;
+    return l->action_prob_ > r->action_prob_;
   }
 };
 

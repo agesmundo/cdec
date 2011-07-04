@@ -254,4 +254,10 @@ void ModelSet::AddFinalFeatures(const FFState& state, Hypergraph::Edge* edge,Sen
 void ModelSet::UpdateWeight(SparseVector<Featval> vector, double loss){
 	double norm = vector.l2norm_sq();
 	double alpha =  loss / norm;
+
+	for (typename SparseVector<Featval>::const_iterator i=vector.begin(),e=vector.end();i!=e;++i) {
+		assert(weights_.size() > i->first);//OR if (weights_.size() <= i->first) weights_.resize(i->first+1)
+		weights_[i->first] += i->second * alpha;
+	}
+
 }

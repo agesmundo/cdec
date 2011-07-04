@@ -823,7 +823,10 @@ void ApplyModelSet(const Hypergraph& in,
     ma.Apply();
   } else if (config.algorithm == IntersectionConfiguration::GREEDY_UNDIRECTED) {
   	int pl = config.pop_limit;
-  	const int max_pl_for_large=50;
+  	GreedyUndirectedRescorer ma(models, smeta, in, pl, out);
+  	ma.Apply();
+  } else if (config.algorithm == IntersectionConfiguration::GREEDY_UNDIRECTED_TRAINING) {
+  	int pl = config.pop_limit;
   	GreedyUndirectedRescorer ma(models, smeta, in, pl, out);
   	ma.Apply();
   } else {

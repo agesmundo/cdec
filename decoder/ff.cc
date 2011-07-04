@@ -228,10 +228,10 @@ void ModelSet::AddFeaturesToEdge(const SentenceMetadata& smeta,
         ants[i] = &node_states[edge->tail_nodes_[i]][spos];
       }
     }
-    ff.TraversalFeatures(smeta, *edge, ants, &edge->feature_values_, &edge->est_vals, cur_ff_context);
+    ff.TraversalFeatures(smeta, *edge, ants, &edge->feature_values_, &edge->est_vals_, cur_ff_context);
   }
   if (combination_cost_estimate)
-    combination_cost_estimate->logeq(edge->est_vals.dot(weights_));
+    combination_cost_estimate->logeq(edge->est_vals_.dot(weights_));
   edge->edge_prob_.logeq(edge->feature_values_.dot(weights_));
 }
 

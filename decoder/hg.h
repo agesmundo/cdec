@@ -82,7 +82,7 @@ public:
     TailNodeVector tail_nodes_;   // contents refer to positions in nodes_
     TRulePtr rule_;
     FeatureVector feature_values_;
-    FeatureVector est_vals;//DEL_ORG additional X313
+    FeatureVector est_vals_;       //added for LG
     prob_t edge_prob_;             // dot product of weights and feat_values
     int id_;   // equal to this object's position in the edges_ vector
 

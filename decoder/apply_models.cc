@@ -129,7 +129,7 @@ ostream& operator<<(ostream& os, const UCandidate& cand) {
   os << endl;
   os << "\tFEATS : " << cand.out_edge_.feature_values_;
   os << endl;
-  os << "\tEST_F : " << cand.out_edge_.est_vals;
+  os << "\tEST_F : " << cand.out_edge_.est_vals_;
   return os << ']';
 }
 
@@ -374,11 +374,11 @@ public:
 
 	SparseVector<Featval> diff (candRight->out_edge_.feature_values_);
 	cerr << diff << endl;
-	diff +=candRight->out_edge_.est_vals;
+	diff +=candRight->out_edge_.est_vals_;
 	cerr << diff << endl;
 	diff -=candWrong->out_edge_.feature_values_;
 	cerr << diff << endl;
-	diff -=candWrong->out_edge_.est_vals;
+	diff -=candWrong->out_edge_.est_vals_;
 	cerr << diff << endl;
 
 	//update weight vector
@@ -394,7 +394,7 @@ public:
 
 		cand.out_edge_.edge_prob_.logeq(models.ScoreVector(cand.out_edge_.feature_values_));
 		prob_t edge_estimate;
-		edge_estimate.logeq(models.ScoreVector(cand.out_edge_.est_vals));
+		edge_estimate.logeq(models.ScoreVector(cand.out_edge_.est_vals_));
 		cand.action_prob_ = cand.out_edge_.edge_prob_ * edge_estimate;
 		cerr << "UPDATED CANDS " << cand <<endl;
 		cerr << "is correct? : (" << cand.in_edge_->id_ <<")";

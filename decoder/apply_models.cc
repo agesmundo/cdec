@@ -47,6 +47,8 @@ struct UCandidate {
   Hypergraph::Edge out_edge_;
   FFState state_;
   const JVector j_;
+
+  //vit_prob_ and est_prob_ are not updated in LG training
   prob_t vit_prob_;            // these are fixed until the cand
                                // is popped, then they may be updated
   prob_t est_prob_;
@@ -383,12 +385,25 @@ public:
 	models.UpdateWeight(diff,loss);
 	models.PrintWeights(cerr);
 
-//models.weights_;
-//    for (size_t i = 0; i < fv.size(); i++){
-//      if (models.size() <= fv[i].first) v.resize(fv[i].first+1);
-//      v[fv[i].first] += fv[i].second * alpha;
-//    }
+	//rescore queue
+	cands.push_back(candWrong);
+	cands.push_back(candRight);
+	for(UCandidateHeap::iterator it = cands.begin();it!=cands.end();it++){
+		UCandidate& cand = **it;
 
+		cand.out_edge_.edge_prob_.logeq(models.ScoreVector(cand.out_edge_.feature_values_));
+		prob_t edge_estimate;
+		edge_estimate.logeq(models.ScoreVector(cand.out_edge_.est_vals));
+		cand.action_prob_ = cand.out_edge_.edge_prob_ * edge_estimate;
+		cerr << "UPDATED CANDS " << cand <<endl;
+		cerr << "is correct? : ";
+		if(correct_edges_mask[cand.in_edge_->id_]){
+			cerr << " true" <<endl;
+		}
+		else{
+			cerr << " false" <<endl;
+		}
+	}
 
 //    if (!SILENT) cerr << "    ";
 //    for (int i = 0; i < in.nodes_.size(); ++i) {

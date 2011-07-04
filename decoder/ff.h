@@ -297,6 +297,8 @@ class ModelSet {
 
   void UpdateWeight(SparseVector<Featval> vector, double alpha);
 
+  double ScoreVector(SparseVector<Featval> vector);
+
  private:
   std::vector<const FeatureFunction*> models_;
   std::vector<double> weights_;

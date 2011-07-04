@@ -271,3 +271,7 @@ void ModelSet::UpdateWeight(SparseVector<Featval> vector, double loss){
 	}
 
 }
+
+double ModelSet::ScoreVector(SparseVector<Featval> vector){
+	return vector.dot(weights_);
+}

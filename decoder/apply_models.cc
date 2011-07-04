@@ -341,7 +341,7 @@ public:
     	cands.pop_back();
 
     	cerr << "POPPED: " << *item << endl;
-    	cerr << "is correct? : ";
+    	cerr << "is correct? : (" << item->in_edge_->id_ <<")";
     	if(correct_edges_mask[item->in_edge_->id_]){
     		cerr << " true" <<endl;
     	}
@@ -358,8 +358,8 @@ public:
 	cands.pop_back();
 
 	cerr << "POPPED NEXT: " << *candRight << endl;
-	cerr << "is correct? : ";
-	if(correct_edges_mask[item->in_edge_->id_]){
+	cerr << "is correct? : "<< "(" << candRight->in_edge_->id_ <<")";
+	if(correct_edges_mask[candRight->in_edge_->id_]){
 		cerr << " true" <<endl;
 	}
 	else{
@@ -396,7 +396,7 @@ public:
 		edge_estimate.logeq(models.ScoreVector(cand.out_edge_.est_vals));
 		cand.action_prob_ = cand.out_edge_.edge_prob_ * edge_estimate;
 		cerr << "UPDATED CANDS " << cand <<endl;
-		cerr << "is correct? : ";
+		cerr << "is correct? : (" << cand.in_edge_->id_ <<")";
 		if(correct_edges_mask[cand.in_edge_->id_]){
 			cerr << " true" <<endl;
 		}

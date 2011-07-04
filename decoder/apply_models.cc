@@ -284,7 +284,7 @@ typedef unordered_map<FFState, UCandidate*, boost::hash<FFState> > UState2Node;
 class GreedyUndirectedRescorer {
 
 public:
-	GreedyUndirectedRescorer(const ModelSet& m,
+	GreedyUndirectedRescorer(/*const*/ ModelSet& m,
                       const SentenceMetadata& sm,
                       const Hypergraph& i,
                       int pop_limit,
@@ -370,10 +370,9 @@ public:
 	diff -=candWrong->out_edge_.feature_values_;
 	diff -=candWrong->out_edge_.est_vals;
 
-	double norm = diff.l2norm_sq();
-	double factor =  loss / norm;
+	//update weight vector
+	models.UpdateWeight(diff,loss);
 
-	//TODO
 //models.weights_;
 //    for (size_t i = 0; i < fv.size(); i++){
 //      if (models.size() <= fv[i].first) v.resize(fv[i].first+1);
@@ -520,7 +519,7 @@ private:
     }
   }
 
-  const ModelSet& models;
+  /*const*/ ModelSet& models;
   const SentenceMetadata& smeta;
   const Hypergraph& in;
   Hypergraph& out;
@@ -781,7 +780,7 @@ struct NoPruningRescorer {
 // each node in the graph has one of these, it keeps track of
 void ApplyModelSet(const Hypergraph& in,
                    const SentenceMetadata& smeta,
-                   const ModelSet& models,
+                   /*const*/ ModelSet& models,
                    const IntersectionConfiguration& config,
                    Hypergraph* out) {
   //force exhaustive if there's no state req. for model

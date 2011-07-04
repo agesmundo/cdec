@@ -251,3 +251,7 @@ void ModelSet::AddFinalFeatures(const FFState& state, Hypergraph::Edge* edge,Sen
   edge->edge_prob_.logeq(edge->feature_values_.dot(weights_));
 }
 
+void ModelSet::UpdateWeight(SparseVector<Featval> vector, double loss){
+	double norm = vector.l2norm_sq();
+	double alpha =  loss / norm;
+}

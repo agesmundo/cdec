@@ -33,7 +33,7 @@ inline std::ostream& operator<<(std::ostream& os, const IntersectionConfiguratio
 
 void ApplyModelSet(const Hypergraph& in,
                    const SentenceMetadata& smeta,
-                   const ModelSet& models,
+                   /*const*/ ModelSet& models,
                    const IntersectionConfiguration& config,
                    Hypergraph* out);
 

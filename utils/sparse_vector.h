@@ -77,7 +77,7 @@ inline void print(O &o,const SparseVector<T>& v, const char* kvsep="=",const cha
       first=false;
     else
       o<<pairsep;
-    o<<FD::Convert(i->first)<<kvsep<<i->second;
+    o<<FD::Convert(i->first)<<"("<<i->first<<")"<<kvsep<<i->second;
   }
   o << post;
 }

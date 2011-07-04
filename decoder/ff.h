@@ -9,6 +9,7 @@
 # define DBGINIT(a)
 #endif
 
+//#include <iostream>
 #include <stdint.h>
 #include <vector>
 #include <cstring>
@@ -291,6 +292,8 @@ class ModelSet {
   bool stateless() const { return !state_size_; }
   Features all_features(std::ostream *warnings=0,bool warn_fid_zero=false); // this will warn about duplicate features as well (one function overwrites the feature of another).  also resizes weights_ so it is large enough to hold the (0) weight for the largest reported feature id.  since 0 is a NULL feature id, it's never included.  if warn_fid_zero, then even the first 0 id is
   void show_features(std::ostream &out,std::ostream &warn,bool warn_zero_wt=true);
+
+  std::ostream& PrintWeights(std::ostream& os);
 
   void UpdateWeight(SparseVector<Featval> vector, double alpha);
 

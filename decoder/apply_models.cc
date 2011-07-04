@@ -124,6 +124,10 @@ ostream& operator<<(ostream& os, const UCandidate& cand) {
   os << " est=" << log(cand.est_prob_);
   os << " act=" << log(cand.action_prob_);
   os << " in_edge_= " << *(cand.in_edge_)<< "; ";
+  os << endl;
+  os << "\tFEATS : " << cand.out_edge_.feature_values_;
+  os << endl;
+  os << "\tEST_F : " << cand.out_edge_.est_vals;
   return os << ']';
 }
 
@@ -366,12 +370,18 @@ public:
 	cerr << " Loss " << loss << endl;
 
 	SparseVector<Featval> diff (candRight->out_edge_.feature_values_);
+	cerr << diff << endl;
 	diff +=candRight->out_edge_.est_vals;
+	cerr << diff << endl;
 	diff -=candWrong->out_edge_.feature_values_;
+	cerr << diff << endl;
 	diff -=candWrong->out_edge_.est_vals;
+	cerr << diff << endl;
 
 	//update weight vector
+	models.PrintWeights(cerr);
 	models.UpdateWeight(diff,loss);
+	models.PrintWeights(cerr);
 
 //models.weights_;
 //    for (size_t i = 0; i < fv.size(); i++){

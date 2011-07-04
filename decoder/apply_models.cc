@@ -293,15 +293,16 @@ public:
 	GreedyUndirectedRescorer(/*const*/ ModelSet& m,
                       const SentenceMetadata& sm,
                       const Hypergraph& i,
-                      int pop_limit,
+                      bool is_training,
                       Hypergraph* o) :
       models(m),
       smeta(sm),
       in(i),
       out(*o),
       D(in.nodes_.size()),
-      pop_limit_(pop_limit) {
-    if (!SILENT) cerr << "  Applying feature functions (cube pruning, pop_limit = " << pop_limit_ << ')' << endl;
+      is_training_(is_training)
+	{
+    if (!SILENT) cerr << "  Applying feature functions (training = " << is_training_ << ')' << endl;
     node_states_.reserve(kRESERVE_NUM_NODES);
   }
 
@@ -502,8 +503,7 @@ private:
     make_heap(cand.begin(), cand.end(), HeapCandCompare());
     UState2Node state2node;   // "buf" in Figure 2
     int pops = 0;
-    int pop_limit_eff=max(1,int(v.promise*pop_limit_));
-    while(!cand.empty() && pops < pop_limit_eff) {
+    while(!cand.empty() && pops < 100) {
       pop_heap(cand.begin(), cand.end(), HeapCandCompare());
       UCandidate* item = cand.back();
       cand.pop_back();
@@ -554,7 +554,7 @@ private:
                              // splits) in the out-HG.
   FFStates node_states_;  // for each node in the out-HG what is
                              // its q function value?
-  const int pop_limit_;
+  const bool is_training_;
 };
 
 class CubePruningRescorer {
@@ -822,12 +822,12 @@ void ApplyModelSet(const Hypergraph& in,
     CubePruningRescorer ma(models, smeta, in, pl, out);
     ma.Apply();
   } else if (config.algorithm == IntersectionConfiguration::GREEDY_UNDIRECTED) {
-  	int pl = config.pop_limit;
-  	GreedyUndirectedRescorer ma(models, smeta, in, pl, out);
+  	//TODO config.pop_limit;
+  	GreedyUndirectedRescorer ma(models, smeta, in, false, out);
   	ma.Apply();
   } else if (config.algorithm == IntersectionConfiguration::GREEDY_UNDIRECTED_TRAINING) {
-  	int pl = config.pop_limit;
-  	GreedyUndirectedRescorer ma(models, smeta, in, pl, out);
+	//TODO config.pop_limit;
+  	GreedyUndirectedRescorer ma(models, smeta, in, true, out);
   	ma.Apply();
   } else {
     cerr << "Don't understand intersection algorithm " << config.algorithm << endl;

@@ -2,11 +2,11 @@ TODO
 	must try LG with no context features if it is able to learn to find the best or something good
 
 110705 MODIFY UCAND AND SCORING
-	do not use UCandidate.out_edge_ 
-	move feature vectors from HG::Edge to UC
-	remove added field from HG::Edge foreest feat vector
 OK! 	use models.AddFeaturesToUCand() to score
 OK!	do not pass out_hg in AddFeaturesToUCand()
+	move feature vectors from HG::Edge to UC
+	remove added field from HG::Edge forest feat vector
+	do not use UCandidate.out_edge_ 
 
 1110702 BOUNDARIES EXPS
 (exec time is 2min on laptop 3+min on desk)

@@ -295,9 +295,22 @@ class ModelSet {
 
   std::ostream& PrintWeights(std::ostream& os);
 
+////////////////////////
+//LG methods
+
+  void AddFeaturesToUCandidate(const SentenceMetadata& smeta,
+                                   const Hypergraph& /* hg */,
+                                   const FFStates& node_states,
+                                   Hypergraph::Edge* edge,
+                                   FFState* context,
+                                   prob_t* combination_cost_estimate) const;
+
   void UpdateWeight(SparseVector<Featval> vector, double alpha);
 
   double ScoreVector(SparseVector<Featval> vector);
+
+///////////////
+
 
  private:
   std::vector<const FeatureFunction*> models_;

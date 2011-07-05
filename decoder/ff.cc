@@ -169,41 +169,39 @@ void ModelSet::PrepareForInput(const SentenceMetadata& smeta) {
     const_cast<FeatureFunction*>(models_[i])->PrepareForInput(smeta);
 }
 
-//original
-//void ModelSet::AddFeaturesToEdge(const SentenceMetadata& smeta,
-//                                 const Hypergraph& /* hg */,
-//                                 const FFStates& node_states,
-//                                 Hypergraph::Edge* edge,
-//                                 FFState* context,
-//                                 prob_t* combination_cost_estimate) const {
-//  edge->reset_info();
-//  context->resize(state_size_);
-//  if (state_size_ > 0) {
-//    memset(&(*context)[0], 0, state_size_);
-//  }
-//  SparseVector<double> est_vals;  // only computed if combination_cost_estimate is non-NULL
-//  if (combination_cost_estimate) *combination_cost_estimate = prob_t::One();
-//  for (int i = 0; i < models_.size(); ++i) {
-//    const FeatureFunction& ff = *models_[i];
-//    void* cur_ff_context = NULL;
-//    vector<const void*> ants(edge->tail_nodes_.size());
-//    bool has_context = ff.NumBytesContext() > 0;
-//    if (has_context) {
-//      int spos = model_state_pos_[i];
-//      cur_ff_context = &(*context)[spos];
-//      for (int i = 0; i < ants.size(); ++i) {
-//        ants[i] = &node_states[edge->tail_nodes_[i]][spos];
-//      }
-//    }
-//    ff.TraversalFeatures(smeta, *edge, ants, &edge->feature_values_, &est_vals, cur_ff_context);
-//  }
-//  if (combination_cost_estimate)
-//    combination_cost_estimate->logeq(est_vals.dot(weights_));
-//  edge->edge_prob_.logeq(edge->feature_values_.dot(weights_));
-//}
-
-//X313 repleace with method above
 void ModelSet::AddFeaturesToEdge(const SentenceMetadata& smeta,
+                                 const Hypergraph& /* hg */,
+                                 const FFStates& node_states,
+                                 Hypergraph::Edge* edge,
+                                 FFState* context,
+                                 prob_t* combination_cost_estimate) const {
+  edge->reset_info();
+  context->resize(state_size_);
+  if (state_size_ > 0) {
+    memset(&(*context)[0], 0, state_size_);
+  }
+  SparseVector<double> est_vals;  // only computed if combination_cost_estimate is non-NULL
+  if (combination_cost_estimate) *combination_cost_estimate = prob_t::One();
+  for (int i = 0; i < models_.size(); ++i) {
+    const FeatureFunction& ff = *models_[i];
+    void* cur_ff_context = NULL;
+    vector<const void*> ants(edge->tail_nodes_.size());
+    bool has_context = ff.NumBytesContext() > 0;
+    if (has_context) {
+      int spos = model_state_pos_[i];
+      cur_ff_context = &(*context)[spos];
+      for (int i = 0; i < ants.size(); ++i) {
+        ants[i] = &node_states[edge->tail_nodes_[i]][spos];
+      }
+    }
+    ff.TraversalFeatures(smeta, *edge, ants, &edge->feature_values_, &est_vals, cur_ff_context);
+  }
+  if (combination_cost_estimate)
+    combination_cost_estimate->logeq(est_vals.dot(weights_));
+  edge->edge_prob_.logeq(edge->feature_values_.dot(weights_));
+}
+
+void ModelSet::AddFeaturesToUCandidate(const SentenceMetadata& smeta,
                                  const Hypergraph& /* hg */,
                                  const FFStates& node_states,
                                  Hypergraph::Edge* edge,

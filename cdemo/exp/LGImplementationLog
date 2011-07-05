@@ -1,25 +1,31 @@
-110603 GRFG YRNEAVAT
-TY F1)	
-	havdhr yvfg bs [^H]Pnaqvqngrf BX!
-	vavg jvgu yrnsf BX!
-	hfr fnzr obggbz-hc srngherf BX!
-	cnff ut rqtrf znfx BX!
-	cbc orfg fpbevat yrns BX!
-	purpx vs yrns vf unf pbeerpg rqtr BX!
-	hcqngr jrvtguf jvgu CN BX!
-	erfpber dhrhr BX!
+110603 TEST LEARNING
+GL S1)	
+	unique list of [^U]Candidates OK!
+	init with leafs OK!
+	use same bottom-up features OK!
+	pass hg edges mask OK!
+	pop best scoring leaf OK!
+	check if leaf is has correct edge OK!
+	update weigths with PA OK!
+	rescore queue OK!
 
 
-110702 OBHAQNEVRF RKCF
-(rkrp gvzr vf 2zva ba yncgbc)
+110702 BOUNDARIES EXPS
+(exec time is 2min on laptop 3+min on desk)
+BLEU 
+0.322487 (normal, beam 30)
+0.31336  (normal, beam 1)
+0.257092 (with rude action score[remove *p from viterbi score], beam 30)
+0.239234 (with rude action score[remove *p from viterbi score], beam 1)
 
-OYRH 
-0.322487 (abezny, ornz 30)
-0.31336  (abezny, ornz 1)
-0.257092 (jvgu ehqr npgvba fpber[erzbir *c sebz ivgreov fpber], ornz 30)
-0.239234 (jvgu ehqr npgvba fpber[erzbir *c sebz ivgreov fpber], ornz 1)
+110705 MODIFY UCAND AND SCORING
+	do not use UCandidate.out_edge_ 
+	move feature vectors from HG::Edge to UC
+	remove added field from HG::Edge foreest feat vector
+OK! 	use models.AddFeaturesToUCand() to score
+	do not pass out_hg in AddFeaturesToUCand()
 
-GBQB
-	zhfg gel YT jvgu ab pbagrkg srngherf vs vg vf noyr gb yrnea gb svaq gur orfg be fbzrguvat tbbq
+TODO
+	must try LG with no context features if it is able to learn to find the best or something good
 
 

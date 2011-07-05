@@ -106,7 +106,7 @@ struct UCandidate {
       const FFState& ant_state = node_states[tail.front()];
       models.AddFinalFeatures(ant_state, &out_edge_, smeta);
     } else {
-      models.AddFeaturesToEdge(smeta, out_hg, node_states, &out_edge_, &state_, &edge_estimate);
+      models.AddFeaturesToUCandidate(smeta, out_hg, node_states, &out_edge_, &state_, &edge_estimate);
     }
     vit_prob_ = out_edge_.edge_prob_ * p;
     est_prob_ = vit_prob_ * edge_estimate;

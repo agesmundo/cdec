@@ -4,9 +4,11 @@ TODO
 110705 MODIFY UCAND AND SCORING
 OK! 	use models.AddFeaturesToUCand() to score
 OK!	do not pass out_hg in AddFeaturesToUCand()
+OK!	pass UCand in AddFeaturesToUCand()
 	move feature vectors from HG::Edge to UC
 	remove added field from HG::Edge forest feat vector
 	do not use UCandidate.out_edge_ 
+	remove UCand.j_ and D add pointer structure
 
 1110702 BOUNDARIES EXPS
 (exec time is 2min on laptop 3+min on desk)

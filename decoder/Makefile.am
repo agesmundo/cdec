@@ -80,7 +80,8 @@ libcdec_a_SOURCES = \
   phrasebased_translator.cc \
   JSON_parser.c \
   json_parse.cc \
-  grammar.cc
+  grammar.cc \
+  undirected_candidate.cc
 
 if GLC
   # Until we build GLC as a library...

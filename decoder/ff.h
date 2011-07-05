@@ -17,9 +17,11 @@
 #include "hg.h"
 #include "feature_vector.h"
 #include "value_array.h"
+#include "undirected_candidate.h"
 
 class SentenceMetadata;
 class FeatureFunction;  // see definition below
+class UCandidate;
 
 typedef std::vector<WordID> Features; // set of features ids
 
@@ -300,6 +302,7 @@ class ModelSet {
 
   void AddFeaturesToUCandidate(const SentenceMetadata& smeta,
                                    const FFStates& node_states,
+                                   UCandidate* ucand,
                                    Hypergraph::Edge* edge,
                                    FFState* context,
                                    prob_t* combination_cost_estimate) const;

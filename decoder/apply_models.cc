@@ -57,7 +57,6 @@ struct UCandidate {
 
   UCandidate(const Hypergraph::Edge& e,
             const JVector& j,
-            const Hypergraph& out_hg,
             const vector<UCandidateList>& D,
             const FFStates& node_states,
             const SentenceMetadata& smeta,
@@ -66,7 +65,7 @@ struct UCandidate {
       node_index_(-1),
       in_edge_(&e),
       j_(j) {
-    InitializeUCandidate(out_hg, smeta, D, node_states, models, is_goal);
+    InitializeUCandidate(smeta, D, node_states, models, is_goal);
   }
 
   // used to query uniqueness
@@ -77,7 +76,7 @@ struct UCandidate {
     return node_index_ >= 0;
   }
 
-  void InitializeUCandidate(const Hypergraph& out_hg,
+  void InitializeUCandidate(
                            const SentenceMetadata& smeta,
                            const vector<vector<UCandidate*> >& D,
                            const FFStates& node_states,
@@ -106,7 +105,7 @@ struct UCandidate {
       const FFState& ant_state = node_states[tail.front()];
       models.AddFinalFeatures(ant_state, &out_edge_, smeta);
     } else {
-      models.AddFeaturesToUCandidate(smeta, out_hg, node_states, &out_edge_, &state_, &edge_estimate);
+      models.AddFeaturesToUCandidate(smeta, node_states, &out_edge_, &state_, &edge_estimate);
     }
     vit_prob_ = out_edge_.edge_prob_ * p;
     est_prob_ = vit_prob_ * edge_estimate;
@@ -418,6 +417,8 @@ public:
 //    }
 //    out.PruneUnreachable(D[goal_id].front()->node_index_);
 //    FreeAll();
+
+	//TODO LG transform the UCands structure in the out_hg
   }
 
 private:
@@ -432,7 +433,7 @@ private:
           	if(currentEdge.tail_nodes_.size()==0){//leafs
           		const Hypergraph::Edge& edge = in.edges_[i];
           		const JVector j(edge.tail_nodes_.size(), 0);
-          		cands.push_back(new UCandidate(edge, j, out, D, node_states_, smeta, models, false));
+          		cands.push_back(new UCandidate(edge, j, D, node_states_, smeta, models, false));
           	}
           }
           make_heap(cands.begin(), cands.end(), HeapCandCompare());
@@ -496,7 +497,7 @@ private:
     for (int i = 0; i < in_edges.size(); ++i) {
       const Hypergraph::Edge& edge = in.edges_[in_edges[i]];
       const JVector j(edge.tail_nodes_.size(), 0);
-      cand.push_back(new UCandidate(edge, j, out, D, node_states_, smeta, models, is_goal));
+      cand.push_back(new UCandidate(edge, j, D, node_states_, smeta, models, is_goal));
       assert(unique_cands.insert(cand.back()).second);  // these should all be unique!
     }
 //    cerr << "  making heap of " << cand.size() << " candidates\n";
@@ -535,7 +536,7 @@ private:
       if (j[i] < D[item.in_edge_->tail_nodes_[i]].size()) {
         UCandidate query_unique(*item.in_edge_, j);
         if (cs->count(&query_unique) == 0) {
-          UCandidate* new_cand = new UCandidate(*item.in_edge_, j, out, D, node_states_, smeta, models, is_goal);
+          UCandidate* new_cand = new UCandidate(*item.in_edge_, j, D, node_states_, smeta, models, is_goal);
           cand.push_back(new_cand);
           push_heap(cand.begin(), cand.end(), HeapCandCompare());
           assert(cs->insert(new_cand).second);  // insert into uniqueness set, sanity check

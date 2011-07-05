@@ -1,4 +1,22 @@
-110603 TEST LEARNING
+TODO
+	must try LG with no context features if it is able to learn to find the best or something good
+
+110705 MODIFY UCAND AND SCORING
+	do not use UCandidate.out_edge_ 
+	move feature vectors from HG::Edge to UC
+	remove added field from HG::Edge foreest feat vector
+OK! 	use models.AddFeaturesToUCand() to score
+OK!	do not pass out_hg in AddFeaturesToUCand()
+
+1110702 BOUNDARIES EXPS
+(exec time is 2min on laptop 3+min on desk)
+BLEU 
+0.322487 (normal, beam 30)
+0.31336  (normal, beam 1)
+0.257092 (with rude action score[remove *p from viterbi score], beam 30)
+0.239234 (with rude action score[remove *p from viterbi score], beam 1)
+
+10603 TEST LEARNING
 GL S1)	
 	unique list of [^U]Candidates OK!
 	init with leafs OK!
@@ -8,24 +26,5 @@ GL S1)
 	check if leaf is has correct edge OK!
 	update weigths with PA OK!
 	rescore queue OK!
-
-
-110702 BOUNDARIES EXPS
-(exec time is 2min on laptop 3+min on desk)
-BLEU 
-0.322487 (normal, beam 30)
-0.31336  (normal, beam 1)
-0.257092 (with rude action score[remove *p from viterbi score], beam 30)
-0.239234 (with rude action score[remove *p from viterbi score], beam 1)
-
-110705 MODIFY UCAND AND SCORING
-	do not use UCandidate.out_edge_ 
-	move feature vectors from HG::Edge to UC
-	remove added field from HG::Edge foreest feat vector
-OK! 	use models.AddFeaturesToUCand() to score
-	do not pass out_hg in AddFeaturesToUCand()
-
-TODO
-	must try LG with no context features if it is able to learn to find the best or something good
 
 

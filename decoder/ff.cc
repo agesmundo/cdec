@@ -202,7 +202,6 @@ void ModelSet::AddFeaturesToEdge(const SentenceMetadata& smeta,
 }
 
 void ModelSet::AddFeaturesToUCandidate(const SentenceMetadata& smeta,
-                                 const Hypergraph& /* hg */,
                                  const FFStates& node_states,
                                  Hypergraph::Edge* edge,
                                  FFState* context,

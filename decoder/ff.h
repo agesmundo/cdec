@@ -299,7 +299,6 @@ class ModelSet {
 //LG methods
 
   void AddFeaturesToUCandidate(const SentenceMetadata& smeta,
-                                   const Hypergraph& /* hg */,
                                    const FFStates& node_states,
                                    Hypergraph::Edge* edge,
                                    FFState* context,

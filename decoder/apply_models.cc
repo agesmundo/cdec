@@ -715,7 +715,7 @@ void ApplyModelSet(const Hypergraph& in,
                    const IntersectionConfiguration& config,
                    Hypergraph* out) {
   //force exhaustive if there's no state req. for model
-  if (models.stateless() || config.algorithm == IntersectionConfiguration::FULL) {
+  if (/*{LG TMP} models.stateless() ||*/ config.algorithm == IntersectionConfiguration::FULL) {
     NoPruningRescorer ma(models, smeta, in, out); // avoid overhead of best-first when no state
     ma.Apply();
   } else if (config.algorithm == IntersectionConfiguration::CUBE) {

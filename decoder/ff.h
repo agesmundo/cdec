@@ -86,12 +86,13 @@ public:
   }
   //GU
   inline void TraversalUndirectedFeatures(const SentenceMetadata& smeta,
+                                UCandidate& ucand,
                                 Hypergraph::Edge& edge,
                                 const std::vector<const void*>& ant_contexts,
                                 FeatureVector* features,
                                 FeatureVector* estimated_features,
                                 void* out_state) const {
-    TraversalUndirectedFeaturesLog(smeta, edge, ant_contexts,
+    TraversalUndirectedFeaturesLog(smeta, ucand, edge, ant_contexts,
                           features, estimated_features, out_state);
   }
 
@@ -132,12 +133,13 @@ public:
   }
   //GU
   virtual void TraversalUndirectedFeaturesLog(const SentenceMetadata& smeta,
-                                    Hypergraph::Edge& edge, // this is writable only so you can use log()
+                                     UCandidate& ucand,  // this is writable only so you can use log()
+                                     Hypergraph::Edge& edge, // this is writable only so you can use log()
                                      const std::vector<const void*>& ant_contexts,
                                      FeatureVector* features,
                                      FeatureVector* estimated_features,
                                      void* context) const {
-    TraversalUndirectedFeaturesImpl(smeta,edge,ant_contexts,features,estimated_features,context);
+    TraversalUndirectedFeaturesImpl(smeta,ucand,edge,ant_contexts,features,estimated_features,context);
   }
 
   // override above or below.
@@ -149,6 +151,7 @@ public:
                                      void* context) const;
   //GU
   virtual void TraversalUndirectedFeaturesImpl(const SentenceMetadata& smeta,
+                                     const UCandidate& ucand,
                                      Hypergraph::Edge const& edge,
                                      const std::vector<const void*>& ant_contexts,
                                      FeatureVector* features,
@@ -184,6 +187,7 @@ class WordPenalty : public FeatureFunction {
                                      void* context) const;
   //GU
   virtual void TraversalUndirectedFeaturesImpl(const SentenceMetadata& smeta,
+                                     const UCandidate& ucand,
                                      const Hypergraph::Edge& edge,
                                      const std::vector<const void*>& ant_contexts,
                                      FeatureVector* features,

@@ -76,8 +76,9 @@ void FeatureFunction::TraversalFeaturesImpl(const SentenceMetadata& smeta,
   throw std::runtime_error("TraversalFeaturesImpl not implemented - override it or TraversalFeaturesLog.\n");
   abort();
 }
-
+//GU
 void FeatureFunction::TraversalUndirectedFeaturesImpl(const SentenceMetadata& smeta,
+                                        const UCandidate& ucand,
                                         const Hypergraph::Edge& edge,
                                         const std::vector<const void*>& ant_states,
                                         SparseVector<double>* features,
@@ -101,6 +102,7 @@ void WordPenalty::TraversalFeaturesImpl(const SentenceMetadata& smeta,
 }
 //GU
 void WordPenalty::TraversalUndirectedFeaturesImpl(const SentenceMetadata& smeta,
+                                        const UCandidate& ucand,
                                         const Hypergraph::Edge& edge,
                                         const std::vector<const void*>& ant_states,
                                         SparseVector<double>* features,
@@ -248,7 +250,7 @@ void ModelSet::AddFeaturesToUCandidate(const SentenceMetadata& smeta,
         ants[i] = &node_states[edge->tail_nodes_[i]][spos];
       }
     }
-    ff.TraversalUndirectedFeatures(smeta, *edge, ants, &edge->feature_values_, &edge->est_vals_, cur_ff_context);
+    ff.TraversalUndirectedFeatures(smeta, *ucand, *edge, ants, &edge->feature_values_, &edge->est_vals_, cur_ff_context);
   }
   if (combination_cost_estimate)
     combination_cost_estimate->logeq(edge->est_vals_.dot(weights_));

@@ -60,7 +60,7 @@ struct UCandidate {
   UCandidate(const Hypergraph::Edge& e,
             const SmallVectorInt& j);
 
-  bool IsIncorporatedIntoHypergraph() const;
+  bool IsSelected() const;
 
   void InitializeUCandidate(
                            const SentenceMetadata& smeta,

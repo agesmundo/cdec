@@ -26,7 +26,7 @@ using namespace std;
 //  UCandidate::UCandidate(const Hypergraph::Edge& e,
 //            const LinksVector& context) : in_edge_(&e), context_links_(context) {}
 
-  bool UCandidate::IsIncorporatedIntoHypergraph() const {
+  bool UCandidate::IsSelected() const {
     return ucand_index_ >= 0;
   }
 
@@ -73,7 +73,7 @@ using namespace std;
 
 ostream& operator<<(ostream& os, const UCandidate& cand) {
   os << "UCAND[";
-  if (!cand.IsIncorporatedIntoHypergraph()) { os << "PENDING "; }
+  if (!cand.IsSelected()) { os << "PENDING "; }
   else { os << "+LM_node=" << cand.ucand_index_; }
   //os << " edge=" << cand.in_edge_->id_; //printed by Edge<<
   os << " context_links_=<";

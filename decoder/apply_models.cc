@@ -278,13 +278,13 @@ public:
 	assert(loss>=0);
 	cerr << " Loss " << loss << endl;
 
-	SparseVector<Featval> diff (candRight->out_edge_.feature_values_);
+	SparseVector<Featval> diff (candRight->feature_values_);
 	cerr << diff << endl;
-	diff +=candRight->out_edge_.est_vals_;
+	diff +=candRight->est_vals_;
 	cerr << diff << endl;
-	diff -=candWrong->out_edge_.feature_values_;
+	diff -=candWrong->feature_values_;
 	cerr << diff << endl;
-	diff -=candWrong->out_edge_.est_vals_;
+	diff -=candWrong->est_vals_;
 	cerr << diff << endl;
 
 	//update weight vector
@@ -296,15 +296,19 @@ public:
 	cands.push_back(candWrong);
 	cands.push_back(candRight);
 	for(UCandidateHeap::iterator it = cands.begin();it!=cands.end();it++){
-		UCandidate& cand = **it;
+		UCandidate& ucand = **it;
 
-		cand.out_edge_.edge_prob_.logeq(models.ScoreVector(cand.out_edge_.feature_values_));
-		prob_t edge_estimate;
-		edge_estimate.logeq(models.ScoreVector(cand.out_edge_.est_vals_));
-		cand.action_prob_ = cand.out_edge_.edge_prob_ * edge_estimate;
-		cerr << "UPDATED CANDS " << cand <<endl;
-		cerr << "is correct? : (" << cand.in_edge_->id_ <<")";
-		if(correct_edges_mask[cand.in_edge_->id_]){
+		prob_t estimate = prob_t::One();
+		estimate.logeq(models.ScoreVector(ucand.est_vals_));
+
+		prob_t local = prob_t::One();
+		local.logeq(models.ScoreVector(ucand.feature_values_));
+
+		ucand.action_prob_ = local * estimate; //sum exps
+
+		cerr << "UPDATED CANDS " << ucand <<endl;
+		cerr << "is correct? : (" << ucand.in_edge_->id_ <<")";
+		if(correct_edges_mask[ucand.in_edge_->id_]){
 			cerr << " true" <<endl;
 		}
 		else{

@@ -226,15 +226,15 @@ void ModelSet::AddFeaturesToEdge(const SentenceMetadata& smeta,
 void ModelSet::AddFeaturesToUCandidate(const SentenceMetadata& smeta,
                                  const FFStates& node_states,
                                  UCandidate* ucand,
-                                 Hypergraph::Edge* edge,
-                                 FFState* context,
-                                 prob_t* combination_cost_estimate) const {
+                                 //Hypergraph::Edge* edge,
+                                 FFState* context//,
+                                 /*prob_t* combination_cost_estimate*/) const {
   context->resize(state_size_);
   if (state_size_ > 0) {
     memset(&(*context)[0], 0, state_size_);
   }
   //SparseVector<double> est_vals;  // only computed if combination_cost_estimate is non-NULL
-  if (combination_cost_estimate) *combination_cost_estimate = prob_t::One();
+  //if (combination_cost_estimate) *combination_cost_estimate = prob_t::One();
   for (int i = 0; i < models_.size(); ++i) {
     const FeatureFunction& ff = *models_[i];
     void* cur_ff_context = NULL;
@@ -244,9 +244,9 @@ void ModelSet::AddFeaturesToUCandidate(const SentenceMetadata& smeta,
     if (has_context) {
       int spos = model_state_pos_[i];
       cur_ff_context = &(*context)[spos];
-      for (int i = 0; i < ants.size(); ++i) {
-        ants[i] = &node_states[edge->tail_nodes_[i]][spos];
-      }
+//      for (int i = 0; i < ants.size(); ++i) {//TODO NB ants useles each UCand ha its own state, not merging per out node as CP
+//        ants[i] = &node_states[edge->tail_nodes_[i]][spos];//TODO then remove ants when know how to adapt LM (context space issue)
+//      }
     }
     ff.TraversalUndirectedFeatures(smeta, *ucand, ants, &ucand->feature_values_, &ucand->est_vals_, cur_ff_context);
   }

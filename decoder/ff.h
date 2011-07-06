@@ -336,9 +336,9 @@ class ModelSet {
   void AddFeaturesToUCandidate(const SentenceMetadata& smeta,
                                    const FFStates& node_states,
                                    UCandidate* ucand,
-                                   Hypergraph::Edge* edge,
-                                   FFState* context,
-                                   prob_t* combination_cost_estimate) const;
+                                   //Hypergraph::Edge* edge,
+                                   FFState* context//,
+                                   /*prob_t* combination_cost_estimate*/) const;
 
   void UpdateWeight(SparseVector<Featval> vector, double alpha);
 

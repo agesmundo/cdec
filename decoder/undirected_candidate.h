@@ -29,8 +29,8 @@ struct UCandidate {
 
   FeatureVector est_vals_;
   FeatureVector feature_values_;
-  //TODO LG remove
-  Hypergraph::Edge out_edge_;
+  //TODO GU remove
+  //Hypergraph::Edge out_edge_;
 
   //links to context
   //NB!!:

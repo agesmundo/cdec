@@ -595,11 +595,9 @@ DecoderImpl::DecoderImpl(po::variables_map& conf, int argc, char** argv, istream
       string isn = "intersection_strategy" + StringSuffixForRescoringPass(pass);
       if (LowercaseString(str(isn.c_str(),conf)) == "full") {
         palg = 0;
-      }
-      if (LowercaseString(str(isn.c_str(),conf)) == "greedy_undirected") {
+      }else if (LowercaseString(str(isn.c_str(),conf)) == "greedy_undirected") {
         palg = 2;
-      }
-      if (LowercaseString(str(isn.c_str(),conf)) == "greedy_undirected_training") {
+      }else if (LowercaseString(str(isn.c_str(),conf)) == "greedy_undirected_training") {
         palg = 3;
       }
       rp.inter_conf.reset(new IntersectionConfiguration(palg, pop_limit));

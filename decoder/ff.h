@@ -84,6 +84,16 @@ public:
     // optional strict mode that's enforced here that adds some kind of
     // barrier between the blocks reserved for the residual contexts
   }
+  //GU
+  inline void TraversalUndirectedFeatures(const SentenceMetadata& smeta,
+                                Hypergraph::Edge& edge,
+                                const std::vector<const void*>& ant_contexts,
+                                FeatureVector* features,
+                                FeatureVector* estimated_features,
+                                void* out_state) const {
+    TraversalUndirectedFeaturesLog(smeta, edge, ant_contexts,
+                          features, estimated_features, out_state);
+  }
 
   // if there's some state left when you transition to the goal state, score
   // it here.  For example, the language model computes the cost of adding
@@ -120,9 +130,25 @@ public:
                                      void* context) const {
     TraversalFeaturesImpl(smeta,edge,ant_contexts,features,estimated_features,context);
   }
+  //GU
+  virtual void TraversalUndirectedFeaturesLog(const SentenceMetadata& smeta,
+                                    Hypergraph::Edge& edge, // this is writable only so you can use log()
+                                     const std::vector<const void*>& ant_contexts,
+                                     FeatureVector* features,
+                                     FeatureVector* estimated_features,
+                                     void* context) const {
+    TraversalUndirectedFeaturesImpl(smeta,edge,ant_contexts,features,estimated_features,context);
+  }
 
   // override above or below.
   virtual void TraversalFeaturesImpl(const SentenceMetadata& smeta,
+                                     Hypergraph::Edge const& edge,
+                                     const std::vector<const void*>& ant_contexts,
+                                     FeatureVector* features,
+                                     FeatureVector* estimated_features,
+                                     void* context) const;
+  //GU
+  virtual void TraversalUndirectedFeaturesImpl(const SentenceMetadata& smeta,
                                      Hypergraph::Edge const& edge,
                                      const std::vector<const void*>& ant_contexts,
                                      FeatureVector* features,
@@ -151,6 +177,13 @@ class WordPenalty : public FeatureFunction {
   bool rule_feature() const { return true; }
  protected:
   virtual void TraversalFeaturesImpl(const SentenceMetadata& smeta,
+                                     const Hypergraph::Edge& edge,
+                                     const std::vector<const void*>& ant_contexts,
+                                     FeatureVector* features,
+                                     FeatureVector* estimated_features,
+                                     void* context) const;
+  //GU
+  virtual void TraversalUndirectedFeaturesImpl(const SentenceMetadata& smeta,
                                      const Hypergraph::Edge& edge,
                                      const std::vector<const void*>& ant_contexts,
                                      FeatureVector* features,

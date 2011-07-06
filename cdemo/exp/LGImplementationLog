@@ -9,6 +9,7 @@ OK!	pass UCand in AddFeaturesToUCand()
 	remove added field from HG::Edge forest feat vector
 	do not use UCandidate.out_edge_ 
 	remove UCand.j_ and D add pointer structure
+	?remove feats est_feats from traversal methods structure?
 
 1110702 BOUNDARIES EXPS
 (exec time is 2min on laptop 3+min on desk)

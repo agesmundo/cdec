@@ -229,7 +229,6 @@ void ModelSet::AddFeaturesToUCandidate(const SentenceMetadata& smeta,
                                  Hypergraph::Edge* edge,
                                  FFState* context,
                                  prob_t* combination_cost_estimate) const {
-  edge->reset_info();
   context->resize(state_size_);
   if (state_size_ > 0) {
     memset(&(*context)[0], 0, state_size_);
@@ -239,7 +238,8 @@ void ModelSet::AddFeaturesToUCandidate(const SentenceMetadata& smeta,
   for (int i = 0; i < models_.size(); ++i) {
     const FeatureFunction& ff = *models_[i];
     void* cur_ff_context = NULL;
-    vector<const void*> ants(edge->tail_nodes_.size());
+    /*rm*/assert(ucand->in_edge_->tail_nodes_.size()==ucand->in_edge_->rule_->Arity());//debug TODO RM
+    vector<const void*> ants(ucand->in_edge_->tail_nodes_.size());
     bool has_context = ff.NumBytesContext() > 0;
     if (has_context) {
       int spos = model_state_pos_[i];
@@ -248,11 +248,15 @@ void ModelSet::AddFeaturesToUCandidate(const SentenceMetadata& smeta,
         ants[i] = &node_states[edge->tail_nodes_[i]][spos];
       }
     }
-    ff.TraversalUndirectedFeatures(smeta, *ucand, ants, &edge->feature_values_, &edge->est_vals_, cur_ff_context);
+    ff.TraversalUndirectedFeatures(smeta, *ucand, ants, &ucand->feature_values_, &ucand->est_vals_, cur_ff_context);
   }
-  if (combination_cost_estimate)
-    combination_cost_estimate->logeq(edge->est_vals_.dot(weights_));
-  edge->edge_prob_.logeq(edge->feature_values_.dot(weights_));
+  prob_t estimate = prob_t::One();
+  estimate.logeq(ucand->est_vals_.dot(weights_));
+
+  prob_t local = prob_t::One();
+  local.logeq(ucand->feature_values_.dot(weights_));
+
+  ucand->action_prob_ = local * estimate; //sum exps
 }
 
 void ModelSet::AddFinalFeatures(const FFState& state, Hypergraph::Edge* edge,SentenceMetadata const& smeta) const {

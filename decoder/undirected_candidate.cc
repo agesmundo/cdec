@@ -36,6 +36,7 @@ using namespace std;
                            const ModelSet& models,
                            const bool is_goal) {
     const Hypergraph::Edge& in_edge = *in_edge_;
+    feature_values_ = in_edge.feature_values_;
     out_edge_.rule_ = in_edge.rule_;
     out_edge_.feature_values_ = in_edge.feature_values_;
     out_edge_.i_ = in_edge.i_;
@@ -44,14 +45,17 @@ using namespace std;
     out_edge_.prev_j_ = in_edge.prev_j_;
     Hypergraph::TailNodeVector& tail = out_edge_.tail_nodes_;
     tail.resize(j_.size());
-    prob_t p = prob_t::One();
-    // cerr << "\nEstimating application of " << in_edge.rule_->AsString() << endl;
-    for (int i = 0; i < tail.size(); ++i) {
-      const UCandidate& ant = *D[in_edge.tail_nodes_[i]][j_[i]];
-      assert(ant.IsIncorporatedIntoHypergraph());
-      tail[i] = ant.node_index_;
-      p *= ant.vit_prob_;
-    }
+
+    //make a feature with score of links?
+//    prob_t p = prob_t::One();
+//    // cerr << "\nEstimating application of " << in_edge.rule_->AsString() << endl;
+//    for (int i = 0; i < tail.size(); ++i) {
+//      const UCandidate& ant = *D[in_edge.tail_nodes_[i]][j_[i]];
+//      assert(ant.IsIncorporatedIntoHypergraph());
+//      tail[i] = ant.node_index_;
+//      p *= ant.vit_prob_;
+//    }
+
     prob_t edge_estimate = prob_t::One();
     if (is_goal) {
       assert(tail.size() == 1);
@@ -60,9 +64,10 @@ using namespace std;
     } else {
       models.AddFeaturesToUCandidate(smeta, node_states, this, &out_edge_, &state_, &edge_estimate);
     }
-    vit_prob_ = out_edge_.edge_prob_ * p;
-    est_prob_ = vit_prob_ * edge_estimate;
-    action_prob_ = out_edge_.edge_prob_ * edge_estimate;
+
+//    vit_prob_ = out_edge_.edge_prob_ * p;
+//    est_prob_ = vit_prob_ * edge_estimate;
+
   }
 
 ostream& operator<<(ostream& os, const UCandidate& cand) {
@@ -73,8 +78,9 @@ ostream& operator<<(ostream& os, const UCandidate& cand) {
   os << " j=<";
   for (int i = 0; i < cand.j_.size(); ++i)
     os << (i==0 ? "" : " ") << cand.j_[i];
-  os << "> vit=" << log(cand.vit_prob_);
-  os << " est=" << log(cand.est_prob_);
+  os << "> ";
+//  os << vit=" << log(cand.vit_prob_);
+//  os << " est=" << log(cand.est_prob_);
   os << " act=" << log(cand.action_prob_);
   os << " in_edge_= " << *(cand.in_edge_)<< "; ";
   os << endl;

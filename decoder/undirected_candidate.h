@@ -27,6 +27,7 @@ struct UCandidate {
   FFState state_;
 
   FeatureVector est_vals_;
+  FeatureVector feature_values_;
   //TODO LG remove
   Hypergraph::Edge out_edge_;
 
@@ -34,9 +35,9 @@ struct UCandidate {
   const SmallVectorInt j_;
 
   //vit_prob_ and est_prob_ are not updated in LG training
-  prob_t vit_prob_;            // these are fixed until the cand
+  //prob_t vit_prob_;            // these are fixed until the cand
                                // is popped, then they may be updated
-  prob_t est_prob_;
+  //prob_t est_prob_;
 
   prob_t action_prob_;
 

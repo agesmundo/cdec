@@ -358,97 +358,97 @@ private:
     D.clear();
   }
 
-  void IncorporateIntoPlusLMForest(UCandidate* item, UState2Node* s2n, UCandidateList* freelist) {
-    Hypergraph::Edge* new_edge = out.AddEdge(item->out_edge_);
-    new_edge->edge_prob_ = item->out_edge_.edge_prob_;
-    UCandidate*& o_item = (*s2n)[item->state_];
-    if (!o_item) o_item = item;
+//  void IncorporateIntoPlusLMForest(UCandidate* item, UState2Node* s2n, UCandidateList* freelist) {
+//    Hypergraph::Edge* new_edge = out.AddEdge(item->out_edge_);
+//    new_edge->edge_prob_ = item->out_edge_.edge_prob_;
+//    UCandidate*& o_item = (*s2n)[item->state_];
+//    if (!o_item) o_item = item;
+//
+//    int& node_id = o_item->node_index_;
+//    if (node_id < 0) {
+//      Hypergraph::Node* new_node = out.AddNode(in.nodes_[item->in_edge_->head_node_].cat_);
+//      node_states_.push_back(item->state_);
+//      node_id = new_node->id_;
+//    }
+//#if 0
+//    Hypergraph::Node* node = &out.nodes_[node_id];
+//    out.ConnectEdgeToHeadNode(new_edge, node);
+//#else
+//    out.ConnectEdgeToHeadNode(new_edge, node_id);
+//#endif
+//    // update candidate if we have a better derivation
+//    // note: the difference between the vit score and the estimated
+//    // score is the same for all items with a common residual DP
+//    // state
+//    if (item->vit_prob_ > o_item->vit_prob_) {
+//      assert(o_item->state_ == item->state_);    // sanity check!
+//      o_item->est_prob_ = item->est_prob_;
+//      o_item->vit_prob_ = item->vit_prob_;
+//    }
+//    if (item != o_item) freelist->push_back(item);
+//  }
 
-    int& node_id = o_item->node_index_;
-    if (node_id < 0) {
-      Hypergraph::Node* new_node = out.AddNode(in.nodes_[item->in_edge_->head_node_].cat_);
-      node_states_.push_back(item->state_);
-      node_id = new_node->id_;
-    }
-#if 0
-    Hypergraph::Node* node = &out.nodes_[node_id];
-    out.ConnectEdgeToHeadNode(new_edge, node);
-#else
-    out.ConnectEdgeToHeadNode(new_edge, node_id);
-#endif
-    // update candidate if we have a better derivation
-    // note: the difference between the vit score and the estimated
-    // score is the same for all items with a common residual DP
-    // state
-    if (item->vit_prob_ > o_item->vit_prob_) {
-      assert(o_item->state_ == item->state_);    // sanity check!
-      o_item->est_prob_ = item->est_prob_;
-      o_item->vit_prob_ = item->vit_prob_;
-    }
-    if (item != o_item) freelist->push_back(item);
-  }
+//  void KBest(const int vert_index, const bool is_goal) {
+//    // cerr << "KBest(" << vert_index << ")\n";
+//    UCandidateList& D_v = D[vert_index];
+//    assert(D_v.empty());
+//    const Hypergraph::Node& v = in.nodes_[vert_index];
+//    // cerr << "  has " << v.in_edges_.size() << " in-coming edges\n";
+//    const vector<int>& in_edges = v.in_edges_;
+//    UCandidateHeap cand;
+//    UCandidateList freelist;
+//    cand.reserve(in_edges.size());
+//    UniqueUCandidateSet unique_cands;
+//    for (int i = 0; i < in_edges.size(); ++i) {
+//      const Hypergraph::Edge& edge = in.edges_[in_edges[i]];
+//      const JVector j(edge.tail_nodes_.size(), 0);
+//      cand.push_back(new UCandidate(edge, j, D, node_states_, smeta, models, is_goal));
+//      assert(unique_cands.insert(cand.back()).second);  // these should all be unique!
+//    }
+////    cerr << "  making heap of " << cand.size() << " candidates\n";
+//    make_heap(cand.begin(), cand.end(), HeapCandCompare());
+//    UState2Node state2node;   // "buf" in Figure 2
+//    int pops = 0;
+//    while(!cand.empty() && pops < 100) {
+//      pop_heap(cand.begin(), cand.end(), HeapCandCompare());
+//      UCandidate* item = cand.back();
+//      cand.pop_back();
+//      // cerr << "POPPED: " << *item << endl;
+//      PushSucc(*item, is_goal, &cand, &unique_cands);
+//      IncorporateIntoPlusLMForest(item, &state2node, &freelist);
+//      ++pops;
+//    }
+//    D_v.resize(state2node.size());
+//    int c = 0;
+//    for (UState2Node::iterator i = state2node.begin(); i != state2node.end(); ++i)
+//      D_v[c++] = i->second;
+//    sort(D_v.begin(), D_v.end(), EstProbSorter());
+//    // cerr << "  expanded to " << D_v.size() << " nodes\n";
+//
+//    for (int i = 0; i < cand.size(); ++i)
+//      delete cand[i];
+//    // freelist is necessary since even after an item merged, it still stays in
+//    // the unique set so it can't be deleted til now
+//    for (int i = 0; i < freelist.size(); ++i)
+//      delete freelist[i];
+//  }
 
-  void KBest(const int vert_index, const bool is_goal) {
-    // cerr << "KBest(" << vert_index << ")\n";
-    UCandidateList& D_v = D[vert_index];
-    assert(D_v.empty());
-    const Hypergraph::Node& v = in.nodes_[vert_index];
-    // cerr << "  has " << v.in_edges_.size() << " in-coming edges\n";
-    const vector<int>& in_edges = v.in_edges_;
-    UCandidateHeap cand;
-    UCandidateList freelist;
-    cand.reserve(in_edges.size());
-    UniqueUCandidateSet unique_cands;
-    for (int i = 0; i < in_edges.size(); ++i) {
-      const Hypergraph::Edge& edge = in.edges_[in_edges[i]];
-      const JVector j(edge.tail_nodes_.size(), 0);
-      cand.push_back(new UCandidate(edge, j, D, node_states_, smeta, models, is_goal));
-      assert(unique_cands.insert(cand.back()).second);  // these should all be unique!
-    }
-//    cerr << "  making heap of " << cand.size() << " candidates\n";
-    make_heap(cand.begin(), cand.end(), HeapCandCompare());
-    UState2Node state2node;   // "buf" in Figure 2
-    int pops = 0;
-    while(!cand.empty() && pops < 100) {
-      pop_heap(cand.begin(), cand.end(), HeapCandCompare());
-      UCandidate* item = cand.back();
-      cand.pop_back();
-      // cerr << "POPPED: " << *item << endl;
-      PushSucc(*item, is_goal, &cand, &unique_cands);
-      IncorporateIntoPlusLMForest(item, &state2node, &freelist);
-      ++pops;
-    }
-    D_v.resize(state2node.size());
-    int c = 0;
-    for (UState2Node::iterator i = state2node.begin(); i != state2node.end(); ++i)
-      D_v[c++] = i->second;
-    sort(D_v.begin(), D_v.end(), EstProbSorter());
-    // cerr << "  expanded to " << D_v.size() << " nodes\n";
-
-    for (int i = 0; i < cand.size(); ++i)
-      delete cand[i];
-    // freelist is necessary since even after an item merged, it still stays in
-    // the unique set so it can't be deleted til now
-    for (int i = 0; i < freelist.size(); ++i)
-      delete freelist[i];
-  }
-
-  void PushSucc(const UCandidate& item, const bool is_goal, UCandidateHeap* pcand, UniqueUCandidateSet* cs) {
-    UCandidateHeap& cand = *pcand;
-    for (int i = 0; i < item.j_.size(); ++i) {
-      JVector j = item.j_;
-      ++j[i];
-      if (j[i] < D[item.in_edge_->tail_nodes_[i]].size()) {
-        UCandidate query_unique(*item.in_edge_, j);
-        if (cs->count(&query_unique) == 0) {
-          UCandidate* new_cand = new UCandidate(*item.in_edge_, j, D, node_states_, smeta, models, is_goal);
-          cand.push_back(new_cand);
-          push_heap(cand.begin(), cand.end(), HeapCandCompare());
-          assert(cs->insert(new_cand).second);  // insert into uniqueness set, sanity check
-        }
-      }
-    }
-  }
+//  void PushSucc(const UCandidate& item, const bool is_goal, UCandidateHeap* pcand, UniqueUCandidateSet* cs) {
+//    UCandidateHeap& cand = *pcand;
+//    for (int i = 0; i < item.j_.size(); ++i) {
+//      JVector j = item.j_;
+//      ++j[i];
+//      if (j[i] < D[item.in_edge_->tail_nodes_[i]].size()) {
+//        UCandidate query_unique(*item.in_edge_, j);
+//        if (cs->count(&query_unique) == 0) {
+//          UCandidate* new_cand = new UCandidate(*item.in_edge_, j, D, node_states_, smeta, models, is_goal);
+//          cand.push_back(new_cand);
+//          push_heap(cand.begin(), cand.end(), HeapCandCompare());
+//          assert(cs->insert(new_cand).second);  // insert into uniqueness set, sanity check
+//        }
+//      }
+//    }
+//  }
 
   /*const*/ ModelSet& models;
   const SentenceMetadata& smeta;

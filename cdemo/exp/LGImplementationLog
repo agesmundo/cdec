@@ -5,8 +5,9 @@ TODO
 OK! 	use models.AddFeaturesToUCand() to score
 OK!	do not pass out_hg in AddFeaturesToUCand()
 OK!	pass UCand in AddFeaturesToUCand()
-	move feature vectors from HG::Edge to UC
-	remove added field from HG::Edge forest feat vector
+OK!	move feature vectors from HG::Edge to UC
+OK!	remove added field from HG::Edge forest feat vector
+OK!	replace bottom up data structs for states j_ D with undir
 	do not use UCandidate.out_edge_ 
 	remove UCand.j_ and D add pointer structure
 	?remove feats est_feats from traversal methods structure?

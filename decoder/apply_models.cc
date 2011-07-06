@@ -163,12 +163,14 @@ struct CandidateUniquenessHash {
     return x;
   }
 };
-struct UCandidateUniquenessHash {
+struct UCandidateUniquenessHash {//TODO GU is this correct??
   size_t operator()(const UCandidate* c) const {
     size_t x = 5381;
     x = ((x << 5) + x) ^ c->in_edge_->id_;
-    for (int i = 0; i < c->j_.size(); ++i)
-      x = ((x << 5) + x) ^ c->j_[i];
+    for (int i = 0; i < c->context_links_.size(); ++i){
+    	assert(c->context_links_[i]->ucand_index_+1>=0);
+      x = ((x << 5) + x) ^ (c->context_links_[i]->ucand_index_+1);
+    }
     return x;
   }
 };
@@ -180,7 +182,7 @@ struct CandidateUniquenessEquals {
 };
 struct UCandidateUniquenessEquals {
   bool operator()(const UCandidate* a, const UCandidate* b) const {
-    return (a->in_edge_ == b->in_edge_) && (a->j_ == b->j_);
+    return (a->in_edge_ == b->in_edge_) && (a->context_links_ == b->context_links_);
   }
 };
 
@@ -207,7 +209,7 @@ public:
       is_training_(is_training)
 	{
     if (!SILENT) cerr << "  Applying feature functions (training = " << is_training_ << ')' << endl;
-    node_states_.reserve(kRESERVE_NUM_NODES);
+    ucands_states_.reserve(kRESERVE_NUM_NODES);
   }
 
   void Apply() {
@@ -337,8 +339,8 @@ private:
           	const Hypergraph::Edge& currentEdge= in.edges_.at(i);
           	if(currentEdge.tail_nodes_.size()==0){//leafs
           		const Hypergraph::Edge& edge = in.edges_[i];
-          		const JVector j(edge.tail_nodes_.size(), 0);
-          		cands.push_back(new UCandidate(edge, j,/* D,*/ node_states_, smeta, models, false));
+          		const LinksVector context(edge.Arity()+1, NULL);
+          		cands.push_back(new UCandidate(edge, context,/* D,*/ ucands_states_, smeta, models, false));
           	}
           }
           make_heap(cands.begin(), cands.end(), HeapCandCompare());
@@ -455,10 +457,12 @@ private:
   const Hypergraph& in;
   Hypergraph& out;
 
+//in GU is useless to rm
 //  vector<UCandidateList> D;   // maps nodes in in-HG to the
                              // equivalent nodes (many due to state
                              // splits) in the out-HG.
-  FFStates node_states_;  // for each node in the out-HG what is
+
+  FFStates ucands_states_;  // for each node in the out-HG what is
                              // its q function value?
   const bool is_training_;
 };

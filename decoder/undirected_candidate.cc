@@ -9,24 +9,25 @@
 using namespace std;
 
   UCandidate::UCandidate(const Hypergraph::Edge& e,
-            const SmallVectorInt& j,
+            const LinksVector& context,
             //const vector<UCandidateList>& D,
             const FFStates& node_states,
             const SentenceMetadata& smeta,
             const ModelSet& models,
             bool is_goal) :
-      node_index_(-1),
+      ucand_index_(-1),
       in_edge_(&e),
-      j_(j) {
+      context_links_(context) {
     InitializeUCandidate(smeta,/* D,*/ node_states, models, is_goal);
   }
 
+  //GU TODO is this needed??
   // used to query uniqueness
-  UCandidate::UCandidate(const Hypergraph::Edge& e,
-            const SmallVectorInt& j) : in_edge_(&e), j_(j) {}
+//  UCandidate::UCandidate(const Hypergraph::Edge& e,
+//            const LinksVector& context) : in_edge_(&e), context_links_(context) {}
 
   bool UCandidate::IsIncorporatedIntoHypergraph() const {
-    return node_index_ >= 0;
+    return ucand_index_ >= 0;
   }
 
   void UCandidate::InitializeUCandidate(
@@ -44,7 +45,7 @@ using namespace std;
     out_edge_.prev_i_ = in_edge.prev_i_;
     out_edge_.prev_j_ = in_edge.prev_j_;
     Hypergraph::TailNodeVector& tail = out_edge_.tail_nodes_;
-    tail.resize(j_.size());
+    tail.resize(in_edge.tail_nodes_.size());
 
     //make a feature with score of links?
 //    prob_t p = prob_t::One();
@@ -73,11 +74,11 @@ using namespace std;
 ostream& operator<<(ostream& os, const UCandidate& cand) {
   os << "UCAND[";
   if (!cand.IsIncorporatedIntoHypergraph()) { os << "PENDING "; }
-  else { os << "+LM_node=" << cand.node_index_; }
+  else { os << "+LM_node=" << cand.ucand_index_; }
   //os << " edge=" << cand.in_edge_->id_; //printed by Edge<<
-  os << " j=<";
-  for (int i = 0; i < cand.j_.size(); ++i)
-    os << (i==0 ? "" : " ") << cand.j_[i];
+  os << " context_links_=<";
+  for (int i = 0; i < cand.context_links_.size(); ++i)
+    os << (i==0 ? "" : " ") << cand.context_links_[i];
   os << "> ";
 //  os << vit=" << log(cand.vit_prob_);
 //  os << " est=" << log(cand.est_prob_);

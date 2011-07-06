@@ -19,10 +19,11 @@ typedef vector<FFState> FFStates;
 struct UCandidate;
 typedef vector<UCandidate*> UCandidateHeap;
 typedef vector<UCandidate*> UCandidateList;
+typedef SmallVector<UCandidate*,3> LinksVector;
 
 struct UCandidate {
-  int node_index_;                     // -1 until incorporated
-                                       // into the +LM forest
+  int ucand_index_;                     // -1 until popped from queue
+
   const Hypergraph::Edge* in_edge_;    // in -LM forest
   FFState state_;
 
@@ -31,8 +32,14 @@ struct UCandidate {
   //TODO LG remove
   Hypergraph::Edge out_edge_;
 
+  //links to context
+  //NB!!:
+  //0 HEAD,
+  //1 FIRST CHILD (left)
+  //2 SECOND CHILD
+  const LinksVector context_links_;
   //TODO LG replace with pointer structure
-  const SmallVectorInt j_;
+//  const SmallVectorInt j_;
 
   //vit_prob_ and est_prob_ are not updated in LG training
   //prob_t vit_prob_;            // these are fixed until the cand
@@ -42,7 +49,7 @@ struct UCandidate {
   prob_t action_prob_;
 
   UCandidate(const Hypergraph::Edge& e,
-            const SmallVectorInt& j,
+		    const LinksVector& lv,
             //const vector<UCandidateList>& D,
             const FFStates& node_states,
             const SentenceMetadata& smeta,

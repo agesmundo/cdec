@@ -203,7 +203,7 @@ public:
       smeta(sm),
       in(i),
       out(*o),
-      D(in.nodes_.size()),
+      //D(in.nodes_.size()),
       is_training_(is_training)
 	{
     if (!SILENT) cerr << "  Applying feature functions (training = " << is_training_ << ')' << endl;
@@ -338,7 +338,7 @@ private:
           	if(currentEdge.tail_nodes_.size()==0){//leafs
           		const Hypergraph::Edge& edge = in.edges_[i];
           		const JVector j(edge.tail_nodes_.size(), 0);
-          		cands.push_back(new UCandidate(edge, j, D, node_states_, smeta, models, false));
+          		cands.push_back(new UCandidate(edge, j,/* D,*/ node_states_, smeta, models, false));
           	}
           }
           make_heap(cands.begin(), cands.end(), HeapCandCompare());
@@ -349,14 +349,14 @@ private:
   }
 
  private:
-  void FreeAll() {
-    for (int i = 0; i < D.size(); ++i) {
-      UCandidateList& D_i = D[i];
-      for (int j = 0; j < D_i.size(); ++j)
-        delete D_i[j];
-    }
-    D.clear();
-  }
+//  void FreeAll() {
+//    for (int i = 0; i < D.size(); ++i) {
+//      UCandidateList& D_i = D[i];
+//      for (int j = 0; j < D_i.size(); ++j)
+//        delete D_i[j];
+//    }
+//    D.clear();
+//  }
 
 //  void IncorporateIntoPlusLMForest(UCandidate* item, UState2Node* s2n, UCandidateList* freelist) {
 //    Hypergraph::Edge* new_edge = out.AddEdge(item->out_edge_);
@@ -455,7 +455,7 @@ private:
   const Hypergraph& in;
   Hypergraph& out;
 
-  vector<UCandidateList> D;   // maps nodes in in-HG to the
+//  vector<UCandidateList> D;   // maps nodes in in-HG to the
                              // equivalent nodes (many due to state
                              // splits) in the out-HG.
   FFStates node_states_;  // for each node in the out-HG what is

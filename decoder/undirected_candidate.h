@@ -43,7 +43,7 @@ struct UCandidate {
 
   UCandidate(const Hypergraph::Edge& e,
             const SmallVectorInt& j,
-            const vector<UCandidateList>& D,
+            //const vector<UCandidateList>& D,
             const FFStates& node_states,
             const SentenceMetadata& smeta,
             const ModelSet& models,
@@ -57,7 +57,7 @@ struct UCandidate {
 
   void InitializeUCandidate(
                            const SentenceMetadata& smeta,
-                           const vector<vector<UCandidate*> >& D,
+                           //const vector<vector<UCandidate*> >& D,
                            const FFStates& node_states,
                            const ModelSet& models,
                            const bool is_goal);

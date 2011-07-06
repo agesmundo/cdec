@@ -79,7 +79,6 @@ void FeatureFunction::TraversalFeaturesImpl(const SentenceMetadata& smeta,
 //GU
 void FeatureFunction::TraversalUndirectedFeaturesImpl(const SentenceMetadata& smeta,
                                         const UCandidate& ucand,
-                                        const Hypergraph::Edge& edge,
                                         const std::vector<const void*>& ant_states,
                                         SparseVector<double>* features,
                                         SparseVector<double>* estimated_features,
@@ -103,7 +102,6 @@ void WordPenalty::TraversalFeaturesImpl(const SentenceMetadata& smeta,
 //GU
 void WordPenalty::TraversalUndirectedFeaturesImpl(const SentenceMetadata& smeta,
                                         const UCandidate& ucand,
-                                        const Hypergraph::Edge& edge,
                                         const std::vector<const void*>& ant_states,
                                         SparseVector<double>* features,
                                         SparseVector<double>* estimated_features,
@@ -112,7 +110,7 @@ void WordPenalty::TraversalUndirectedFeaturesImpl(const SentenceMetadata& smeta,
   (void) ant_states;
   (void) state;
   (void) estimated_features;
-  features->set_value(fid_, edge.rule_->EWords() * value_);
+  features->set_value(fid_, ucand.in_edge_->rule_->EWords() * value_);
 }
 
 SourceWordPenalty::SourceWordPenalty(const string& param) :
@@ -250,7 +248,7 @@ void ModelSet::AddFeaturesToUCandidate(const SentenceMetadata& smeta,
         ants[i] = &node_states[edge->tail_nodes_[i]][spos];
       }
     }
-    ff.TraversalUndirectedFeatures(smeta, *ucand, *edge, ants, &edge->feature_values_, &edge->est_vals_, cur_ff_context);
+    ff.TraversalUndirectedFeatures(smeta, *ucand, ants, &edge->feature_values_, &edge->est_vals_, cur_ff_context);
   }
   if (combination_cost_estimate)
     combination_cost_estimate->logeq(edge->est_vals_.dot(weights_));

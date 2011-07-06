@@ -87,12 +87,11 @@ public:
   //GU
   inline void TraversalUndirectedFeatures(const SentenceMetadata& smeta,
                                 UCandidate& ucand,
-                                Hypergraph::Edge& edge,
                                 const std::vector<const void*>& ant_contexts,
                                 FeatureVector* features,
                                 FeatureVector* estimated_features,
                                 void* out_state) const {
-    TraversalUndirectedFeaturesLog(smeta, ucand, edge, ant_contexts,
+    TraversalUndirectedFeaturesLog(smeta, ucand, ant_contexts,
                           features, estimated_features, out_state);
   }
 
@@ -134,12 +133,11 @@ public:
   //GU
   virtual void TraversalUndirectedFeaturesLog(const SentenceMetadata& smeta,
                                      UCandidate& ucand,  // this is writable only so you can use log()
-                                     Hypergraph::Edge& edge, // this is writable only so you can use log()
                                      const std::vector<const void*>& ant_contexts,
                                      FeatureVector* features,
                                      FeatureVector* estimated_features,
                                      void* context) const {
-    TraversalUndirectedFeaturesImpl(smeta,ucand,edge,ant_contexts,features,estimated_features,context);
+    TraversalUndirectedFeaturesImpl(smeta,ucand,ant_contexts,features,estimated_features,context);
   }
 
   // override above or below.
@@ -152,7 +150,6 @@ public:
   //GU
   virtual void TraversalUndirectedFeaturesImpl(const SentenceMetadata& smeta,
                                      const UCandidate& ucand,
-                                     Hypergraph::Edge const& edge,
                                      const std::vector<const void*>& ant_contexts,
                                      FeatureVector* features,
                                      FeatureVector* estimated_features,
@@ -188,7 +185,6 @@ class WordPenalty : public FeatureFunction {
   //GU
   virtual void TraversalUndirectedFeaturesImpl(const SentenceMetadata& smeta,
                                      const UCandidate& ucand,
-                                     const Hypergraph::Edge& edge,
                                      const std::vector<const void*>& ant_contexts,
                                      FeatureVector* features,
                                      FeatureVector* estimated_features,

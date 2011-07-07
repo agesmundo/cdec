@@ -5,6 +5,11 @@ TODO
 then execute exp and record new lower-boundary BLEU
 OK!	method to Pop heap
 OK! 	free memory policy
+OK!	pop best
+OK!	correct weight if wrong
+OK!	update queue if wrong
+	structure for borders
+	update queue if correct
 
 110705 MODIFY UCAND AND SCORING
 OK! 	use models.AddFeaturesToUCand() to score

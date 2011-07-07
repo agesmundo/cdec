@@ -259,7 +259,7 @@ public:
     		//free mem of discarted cands
     		for (int i = 1; i < cands.size(); ++i){
 #ifdef DEBUG_GU
-    			cerr << "FREE : " <<cands[i]<<endl;
+    			cerr << "FREE : (id:"<<i<<")  " <<cands[i]<<endl;
 #endif
     			delete cands[i];
     		}

@@ -38,8 +38,6 @@ struct UCandidate {
   //1 FIRST CHILD (left)
   //2 SECOND CHILD
   const LinksVector context_links_;
-  //TODO LG replace with pointer structure
-//  const SmallVectorInt j_;
 
   //vit_prob_ and est_prob_ are not updated in LG training
   //prob_t vit_prob_;            // these are fixed until the cand

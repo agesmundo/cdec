@@ -255,7 +255,9 @@ public:
     		cerr << "CORRECT || !TRAINING " << endl;
 #endif
 
-    		//DELETE ALL QUEUE //TODO this is kind of brute force (think on how to reuse)
+    		//DELETE ALL QUEUE
+    		//TODO this is kind of brute force (think on how to reuse)
+    		//TODO keep all non conflicting elements? how?? (now simple version)
     		//free mem of discarted cands
     		for (int i = 1; i < cands.size(); ++i){
 #ifdef DEBUG_GU
@@ -273,6 +275,12 @@ public:
     		boundary_.push_back(topCand);
 
     		//RECOMPUTE QUEUE EACH ITERATION
+    		for (int i=0;i<boundary_.size();i++){
+    			UCandidate* currCand=boundary_[0];
+    			for (int k=0;k<currCand->context_links_.size();k++){
+
+    			}
+    		}
 
     	}else{
     	//TODO IF WRONG

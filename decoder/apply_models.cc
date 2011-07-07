@@ -242,16 +242,16 @@ public:
     	//best action candidate
     	UCandidate* aCand = PopBest(cands);
 
-//    	if(aCand)
+    	if(!is_training_ || IsCorrect(*aCand)){
     	//TODO IF CORRECT
     	//update queue
     	//propagate
-
+    	}else{
     	//TODO IF WRONG
     	//find first correct
     	//update weights vector
     	//update queue
-
+    	}
     }
 
 //        bool foundWrong=false;
@@ -354,6 +354,20 @@ public:
   }
 
 private:
+
+  //check if cand is correct (for training)
+  bool IsCorrect(const UCandidate& ucand){
+#ifdef DEBUG_GU
+	  cerr << "is correct? : (" << ucand.in_edge_->id_ <<")";
+	  if((*correct_edges_mask_)[ucand.in_edge_->id_]){
+		  cerr << " true" <<endl;
+	  }
+	  else{
+		  cerr << " false" <<endl;
+	  }
+#endif
+	  return (*correct_edges_mask_)[ucand.in_edge_->id_];
+  }
 
   //initialize candidate heap with leafs
   void InitCands(UCandidateHeap& cands/*, UniqueGCandidateSet& unique_cands*/)

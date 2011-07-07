@@ -270,6 +270,7 @@ public:
     		cerr << "SELECTED: "<< *topCand<<endl;
 
     		//KEEP LIST OF BORDERS
+    		boundary_.push_back(topCand);
 
     		//RECOMPUTE QUEUE EACH ITERATION
 
@@ -518,9 +519,10 @@ private:
                              // splits) in the out-HG.
 
   FFStates ucands_states_;  // for each node in the out-HG what is
-                             // its q function value?
+                            // its q function value?
+  UCandidateList boundary_; //keeps list of ucands available for expansion
   const bool is_training_;
-  vector<bool>* correct_edges_mask_;//used only for trainig
+  vector<bool>* correct_edges_mask_;//used only for training
 
   //UCandidateList free_; //store UCands pointer to free mem
 };

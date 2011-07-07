@@ -17,7 +17,7 @@ typedef ValueArray<uint8_t> FFState;
 typedef vector<FFState> FFStates;
 
 struct UCandidate;
-typedef vector<UCandidate*> UCandidateHeap;
+typedef vector<UCandidate*> UCandidateHeap;//TODO GU create struct with methods
 typedef vector<UCandidate*> UCandidateList;
 typedef SmallVector<UCandidate*,3> LinksVector;
 

@@ -1,5 +1,10 @@
 TODO
-	must try LG with no context features if it is able to learn to find the best or something good
+	?remove feats est_feats from traversal methods structure?
+
+110707 IMPLEMENT DECODING/TRAINING LOOP (only local feats)
+then execute exp and record new lower-boundary BLEU
+OK!	method to Pop heap
+OK! 	free memory policy
 
 110705 MODIFY UCAND AND SCORING
 OK! 	use models.AddFeaturesToUCand() to score
@@ -8,9 +13,8 @@ OK!	pass UCand in AddFeaturesToUCand()
 OK!	move feature vectors from HG::Edge to UC
 OK!	remove added field from HG::Edge forest feat vector
 OK!	replace bottom up data structs for states j_ D with undir
-	do not use UCandidate.out_edge_ 
-	remove UCand.j_ and D add pointer structure
-	?remove feats est_feats from traversal methods structure?
+OK!	do not use UCandidate.out_edge_ 
+OK!  	remove UCand.j_ and D add pointer structure
 
 1110702 BOUNDARIES EXPS
 (exec time is 2min on laptop 3+min on desk)

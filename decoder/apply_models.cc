@@ -327,12 +327,13 @@ public:
 //           << "\t" << log(D[goal_id].front()->est_prob_) << endl;
 //    }
 //    out.PruneUnreachable(D[goal_id].front()->node_index_);
-//    FreeAll();
+    FreeAll(cands);
 
 	//TODO LG transform the UCands structure in the out_hg
   }
 
 private:
+
   //initialize candidate heap with leafs
   void InitCands(UCandidateHeap& cands/*, UniqueGCandidateSet& unique_cands*/)
   {
@@ -354,15 +355,30 @@ private:
 
   }
 
+  //order cands and pop best
+  inline UCandidate* PopBest(UCandidateHeap& cands){
+	  make_heap(cands.begin(), cands.end(), HeapCandCompare());
+	  pop_heap(cands.begin(), cands.end(), HeapCandCompare());
+	  UCandidate* ucand = cands.back(); //accepted cand
+	  cands.pop_back();
+#ifdef DEBUG_GU
+	  cerr << "free_[" << free_.size() << "] = " << ucand <<endl;
+	  cerr << "PopBest(): " << *ucand << "\n";
+#endif
+	  free_.push_back(ucand);
+	  return ucand;
+  }
+
  private:
-//  void FreeAll() {
-//    for (int i = 0; i < D.size(); ++i) {
-//      UCandidateList& D_i = D[i];
-//      for (int j = 0; j < D_i.size(); ++j)
-//        delete D_i[j];
-//    }
-//    D.clear();
-//  }
+
+  void FreeAll(UCandidateHeap& cands) {
+	  for (int i = 0; i < cands.size(); ++i){
+		  delete cands[i];
+	  }
+	  for (int i = 0; i < free_.size(); ++i){
+		  delete free_[i];
+	  }
+  }
 
 //  void IncorporateIntoPlusLMForest(UCandidate* item, UState2Node* s2n, UCandidateList* freelist) {
 //    Hypergraph::Edge* new_edge = out.AddEdge(item->out_edge_);
@@ -469,6 +485,8 @@ private:
   FFStates ucands_states_;  // for each node in the out-HG what is
                              // its q function value?
   const bool is_training_;
+
+  UCandidateList free_; //store UCands pointer to free mem
 };
 
 class CubePruningRescorer {

@@ -240,8 +240,9 @@ public:
 #endif
 
     	//best action candidate
-    	make_heap(cands.begin(), cands.end(), HeapCandCompare());
-    	UCandidate* topCand=cands.back();
+    	make_heap(cands.begin(), cands.end(), HeapCandCompare());//TODO need this or only find best?
+    	UCandidate* topCand=cands.front();
+    	cerr << " L" << " | cands.size(): "<< cands.size()<<"\n";
 
   #ifdef DEBUG_GU
 //  	  cerr << "free_[" << free_.size() << "] = " << ucand <<endl;
@@ -251,15 +252,22 @@ public:
     	if(!is_training_ || IsCorrect(*topCand)){
     		//TODO IF CORRECT
 #ifdef DEBUG_GU
-	  cerr << "CORRECT || !TRAINING " << endl;
+    		cerr << "CORRECT || !TRAINING " << endl;
 #endif
 
-    		//POP BEST
-    		pop_heap(cands.begin(), cands.end(), HeapCandCompare());
-    		cands.pop_back();
+    		//DELETE ALL QUEUE //TODO this is kind of brute force (think on how to reuse)
+    		//free mem of discarted cands
+    		for (int i = 1; i < cands.size(); ++i){
+#ifdef DEBUG_GU
+    			cerr << "FREE : " <<cands[i]<<endl;
+#endif
+    			delete cands[i];
+    		}
 
-    		//DELETE ALL QUEUE
-    		FreeAll(cands);
+    		cerr << " XXXX" << " | cands.size(): "<< cands.size()<<"\n";
+    		cands.erase(cands.begin(),cands.end());
+    		cerr << " YYYY" << " | cands.size(): "<< cands.size()<<"\n";
+    		cerr << "SELECTED: "<< *topCand<<endl;
 
     		//KEEP LIST OF BORDERS
 
@@ -273,8 +281,8 @@ public:
     		cerr<< "WRONG\nFIND FIRST CORRECT" << endl;
 #endif
     		UCandidate* correctCand=NULL;
-    		sort(cands.begin(), cands.end(), HeapCandCompare()); //try iteration of pop heap (faster?)
-    		for(int i = cands.size()-1;i>=0 ; i--){
+    		sort(cands.begin(), cands.end(), EstProbSorter()); //TODO try iteration of pop heap (faster?) {make_heap(i++,end),cands(i)}
+    		for(int i = 1;i<cands.size() ; i++){//start from 1 to skip last that is topCand (wrong)
 #ifdef DEBUG_GU
     			cerr << "IS CORRECT ?: " << *cands[i] << endl;
 #endif
@@ -316,7 +324,6 @@ public:
 #ifdef DEBUG_GU
     		cerr<< "UPDATE QUEUE" << endl;
 #endif
-    		cands.push_back(topCand);
     		for(UCandidateHeap::iterator it = cands.begin();it!=cands.end();it++){
     			UCandidate& ucand = **it;
 
@@ -346,7 +353,7 @@ public:
 //           << "\t" << log(D[goal_id].front()->est_prob_) << endl;
 //    }
 //    out.PruneUnreachable(D[goal_id].front()->node_index_);
-    FreeAll(cands);
+//    FreeAll(cands);
 
 	//TODO LG transform the UCands structure in the out_hg
   }
@@ -356,7 +363,7 @@ private:
   //check if cand is correct (for training)
   bool IsCorrect(const UCandidate& ucand){
 #ifdef DEBUG_GU
-	  cerr << "is correct? : (" << ucand.in_edge_->id_ <<")";
+	  cerr << "is correct? : (" << &ucand <<")";
 	  if((*correct_edges_mask_)[ucand.in_edge_->id_]){
 		  cerr << " true" <<endl;
 	  }
@@ -385,33 +392,28 @@ private:
 #ifdef DEBUG_GU
           cerr << "cands.size(): "<< cands.size()<<"\n";
 #endif
-
   }
 
-  //order cands and pop best
-  inline UCandidate* PopBest(UCandidateHeap& cands){
-	  make_heap(cands.begin(), cands.end(), HeapCandCompare());
-	  pop_heap(cands.begin(), cands.end(), HeapCandCompare());
-	  UCandidate* ucand = cands.back(); //accepted cand
-	  cands.pop_back();
-#ifdef DEBUG_GU
-//	  cerr << "free_[" << free_.size() << "] = " << ucand <<endl;
-	  cerr << "PopBest(): " << *ucand << "\n";
-#endif
-//	  free_.push_back(ucand);
-	  return ucand;
-  }
-
- private:
-
-  void FreeAll(UCandidateHeap& cands) {
-	  for (int i = 0; i < cands.size(); ++i){
-		  delete cands[i];
-	  }
-//	  for (int i = 0; i < free_.size(); ++i){
-//		  delete free_[i];
+//  //order cands and pop best
+//  inline UCandidate* PopBest(UCandidateHeap& cands){
+//	  make_heap(cands.begin(), cands.end(), HeapCandCompare());
+//	  pop_heap(cands.begin(), cands.end(), HeapCandCompare());
+//	  UCandidate* ucand = cands.back(); //accepted cand
+//	  cands.pop_back();
+//#ifdef DEBUG_GU
+////	  cerr << "free_[" << free_.size() << "] = " << ucand <<endl;
+//	  cerr << "PopBest(): " << *ucand << "\n";
+//#endif
+////	  free_.push_back(ucand);
+//	  return ucand;
+//  }
+//
+//  void FreeAll(UCandidateHeap& cands) {
+//	  for (int i = 0; i < cands.size(); ++i){
+//		  cerr << "FREE : " <<*cands[i]<<endl;
+//		  delete cands[i];
 //	  }
-  }
+//  }
 
 //  void IncorporateIntoPlusLMForest(UCandidate* item, UState2Node* s2n, UCandidateList* freelist) {
 //    Hypergraph::Edge* new_edge = out.AddEdge(item->out_edge_);

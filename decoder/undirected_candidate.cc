@@ -72,7 +72,9 @@ using namespace std;
   }
 
 ostream& operator<<(ostream& os, const UCandidate& cand) {
-  os << "UCAND[";
+  os << "UCAND";
+  os << "(" << &cand << ")";
+  os <<  "[";
   if (!cand.IsSelected()) { os << "PENDING "; }
   else { os << "+LM_node=" << cand.ucand_index_; }
   //os << " edge=" << cand.in_edge_->id_; //printed by Edge<<

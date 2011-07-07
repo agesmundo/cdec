@@ -240,17 +240,80 @@ public:
 #endif
 
     	//best action candidate
-    	UCandidate* aCand = PopBest(cands);
+    	UCandidate* topCand = PopBest(cands);//TODO GU decompose? free mem? pop?
 
-    	if(!is_training_ || IsCorrect(*aCand)){
+    	if(!is_training_ || IsCorrect(*topCand)){
     	//TODO IF CORRECT
     	//update queue
     	//propagate
     	}else{
     	//TODO IF WRONG
+
     	//find first correct
+#ifdef DEBUG_GU
+    		cerr<< "FIND FIRST CORRECT" << endl;
+#endif
+    		UCandidate* correctCand=NULL;
+    		sort(cands.begin(), cands.end(), HeapCandCompare()); //try iteration of pop heap (faster?)
+    		for(int i = cands.size()-1;i>=0 ; i--){
+#ifdef DEBUG_GU
+    			cerr << "IS CORRECT ?: " << *cands[i] << endl;
+#endif
+    			if(IsCorrect(*cands[i])){
+    				correctCand = cands[i];
+    				break;
+    			}
+    		}
+    		assert(correctCand!=NULL);//TODO GU what do in case there are no correct edges?
+
+
     	//update weights vector
+#ifdef DEBUG_GU
+    		cerr<< "UPDATE WEIGHT VECTOR" << endl;
+#endif
+    		double margin = 1;
+    		double loss = log(topCand->action_prob_) - log(correctCand->action_prob_) + margin;
+    		assert(loss>=0);
+#ifdef DEBUG_GU
+    		cerr << " Loss " << loss << endl;
+#endif
+    		SparseVector<Featval> diff (correctCand->feature_values_);
+    		cerr << diff << endl;
+    		diff +=correctCand->est_vals_;
+    		cerr << diff << endl;
+    		diff -=topCand->feature_values_;
+    		cerr << diff << endl;
+    		diff -=topCand->est_vals_;
+    		cerr << diff << endl;
+#ifdef DEBUG_GU
+    		models.PrintWeights(cerr);
+#endif
+    		models.UpdateWeight(diff,loss);
+#ifdef DEBUG_GU
+    		models.PrintWeights(cerr);
+#endif
+
     	//update queue
+#ifdef DEBUG_GU
+    		cerr<< "UPDATE QUEUE" << endl;
+#endif
+    		cands.push_back(topCand);
+    		for(UCandidateHeap::iterator it = cands.begin();it!=cands.end();it++){
+    			UCandidate& ucand = **it;
+
+    			prob_t estimate = prob_t::One();
+    			estimate.logeq(models.ScoreVector(ucand.est_vals_));
+
+    			prob_t local = prob_t::One();
+    			local.logeq(models.ScoreVector(ucand.feature_values_));
+
+    			ucand.action_prob_ = local * estimate; //sum exps
+#ifdef DEBUG_GU
+    			cerr << "UPDATED CANDS " << ucand <<endl;
+    			IsCorrect(ucand);
+#endif
+    		}
+
     	}
     }
 

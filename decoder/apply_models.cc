@@ -240,18 +240,37 @@ public:
 #endif
 
     	//best action candidate
-    	UCandidate* topCand = PopBest(cands);//TODO GU decompose? free mem? pop?
+    	make_heap(cands.begin(), cands.end(), HeapCandCompare());
+    	UCandidate* topCand=cands.back();
+
+  #ifdef DEBUG_GU
+//  	  cerr << "free_[" << free_.size() << "] = " << ucand <<endl;
+  	  cerr << "BEST IS: " << *topCand << "\n";
+  #endif
 
     	if(!is_training_ || IsCorrect(*topCand)){
-    	//TODO IF CORRECT
-    	//update queue
-    	//propagate
+    		//TODO IF CORRECT
+#ifdef DEBUG_GU
+	  cerr << "CORRECT || !TRAINING " << endl;
+#endif
+
+    		//POP BEST
+    		pop_heap(cands.begin(), cands.end(), HeapCandCompare());
+    		cands.pop_back();
+
+    		//DELETE ALL QUEUE
+    		FreeAll(cands);
+
+    		//KEEP LIST OF BORDERS
+
+    		//RECOMPUTE QUEUE EACH ITERATION
+
     	}else{
     	//TODO IF WRONG
 
     	//find first correct
 #ifdef DEBUG_GU
-    		cerr<< "FIND FIRST CORRECT" << endl;
+    		cerr<< "WRONG\nFIND FIRST CORRECT" << endl;
 #endif
     		UCandidate* correctCand=NULL;
     		sort(cands.begin(), cands.end(), HeapCandCompare()); //try iteration of pop heap (faster?)
@@ -313,92 +332,8 @@ public:
     			IsCorrect(ucand);
 #endif
     		}
-
     	}
     }
-
-//        bool foundWrong=false;
-//        UCandidate* candWrong;
-//        UCandidate* candRight;
-//        UCandidate* item;
-//        int c=0;
-//    	//loop until first wrong edge is found
-//    while(!foundWrong){
-//    	c++;
-//
-//    	//pop best cand from queue
-//    	pop_heap(cands.begin(), cands.end(), HeapCandCompare());
-//    	item = cands.back();
-//    	cands.pop_back();
-//
-//    	cerr << "POPPED: " << *item << endl;
-//    	cerr << "is correct? : (" << item->in_edge_->id_ <<")";
-//    	if(correct_edges_mask[item->in_edge_->id_]){
-//    		cerr << " true" <<endl;
-//    	}
-//    	else{
-//    		cerr << " false" <<endl;
-//    		foundWrong = true;
-//    		candWrong = item;
-//    	}
-//    }
-//
-//    //pop next
-//	pop_heap(cands.begin(), cands.end(), HeapCandCompare());
-//	candRight = cands.back();
-//	cands.pop_back();
-//
-//	cerr << "POPPED NEXT: " << *candRight << endl;
-//	cerr << "is correct? : "<< "(" << candRight->in_edge_->id_ <<")";
-//	if(correct_edges_mask[candRight->in_edge_->id_]){
-//		cerr << " true" <<endl;
-//	}
-//	else{
-//		cerr << " false" <<endl;
-//	}
-//
-//	double margin = 1;
-//	double loss = log(candWrong->action_prob_) - log(candRight->action_prob_) + margin;
-//	assert(loss>=0);
-//	cerr << " Loss " << loss << endl;
-//
-//	SparseVector<Featval> diff (candRight->feature_values_);
-//	cerr << diff << endl;
-//	diff +=candRight->est_vals_;
-//	cerr << diff << endl;
-//	diff -=candWrong->feature_values_;
-//	cerr << diff << endl;
-//	diff -=candWrong->est_vals_;
-//	cerr << diff << endl;
-//
-//	//update weight vector
-//	models.PrintWeights(cerr);
-//	models.UpdateWeight(diff,loss);
-//	models.PrintWeights(cerr);
-//
-//	//rescore queue
-//	cands.push_back(candWrong);
-//	cands.push_back(candRight);
-//	for(UCandidateHeap::iterator it = cands.begin();it!=cands.end();it++){
-//		UCandidate& ucand = **it;
-//
-//		prob_t estimate = prob_t::One();
-//		estimate.logeq(models.ScoreVector(ucand.est_vals_));
-//
-//		prob_t local = prob_t::One();
-//		local.logeq(models.ScoreVector(ucand.feature_values_));
-//
-//		ucand.action_prob_ = local * estimate; //sum exps
-//
-//		cerr << "UPDATED CANDS " << ucand <<endl;
-//		cerr << "is correct? : (" << ucand.in_edge_->id_ <<")";
-//		if(correct_edges_mask[ucand.in_edge_->id_]){
-//			cerr << " true" <<endl;
-//		}
-//		else{
-//			cerr << " false" <<endl;
-//		}
-//	}
 
 //    if (!SILENT) cerr << "    ";
 //    for (int i = 0; i < in.nodes_.size(); ++i) {
@@ -460,10 +395,10 @@ private:
 	  UCandidate* ucand = cands.back(); //accepted cand
 	  cands.pop_back();
 #ifdef DEBUG_GU
-	  cerr << "free_[" << free_.size() << "] = " << ucand <<endl;
+//	  cerr << "free_[" << free_.size() << "] = " << ucand <<endl;
 	  cerr << "PopBest(): " << *ucand << "\n";
 #endif
-	  free_.push_back(ucand);
+//	  free_.push_back(ucand);
 	  return ucand;
   }
 
@@ -473,9 +408,9 @@ private:
 	  for (int i = 0; i < cands.size(); ++i){
 		  delete cands[i];
 	  }
-	  for (int i = 0; i < free_.size(); ++i){
-		  delete free_[i];
-	  }
+//	  for (int i = 0; i < free_.size(); ++i){
+//		  delete free_[i];
+//	  }
   }
 
 //  void IncorporateIntoPlusLMForest(UCandidate* item, UState2Node* s2n, UCandidateList* freelist) {
@@ -585,7 +520,7 @@ private:
   const bool is_training_;
   vector<bool>* correct_edges_mask_;//used only for trainig
 
-  UCandidateList free_; //store UCands pointer to free mem
+  //UCandidateList free_; //store UCands pointer to free mem
 };
 
 class CubePruningRescorer {

@@ -29,8 +29,6 @@ struct UCandidate {
 
   FeatureVector est_vals_;
   FeatureVector feature_values_;
-  //TODO GU remove
-  //Hypergraph::Edge out_edge_;
 
   //links to context
   //NB!!:
@@ -38,6 +36,7 @@ struct UCandidate {
   //1 FIRST CHILD (left)
   //2 SECOND CHILD
   const LinksVector context_links_;
+  int source_link_; //context_links_(id) for the source UCand
 
   //vit_prob_ and est_prob_ are not updated in LG training
   //prob_t vit_prob_;            // these are fixed until the cand

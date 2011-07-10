@@ -280,7 +280,7 @@ public:
 
     		//RECOMPUTE QUEUE EACH ITERATION
     		for (int i=0;i<boundary_.size();i++){
-    			UCandidate* currCand=boundary_[0];
+    			UCandidate* currCand=boundary_[i];
     			for (int k=0;k<currCand->context_links_.size();k++){
 
     			}

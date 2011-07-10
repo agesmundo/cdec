@@ -36,7 +36,7 @@ struct UCandidate {
   //1 FIRST CHILD (left)
   //2 SECOND CHILD
   const LinksVector context_links_;
-  int source_link_; //context_links_(id) for the source UCand
+  int source_link_; //context_links_(id) for the source UCand (-1 for starting leaf)
 
   //vit_prob_ and est_prob_ are not updated in LG training
   //prob_t vit_prob_;            // these are fixed until the cand

@@ -17,7 +17,8 @@ using namespace std;
             bool is_goal) :
       ucand_index_(-1),
       in_edge_(&e),
-      context_links_(context) {
+      context_links_(context),
+      source_link_(-1){
     InitializeUCandidate(smeta,/* D,*/ node_states, models, is_goal);
   }
 

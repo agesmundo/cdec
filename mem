@@ -36,6 +36,7 @@ change "build directory:" to ${workspace_loc:/<projectName>/}
 
 %put on eclipseCDT (with copy of files)
 create project
+use default location
 import cdec/ from file system
 right clk on proj -> properties -> Build
 de-select "Generate Makefiles .."

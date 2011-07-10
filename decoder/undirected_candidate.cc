@@ -11,7 +11,7 @@ using namespace std;
   UCandidate::UCandidate(const Hypergraph::Edge& e,
             const LinksVector& context,
             //const vector<UCandidateList>& D,
-            const FFStates& node_states,
+            //const FFStates& node_states,
             const SentenceMetadata& smeta,
             const ModelSet& models,
             bool is_goal) :
@@ -19,7 +19,7 @@ using namespace std;
       in_edge_(&e),
       context_links_(context),
       source_link_(-1){
-    InitializeUCandidate(smeta,/* D,*/ node_states, models, is_goal);
+    InitializeUCandidate(smeta,/* D, node_states,*/ models, is_goal);
   }
 
   //GU TODO is this needed??
@@ -34,7 +34,7 @@ using namespace std;
   void UCandidate::InitializeUCandidate(
                            const SentenceMetadata& smeta,
                            //const vector<vector<UCandidate*> >& D,
-                           const FFStates& node_states,
+                           //const FFStates& node_states,
                            const ModelSet& models,
                            const bool is_goal) {
     const Hypergraph::Edge& in_edge = *in_edge_;
@@ -64,7 +64,7 @@ using namespace std;
 //      const FFState& ant_state = node_states[tail.front()];
 //      models.AddFinalFeatures(ant_state, &out_edge_, smeta);
 //    } else {
-      models.AddFeaturesToUCandidate(smeta, node_states, this,/* &out_edge_,*/ &state_/*, &edge_estimate*/);
+      models.AddFeaturesToUCandidate(smeta, /*node_states,*/ this,/* &out_edge_,*/ &state_/*, &edge_estimate*/);
 //    }
 
 //    vit_prob_ = out_edge_.edge_prob_ * p;

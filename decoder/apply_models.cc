@@ -209,7 +209,7 @@ public:
       is_training_(is_training)
 	{
     if (!SILENT) cerr << "  Applying feature functions (training = " << is_training_ << ')' << endl;
-    ucands_states_.reserve(kRESERVE_NUM_NODES);
+    //ucands_states_.reserve(kRESERVE_NUM_NODES);
   }
 
   void Apply() {
@@ -249,7 +249,7 @@ public:
 
     	if(!is_training_ || IsCorrect(*topCand)){
 
-    		//TODO IF CORRECT
+    		//IF CORRECT
 #ifdef DEBUG_GU
     		cerr << "CORRECT || !TRAINING " << endl;
 #endif
@@ -281,14 +281,31 @@ public:
     		//RECOMPUTE QUEUE EACH ITERATION
     		for (int i=0;i<boundary_.size();i++){
     			UCandidate* currCand=boundary_[i];
+    			assert(currCand->context_links_.size()<=3);//for binary rules only
     			for (int k=0;k<currCand->context_links_.size();k++){
+    				if(currCand->context_links_[k]==NULL){
+    					//head
+    					if(k==0){
+    						const Hypergraph::Node& head_node = in.nodes_[currCand->in_edge_->head_node_];
+    						for (int j=0; j<head_node.out_edges_.size();j++){
 
+    						}
+    					}
+    					//first child (left)
+    					else if(k==1){
+
+    					}
+    					//second child (right)
+    					else if(k==2){
+
+    					}
+    				}
     			}
     		}
 
     	}else{
 
-    	//TODO IF WRONG
+    	//IF WRONG
 
     	//find first correct
 #ifdef DEBUG_GU
@@ -398,7 +415,7 @@ private:
           	if(currentEdge.tail_nodes_.size()==0){//leafs
           		const Hypergraph::Edge& edge = in.edges_[i];
           		const LinksVector context(edge.Arity()+1, NULL);
-          		cands.push_back(new UCandidate(edge, context,/* D,*/ ucands_states_, smeta, models, false));
+          		cands.push_back(new UCandidate(edge, context,/* D, ucands_states_,*/ smeta, models, false));
 #ifdef DEBUG_GU
           		cerr << "Push Init UCand (" << i << ") :" << *cands.back() << endl;
 #endif
@@ -533,7 +550,8 @@ private:
                              // equivalent nodes (many due to state
                              // splits) in the out-HG.
 
-  FFStates ucands_states_;  // for each node in the out-HG what is
+  //TODO delete and put states in the UCandidates
+  //FFStates ucands_states_;  // for each node in the out-HG what is
                             // its q function value?
   UCandidateList boundary_; //keeps list of ucands available for expansion
   const bool is_training_;

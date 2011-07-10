@@ -395,6 +395,9 @@ private:
           		const Hypergraph::Edge& edge = in.edges_[i];
           		const LinksVector context(edge.Arity()+1, NULL);
           		cands.push_back(new UCandidate(edge, context,/* D,*/ ucands_states_, smeta, models, false));
+#ifdef DEBUG_GU
+          		cerr << "Push Init UCand (" << i << ") :" << cands.back() << endl;
+#endif
           	}
           }
           make_heap(cands.begin(), cands.end(), HeapCandCompare());

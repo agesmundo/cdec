@@ -236,20 +236,19 @@ public:
 
 #ifdef DEBUG_GU
     	cerr<< "/////////////////////////////////////////////////////////////////////\n";
-    	cerr << " L" << " | cands.size(): "<< cands.size()<<"\n";
+    	cerr << " L | cands.size(): "<< cands.size()<<"\n";
 #endif
 
     	//best action candidate
     	make_heap(cands.begin(), cands.end(), HeapCandCompare());//TODO need this or only find best?
     	UCandidate* topCand=cands.front();
-    	cerr << " L" << " | cands.size(): "<< cands.size()<<"\n";
 
   #ifdef DEBUG_GU
-//  	  cerr << "free_[" << free_.size() << "] = " << ucand <<endl;
   	  cerr << "BEST IS: " << *topCand << "\n";
   #endif
 
     	if(!is_training_ || IsCorrect(*topCand)){
+
     		//TODO IF CORRECT
 #ifdef DEBUG_GU
     		cerr << "CORRECT || !TRAINING " << endl;
@@ -257,7 +256,7 @@ public:
 
     		//DELETE ALL QUEUE
     		//TODO this is kind of brute force (think on how to reuse)
-    		//TODO keep all non conflicting elements? how?? (now simple version)
+    		//TODO keep all non conflicting elements(as islands in btagger)? how?? (now simple version)
     		//free mem of discarted cands
     		for (int i = 1; i < cands.size(); ++i){
 #ifdef DEBUG_GU
@@ -266,13 +265,18 @@ public:
     			delete cands[i];
     		}
 
-    		cerr << " XXXX" << " | cands.size(): "<< cands.size()<<"\n";
+#ifdef DEBUG_GU
+    		cerr << " EMPTY cands" << " | cands.size(): "<< cands.size()<<" ->";
+#endif
     		cands.erase(cands.begin(),cands.end());
-    		cerr << " YYYY" << " | cands.size(): "<< cands.size()<<"\n";
+#ifdef DEBUG_GU
+    		cerr << " | cands.size(): "<< cands.size()<<"\n";
     		cerr << "SELECTED: "<< *topCand<<endl;
+#endif
 
-    		//KEEP LIST OF BORDERS
+    		//PUT IN LIST OF BORDER CANDS
     		boundary_.push_back(topCand);
+    		//TODO source cand update (or remove from list if no more missing links)
 
     		//RECOMPUTE QUEUE EACH ITERATION
     		for (int i=0;i<boundary_.size();i++){
@@ -283,6 +287,7 @@ public:
     		}
 
     	}else{
+
     	//TODO IF WRONG
 
     	//find first correct
@@ -301,7 +306,6 @@ public:
     			}
     		}
     		assert(correctCand!=NULL);//TODO GU what do in case there are no correct edges?
-
 
     	//update weights vector
 #ifdef DEBUG_GU

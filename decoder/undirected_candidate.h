@@ -50,8 +50,8 @@ struct UCandidate {
             //const vector<UCandidateList>& D,
             //const FFStates& ucands_states,
             const SentenceMetadata& smeta,
-            const ModelSet& models,
-            bool is_goal);
+            const ModelSet& models//,
+            /*bool is_goal*/);
 
   // used to query uniqueness
   UCandidate(const Hypergraph::Edge& e,
@@ -63,8 +63,8 @@ struct UCandidate {
                            const SentenceMetadata& smeta,
                            //const vector<vector<UCandidate*> >& D,
                            //const FFStates& ucands_states,
-                           const ModelSet& models,
-                           const bool is_goal);
+                           const ModelSet& models//,
+                           /*const bool is_goal*/);
 };
 
 ostream& operator<<(ostream& os, const UCandidate& cand);

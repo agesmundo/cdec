@@ -13,13 +13,13 @@ using namespace std;
             //const vector<UCandidateList>& D,
             //const FFStates& node_states,
             const SentenceMetadata& smeta,
-            const ModelSet& models,
-            bool is_goal) :
+            const ModelSet& models//,
+            /*bool is_goal*/) :
       ucand_index_(-1),
       in_edge_(&e),
       context_links_(context),
       source_link_(-1){
-    InitializeUCandidate(smeta,/* D, node_states,*/ models, is_goal);
+    InitializeUCandidate(smeta,/* D, node_states,*/ models/*, is_goal*/);
   }
 
   //GU TODO is this needed??
@@ -35,8 +35,9 @@ using namespace std;
                            const SentenceMetadata& smeta,
                            //const vector<vector<UCandidate*> >& D,
                            //const FFStates& node_states,
-                           const ModelSet& models,
-                           const bool is_goal) {
+                           const ModelSet& models//,
+                           //const bool is_goal
+                           ) {
     const Hypergraph::Edge& in_edge = *in_edge_;
     feature_values_ = in_edge.feature_values_;
 //    out_edge_.rule_ = in_edge.rule_;

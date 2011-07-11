@@ -60,6 +60,12 @@ struct UCandidate {
 
   bool IsSelected() const;
 
+  bool HasSingleMissingLink() const;
+
+  UCandidate* GetSource();
+
+  bool HasSource();
+
 //  void InitializeUCandidate(
 //                           const SentenceMetadata& smeta,
 //                           //const vector<vector<UCandidate*> >& D,

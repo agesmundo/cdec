@@ -232,7 +232,7 @@ public:
 
     InitCands(cands);     //put leafs candidates in the queue
 
-    for (;!cands.empty();) {
+    for (;!cands.empty();) {//TODO borders shoul not be empty, first pass ok to be empty
 
 #ifdef DEBUG_GU
     	cerr<< "/////////////////////////////////////////////////////////////////////\n";
@@ -277,7 +277,25 @@ public:
 
     		//PUT IN LIST OF BORDER CANDS
     		boundary_.push_back(topCand);
-    		//TODO source cand update (or remove from list if no more missing links)
+
+    		//UPDATE BORDERS
+    		if(topCand->HasSource()){
+#ifdef DEBUG_GU
+    		cerr << "SOURCE: "<< *topCand->GetSource()<<endl;
+#endif
+    			if(topCand->GetSource()->HasSingleMissingLink()){
+#ifdef DEBUG_GU
+    		cerr << "SOURCE: DELETED! "<<endl;
+#endif
+    				//remove source ucand from list if no more missing links
+    				UCandidateList::iterator it = find(boundary_.begin(),boundary_.end(),topCand->GetSource());
+    				boundary_.erase(it);//TODO GU!!! this in not efficient, use different data structure?
+    			}else{
+    				//TODO source cand update
+    				assert(false);
+
+    			}
+    		}
 
     		//RECOMPUTE QUEUE EACH ITERATION
 #ifdef DEBUG_GU
@@ -315,7 +333,7 @@ public:
     			          		}
     			          		cands.push_back(new UCandidate(currEdge, context,/* D, ucands_states_,*/ smeta, models, source_link/*, false*/));
 #ifdef DEBUG_GU
-    			          		cerr << "Push UCand (" << cands.size() << ") :" << *cands.back() << endl;
+    			          		cerr << "PUSH UCAND (" << cands.size() << ") :" << *cands.back() << endl;
 #endif
     						}
     					}
@@ -581,7 +599,10 @@ private:
   //TODO delete and put states in the UCandidates
   //FFStates ucands_states_;  // for each node in the out-HG what is
                             // its q function value?
+
+  //TODO GU implement with hash table, use boost:hash
   UCandidateList boundary_; //keeps list of ucands available for expansion
+
   const bool is_training_;
   vector<bool>* correct_edges_mask_;//used only for training
 

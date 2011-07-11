@@ -26,6 +26,26 @@ using namespace std;
 
   }
 
+  bool UCandidate::HasSingleMissingLink() const{//TODO keep counter instead of computing?
+	  int count =0;
+	for (int i=0; i<context_links_.size();i++){
+		if(context_links_[0]==NULL){
+			count++;
+			if(count>1)return false;
+		}
+	}
+	return true;
+  }
+
+  UCandidate* UCandidate::GetSource(){
+	  if(source_link_<0)return NULL;
+	  return context_links_[source_link_];
+  }
+
+  bool UCandidate::HasSource(){
+	  return source_link_>=0;
+  }
+
   //GU TODO is this needed??
   // used to query uniqueness
 //  UCandidate::UCandidate(const Hypergraph::Edge& e,

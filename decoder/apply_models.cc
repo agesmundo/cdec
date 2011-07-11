@@ -240,8 +240,9 @@ public:
 #endif
 
     	//best action candidate
-    	make_heap(cands.begin(), cands.end(), HeapCandCompare());//TODO need this or only find best?
-    	UCandidate* topCand=cands.front();
+//    	make_heap(cands.begin(), cands.end(), HeapCandCompare());//TODO need this or only find best?
+//    	UCandidate* topCand=cands.front();
+    	UCandidate* topCand = *max_element(cands.begin(), cands.end(),HeapCandCompare());
 
   #ifdef DEBUG_GU
   	  cerr << "BEST IS: " << *topCand << "\n";

@@ -449,20 +449,13 @@ public:
     	}
     }
 
-//    if (!SILENT) cerr << "    ";
-//    for (int i = 0; i < in.nodes_.size(); ++i) {
-//      if (!SILENT && i % every == 0) cerr << '.';
-//      KBest(i, i == goal_id);
-//    }
-//    if (!SILENT) {
-//      cerr << endl;
-//      cerr << "  Best path: " << log(D[goal_id].front()->vit_prob_)
-//           << "\t" << log(D[goal_id].front()->est_prob_) << endl;
-//    }
-//    out.PruneUnreachable(D[goal_id].front()->node_index_);
-//    FreeAll(cands);
 
 	//TODO LG transform the UCands structure in the out_hg
+
+    //    out.PruneUnreachable(D[goal_id].front()->node_index_);
+
+    //TODO free cands structure
+    //FreeAll(cands);
   }
 
 private:

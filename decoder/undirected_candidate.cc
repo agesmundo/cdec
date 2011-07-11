@@ -46,6 +46,27 @@ using namespace std;
 	  return source_link_>=0;
   }
 
+  bool UCandidate::CreateLink(UCandidate* ucand){
+	  int node_id;
+	  if (ucand->source_link_==0)node_id =ucand->in_edge_->head_node_;
+	  else node_id = ucand->in_edge_->tail_nodes_[ucand->source_link_-1];
+
+
+	  if(context_links_.size()>0 && context_links_[0]==NULL && in_edge_->head_node_==node_id){
+		  context_links_[0]=ucand;
+		  return true;
+	  }
+	  if(context_links_.size()>1 && context_links_[1]==NULL && in_edge_->tail_nodes_[0]==node_id){
+		  context_links_[1]=ucand;
+		  return true;
+	  }
+	  if(context_links_.size()>2 && context_links_[2]==NULL && in_edge_->tail_nodes_[1]==node_id){
+		  context_links_[2]=ucand;
+		  return true;
+	  }
+	  return false;
+  }
+
   //GU TODO is this needed??
   // used to query uniqueness
 //  UCandidate::UCandidate(const Hypergraph::Edge& e,

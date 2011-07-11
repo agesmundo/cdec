@@ -291,9 +291,14 @@ public:
     				UCandidateList::iterator it = find(boundary_.begin(),boundary_.end(),topCand->GetSource());
     				boundary_.erase(it);//TODO GU!!! this in not efficient, use different data structure?
     			}else{
-    				//TODO source cand update
-    				assert(false);
+    				//source ucand update
+    				assert(topCand->GetSource()->CreateLink(topCand));
 
+    				//TODO GU update state
+
+#ifdef DEBUG_GU
+    		cerr << "SOURCE UPDATED: "<< *topCand->GetSource()<<endl;
+#endif
     			}
     		}
 

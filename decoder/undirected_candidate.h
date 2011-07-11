@@ -35,7 +35,7 @@ struct UCandidate {
   //0 HEAD,
   //1 FIRST CHILD (left)
   //2 SECOND CHILD
-  const LinksVector context_links_; //NULL if no link, *UCand if link
+  LinksVector context_links_; //NULL if no link, *UCand if link
   int source_link_; //context_links_(id) for the source UCand (-1 for starting leaf)
 
   //vit_prob_ and est_prob_ are not updated in LG training
@@ -65,6 +65,8 @@ struct UCandidate {
   UCandidate* GetSource();
 
   bool HasSource();
+
+  bool CreateLink(UCandidate* ucand);
 
 //  void InitializeUCandidate(
 //                           const SentenceMetadata& smeta,

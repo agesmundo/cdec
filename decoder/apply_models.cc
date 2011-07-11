@@ -259,7 +259,7 @@ public:
     		//TODO this is kind of brute force (think on how to reuse)
     		//TODO keep all non conflicting elements(as islands in btagger)? how?? (now simple version)
     		//free mem of discarted cands
-    		for (int i = 1; i < cands.size(); ++i){
+    		for (int i = 1; i < cands.size(); ++i){//starts from 1 because best has been moved to cands.begin()
 #ifdef DEBUG_GU
     			cerr << "FREE : (id:"<<i<<")  " <<cands[i]<<endl;
 #endif
@@ -302,15 +302,18 @@ public:
     			          			source_link=2;
     			          		}
     			          		cands.push_back(new UCandidate(edge, context,/* D, ucands_states_,*/ smeta, models, source_link/*, false*/));
+#ifdef DEBUG_GU
+    			          		cerr << "Push UCand (" << cands.size() << ") :" << *cands.back() << endl;
+#endif
     						}
     					}
     					//first child (left)
     					else if(k==1){
-
+    						cerr<< "XXXXX IMPLEMENT LEFT CHILD PROPAGATION"<<endl;
     					}
     					//second child (right)
     					else if(k==2){
-
+    						cerr<< "XXXXX IMPLEMENT RIGHT CHILD PROPAGATION"<<endl;
     					}
     				}
     			}
@@ -430,7 +433,7 @@ private:
           		const LinksVector context(edge.Arity()+1, NULL);
           		cands.push_back(new UCandidate(edge, context,/* D, ucands_states_,*/ smeta, models, -1/*, false*/));
 #ifdef DEBUG_GU
-          		cerr << "Push Init UCand (" << i << ") :" << *cands.back() << endl;
+          		cerr << "Push Init UCand (" << cands.size() << ") :" << *cands.back() << endl;
 #endif
           	}
           }

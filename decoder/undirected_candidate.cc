@@ -16,7 +16,7 @@ using namespace std;
             const ModelSet& models,
             const int sl
             /*bool is_goal*/) :
-      ucand_index_(-1),
+      //ucand_index_(-1),
       in_edge_(&e),
       context_links_(context),
       source_link_(sl){
@@ -31,9 +31,9 @@ using namespace std;
 //  UCandidate::UCandidate(const Hypergraph::Edge& e,
 //            const LinksVector& context) : in_edge_(&e), context_links_(context) {}
 
-  bool UCandidate::IsSelected() const {
-    return ucand_index_ >= 0;
-  }
+//  bool UCandidate::IsSelected() const {
+//    return ucand_index_ >= 0;
+//  }
 
 //  void UCandidate::InitializeUCandidate(
 //                           const SentenceMetadata& smeta,
@@ -81,8 +81,8 @@ ostream& operator<<(ostream& os, const UCandidate& cand) {
   os << "UCAND";
   os << "(" << &cand << ")";
   os <<  "[";
-  if (!cand.IsSelected()) { os << "PENDING "; }
-  else { os << "+LM_node=" << cand.ucand_index_; }
+//  if (!cand.IsSelected()) { os << "PENDING "; }
+//  else { os << "+LM_node=" << cand.ucand_index_; }
   //os << " edge=" << cand.in_edge_->id_; //printed by Edge<<
   os << " context_links_=<";
   for (int i = 0; i < cand.context_links_.size(); ++i)

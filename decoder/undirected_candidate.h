@@ -22,7 +22,7 @@ typedef vector<UCandidate*> UCandidateList;
 typedef SmallVector<UCandidate*,3> LinksVector;
 
 struct UCandidate {
-  int ucand_index_;                     // -1 until popped from queue
+  //int ucand_index_;                     // -1 until popped from queue
 
   const Hypergraph::Edge* in_edge_;    // in -LM forest
   FFState state_;

@@ -1,5 +1,13 @@
 TODO
-	?remove feats est_feats from traversal methods structure?
+	?remove feats est_feats from traversal methods structure? can be passed with ucand
+TODO speed up
+	sparse vector should not store 0s
+	boundry_ implement with hash table, use boost:hash (pointers)
+	smeta and models make static fields in 
+	
+110711 
+	convert ucands structure in out_hg
+	free memory (test with val girnd)
 
 110707 IMPLEMENT DECODING/TRAINING LOOP (only local feats)
 then execute exp and record new lower-boundary BLEU
@@ -8,8 +16,9 @@ OK! 	free memory policy
 OK!	pop best
 OK!	correct weight if wrong
 OK!	update queue if wrong
-	structure for borders
-	update queue if correct
+OK!	structure for borders
+OK!	update queue if correct
+MAIN LOOP DONE
 
 110705 MODIFY UCAND AND SCORING
 OK! 	use models.AddFeaturesToUCand() to score

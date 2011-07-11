@@ -28,13 +28,22 @@ using namespace std;
 
   bool UCandidate::HasSingleMissingLink() const{//TODO keep counter instead of computing?
 	  int count =0;
-	for (int i=0; i<context_links_.size();i++){
-		if(context_links_[0]==NULL){
-			count++;
-			if(count>1)return false;
-		}
-	}
-	return true;
+	  for (int i=0; i<context_links_.size();i++){
+		  if(context_links_[i]==NULL){
+			  count++;
+			  if(count>1)return false;
+		  }
+	  }
+	  return count==1;
+  }
+
+  bool UCandidate::HasMissingLink() const{
+	  for (int i=0; i<context_links_.size();i++){
+		  if(context_links_[i]==NULL){
+			  return true;
+		  }
+	  }
+	  return false;
   }
 
   UCandidate* UCandidate::GetSource(){

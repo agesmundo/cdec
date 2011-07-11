@@ -271,12 +271,17 @@ public:
 #endif
     		cands.erase(cands.begin(),cands.end());
 #ifdef DEBUG_GU
-    		cerr << " | cands.size(): "<< cands.size()<<"\n";
-    		cerr << "SELECTED: "<< *topCand<<endl;
+    		cerr << " | cands.size(): "<< cands.size()<<endl;
+//    		cerr << "SELECTED: "<< *topCand<<endl;
 #endif
 
     		//PUT IN LIST OF BORDER CANDS
-    		boundary_.push_back(topCand);
+    		if(topCand->HasMissingLink()){
+    			boundary_.push_back(topCand);
+#ifdef DEBUG_GU
+    		cerr << " ADD TO BOUNDARY: "<< topCand<<"\n";
+#endif
+    		}
 
     		//UPDATE BORDERS
     		if(topCand->HasSource()){
@@ -284,6 +289,7 @@ public:
     		cerr << "SOURCE: "<< *topCand->GetSource()<<endl;
 #endif
     			if(topCand->GetSource()->HasSingleMissingLink()){
+    				//TODO GU update link before removing? if yes move upward (if) CreateLink() and in the if test if HasMissingLink()
 #ifdef DEBUG_GU
     				cerr << "SOURCE: REMOVED FROM BORDERS"<<endl;
 #endif
@@ -318,7 +324,7 @@ public:
     					if(k==0){
     						const Hypergraph::Node& head_node = in.nodes_[currBoundary->in_edge_->head_node_];
 #ifdef DEBUG_GU
-    						if(k==2) cerr<< "HEAD PROPAGATION"<<endl;
+    						cerr<< "HEAD PROPAGATION"<<endl;
 							cerr << " head_node.out_edges_.size(): " <<head_node.out_edges_.size()<<endl;
 #endif
     						for (int j=0; j<head_node.out_edges_.size();j++){
@@ -328,10 +334,9 @@ public:
 #endif
     			          		LinksVector context(currEdge.Arity()+1, NULL);
     			          		assert(currEdge.Arity()<=2);//constraint to binary rules only
+    			          		assert(currEdge.Arity()>=1);//must have one child since reached vie head propagation
     			          		int source_link;
-    			          		if(currEdge.Arity()==0){
-    			          			source_link=-1;
-    			          		}else if(currEdge.tail_nodes_[0]==head_node.id_){
+    			          		if(currEdge.tail_nodes_[0]==head_node.id_){
     			          			context[1]=currBoundary;
     			          			source_link=1;
     			          		}else{
@@ -339,6 +344,7 @@ public:
     			          			context[2]=currBoundary;
     			          			source_link=2;
     			          		}
+    			          		if(IsGoal(currEdge))context[0]=(UCandidate*)-1;
     			          		cands.push_back(new UCandidate(currEdge, context,/* D, ucands_states_,*/ smeta, models, source_link/*, false*/));
 #ifdef DEBUG_GU
     			          		cerr << "PUSH UCAND (" << cands.size() << ") :" << *cands.back() << endl;
@@ -360,14 +366,10 @@ public:
 #endif
     			          		LinksVector context(currEdge.Arity()+1, NULL);
     			          		assert(currEdge.Arity()<=2);//constraint to binary rules only
-    			          		int source_link;
-    			          		if(currEdge.Arity()==0){
-    			          			source_link=-1;
-    			          		}else {
-    			          			assert(currEdge.head_node_==tail_node.id_);
-    			          			context[0]=currBoundary;
-    			          			source_link=0;
-    			          		}
+    			          		assert(currEdge.head_node_==tail_node.id_);
+    			          		context[0]=currBoundary;
+    			          		int	source_link=0;
+
     			          		cands.push_back(new UCandidate(currEdge, context,/* D, ucands_states_,*/ smeta, models, source_link/*, false*/));
 #ifdef DEBUG_GU
     			          		cerr << "PUSH UCAND (" << cands.size() << ") :" << *cands.back() << endl;
@@ -502,6 +504,9 @@ private:
 #endif
   }
 
+  bool IsGoal(const Hypergraph::Edge& edge){
+	  return edge.head_node_==in.nodes_.size()-1;
+  }
 //  //order cands and pop best
 //  inline UCandidate* PopBest(UCandidateHeap& cands){
 //	  make_heap(cands.begin(), cands.end(), HeapCandCompare());

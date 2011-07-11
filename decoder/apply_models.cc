@@ -280,28 +280,40 @@ public:
     		//TODO source cand update (or remove from list if no more missing links)
 
     		//RECOMPUTE QUEUE EACH ITERATION
+#ifdef DEBUG_GU
+    		cerr << " boundary_.size(): " <<boundary_.size()<<endl;
+#endif
     		for (int i=0;i<boundary_.size();i++){
-    			UCandidate* currCand=boundary_[i];
-    			assert(currCand->context_links_.size()<=3);//constraint to binary rules only
-    			for (int k=0;k<currCand->context_links_.size();k++){
-    				if(currCand->context_links_[k]==NULL){//missing link, available for expansion
+    			UCandidate* currBoundary=boundary_[i];
+#ifdef DEBUG_GU
+        		cerr << "currBoundary("<<i<<"): "<< *currBoundary<<endl;
+#endif
+    			assert(currBoundary->context_links_.size()<=3);//constraint to binary rules only
+    			for (int k=0;k<currBoundary->context_links_.size();k++){
+    				if(currBoundary->context_links_[k]==NULL){//missing link, available for expansion
     					//head
     					if(k==0){
-    						const Hypergraph::Node& head_node = in.nodes_[currCand->in_edge_->head_node_];
+    						const Hypergraph::Node& head_node = in.nodes_[currBoundary->in_edge_->head_node_];
+#ifdef DEBUG_GU
+							cerr << " head_node.out_edges_.size(): " <<head_node.out_edges_.size()<<endl;
+#endif
     						for (int j=0; j<head_node.out_edges_.size();j++){
-    			          		const Hypergraph::Edge& edge = in.edges_[head_node.out_edges_[j]];
-    			          		LinksVector context(edge.Arity()+1, NULL);
-    			          		assert(edge.Arity()<=2);//constraint to binary rules only
+    			          		const Hypergraph::Edge& currEdge = in.edges_[head_node.out_edges_[j]];
+#ifdef DEBUG_GU
+    			          		cerr << "currEdge("<<j<<"): "<< currEdge<<endl;
+#endif
+    			          		LinksVector context(currEdge.Arity()+1, NULL);
+    			          		assert(currEdge.Arity()<=2);//constraint to binary rules only
     			          		int source_link;
-    			          		if(edge.tail_nodes_[0]==head_node.id_){
-    			          			context[1]=currCand;
+    			          		if(currEdge.tail_nodes_[0]==head_node.id_){
+    			          			context[1]=currBoundary;
     			          			source_link=1;
     			          		}else{
-    			          			assert(edge.tail_nodes_[1]==head_node.id_);
-    			          			context[2]=currCand;
+    			          			assert(currEdge.tail_nodes_[1]==head_node.id_);
+    			          			context[2]=currBoundary;
     			          			source_link=2;
     			          		}
-    			          		cands.push_back(new UCandidate(edge, context,/* D, ucands_states_,*/ smeta, models, source_link/*, false*/));
+    			          		cands.push_back(new UCandidate(currEdge, context,/* D, ucands_states_,*/ smeta, models, source_link/*, false*/));
 #ifdef DEBUG_GU
     			          		cerr << "Push UCand (" << cands.size() << ") :" << *cands.back() << endl;
 #endif

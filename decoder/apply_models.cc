@@ -163,17 +163,17 @@ struct CandidateUniquenessHash {
     return x;
   }
 };
-struct UCandidateUniquenessHash {//TODO GU is this correct??
-  size_t operator()(const UCandidate* c) const {
-    size_t x = 5381;
-    x = ((x << 5) + x) ^ c->in_edge_->id_;
-    for (int i = 0; i < c->context_links_.size(); ++i){
-    	assert(c->context_links_[i]->ucand_index_+1>=0);
-      x = ((x << 5) + x) ^ (c->context_links_[i]->ucand_index_+1);
-    }
-    return x;
-  }
-};
+//struct UCandidateUniquenessHash {//TODO GU is this correct??
+//  size_t operator()(const UCandidate* c) const {
+//    size_t x = 5381;
+//    x = ((x << 5) + x) ^ c->in_edge_->id_;
+//    for (int i = 0; i < c->context_links_.size(); ++i){
+//    	assert(c->context_links_[i]->ucand_index_+1>=0);
+//      x = ((x << 5) + x) ^ (c->context_links_[i]->ucand_index_+1);
+//    }
+//    return x;
+//  }
+//};
 
 struct CandidateUniquenessEquals {
   bool operator()(const Candidate* a, const Candidate* b) const {
@@ -190,7 +190,7 @@ typedef unordered_set<const Candidate*, CandidateUniquenessHash, CandidateUnique
 typedef unordered_map<FFState, Candidate*, boost::hash<FFState> > State2Node;
 
 //TODO remove later, not merging states in GU
-typedef unordered_set<const UCandidate*, UCandidateUniquenessHash, UCandidateUniquenessEquals> UniqueUCandidateSet;
+//typedef unordered_set<const UCandidate*, UCandidateUniquenessHash, UCandidateUniquenessEquals> UniqueUCandidateSet;
 typedef unordered_map<FFState, UCandidate*, boost::hash<FFState> > UState2Node;
 
 class GreedyUndirectedRescorer {

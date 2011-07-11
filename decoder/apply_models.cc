@@ -285,7 +285,7 @@ public:
 #endif
     			if(topCand->GetSource()->HasSingleMissingLink()){
 #ifdef DEBUG_GU
-    		cerr << "SOURCE: DELETED! "<<endl;
+    				cerr << "SOURCE: REMOVED FROM BORDERS"<<endl;
 #endif
     				//remove source ucand from list if no more missing links
     				UCandidateList::iterator it = find(boundary_.begin(),boundary_.end(),topCand->GetSource());
@@ -313,6 +313,7 @@ public:
     					if(k==0){
     						const Hypergraph::Node& head_node = in.nodes_[currBoundary->in_edge_->head_node_];
 #ifdef DEBUG_GU
+    						if(k==2) cerr<< "HEAD PROPAGATION"<<endl;
 							cerr << " head_node.out_edges_.size(): " <<head_node.out_edges_.size()<<endl;
 #endif
     						for (int j=0; j<head_node.out_edges_.size();j++){
@@ -323,7 +324,9 @@ public:
     			          		LinksVector context(currEdge.Arity()+1, NULL);
     			          		assert(currEdge.Arity()<=2);//constraint to binary rules only
     			          		int source_link;
-    			          		if(currEdge.tail_nodes_[0]==head_node.id_){
+    			          		if(currEdge.Arity()==0){
+    			          			source_link=-1;
+    			          		}else if(currEdge.tail_nodes_[0]==head_node.id_){
     			          			context[1]=currBoundary;
     			          			source_link=1;
     			          		}else{
@@ -337,13 +340,34 @@ public:
 #endif
     						}
     					}
-    					//first child (left)
-    					else if(k==1){
-    						cerr<< "XXXXX IMPLEMENT LEFT CHILD PROPAGATION"<<endl;
-    					}
-    					//second child (right)
-    					else if(k==2){
-    						cerr<< "XXXXX IMPLEMENT RIGHT CHILD PROPAGATION"<<endl;
+    					else /*if(k==1 ||k==2)*/{
+    						const Hypergraph::Node& tail_node = in.nodes_[currBoundary->in_edge_->tail_nodes_[k-1]];
+#ifdef DEBUG_GU
+							assert (k==1 || k==2);
+    						if(k==1) cerr<< "LEFT CHILD PROPAGATION"<<endl;
+    						if(k==2) cerr<< "RIGHT CHILD PROPAGATION"<<endl;
+							cerr << " tail_node.in_edges_.size(): " <<tail_node.in_edges_.size()<<endl;
+#endif
+    						for (int j=0; j<tail_node.in_edges_.size();j++){
+    			          		const Hypergraph::Edge& currEdge = in.edges_[tail_node.in_edges_[j]];
+#ifdef DEBUG_GU
+    			          		cerr << "currEdge("<<j<<"): "<< currEdge<<endl;
+#endif
+    			          		LinksVector context(currEdge.Arity()+1, NULL);
+    			          		assert(currEdge.Arity()<=2);//constraint to binary rules only
+    			          		int source_link;
+    			          		if(currEdge.Arity()==0){
+    			          			source_link=-1;
+    			          		}else {
+    			          			assert(currEdge.head_node_==tail_node.id_);
+    			          			context[0]=currBoundary;
+    			          			source_link=0;
+    			          		}
+    			          		cands.push_back(new UCandidate(currEdge, context,/* D, ucands_states_,*/ smeta, models, source_link/*, false*/));
+#ifdef DEBUG_GU
+    			          		cerr << "PUSH UCAND (" << cands.size() << ") :" << *cands.back() << endl;
+#endif
+    						}
     					}
     				}
     			}

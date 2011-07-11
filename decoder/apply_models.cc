@@ -282,14 +282,26 @@ public:
     		//RECOMPUTE QUEUE EACH ITERATION
     		for (int i=0;i<boundary_.size();i++){
     			UCandidate* currCand=boundary_[i];
-    			assert(currCand->context_links_.size()<=3);//for binary rules only
+    			assert(currCand->context_links_.size()<=3);//constraint to binary rules only
     			for (int k=0;k<currCand->context_links_.size();k++){
-    				if(currCand->context_links_[k]==NULL){
+    				if(currCand->context_links_[k]==NULL){//missing link, available for expansion
     					//head
     					if(k==0){
     						const Hypergraph::Node& head_node = in.nodes_[currCand->in_edge_->head_node_];
     						for (int j=0; j<head_node.out_edges_.size();j++){
-
+    			          		const Hypergraph::Edge& edge = in.edges_[head_node.out_edges_[j]];
+    			          		LinksVector context(edge.Arity()+1, NULL);
+    			          		assert(edge.Arity()<=2);//constraint to binary rules only
+    			          		int source_link;
+    			          		if(edge.tail_nodes_[0]==head_node.id_){
+    			          			context[1]=currCand;
+    			          			source_link=1;
+    			          		}else{
+    			          			assert(edge.tail_nodes_[1]==head_node.id_);
+    			          			context[2]=currCand;
+    			          			source_link=2;
+    			          		}
+    			          		cands.push_back(new UCandidate(edge, context,/* D, ucands_states_,*/ smeta, models, source_link/*, false*/));
     						}
     					}
     					//first child (left)
@@ -416,7 +428,7 @@ private:
           	if(currentEdge.tail_nodes_.size()==0){//leafs
           		const Hypergraph::Edge& edge = in.edges_[i];
           		const LinksVector context(edge.Arity()+1, NULL);
-          		cands.push_back(new UCandidate(edge, context,/* D, ucands_states_,*/ smeta, models/*, false*/));
+          		cands.push_back(new UCandidate(edge, context,/* D, ucands_states_,*/ smeta, models, -1/*, false*/));
 #ifdef DEBUG_GU
           		cerr << "Push Init UCand (" << i << ") :" << *cands.back() << endl;
 #endif

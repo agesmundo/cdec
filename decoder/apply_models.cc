@@ -476,11 +476,29 @@ private:
 		  new_edge->edge_prob_ = ucand->in_edge_->edge_prob_;
 
 		  //link with head
+		  {
 #ifdef DEBUG_GU
-		  assert(ucand->context_links_[0]!=NULL);
+			  assert(ucand->context_links_[0]!=NULL);
 #endif
-		  Hypergraph::Node* new_node = out.AddNode(in.nodes_[ucand->in_edge_->head_node_].cat_);
-		  out.ConnectEdgeToHeadNode(new_edge, new_node->id_);
+			  map<UCandidate*,Hypergraph::Edge*>::iterator it = ucand2edge.end();
+			  UCandidate* head_ucand=ucand->context_links_[0];
+			  if(head_ucand!=(UCandidate*)-1){
+				  it = ucand2edge.find(head_ucand);
+			  }
+			  int head_node_id;
+			  if(it!=ucand2edge.end()){
+				  Hypergraph::Edge* head_edge = it->second;
+				  if(head_ucand->context_links_[1]==ucand){
+					  head_node_id=head_edge->tail_nodes_[0];
+				  }else {
+					  assert(head_ucand->context_links_[2]==ucand);
+					  head_node_id=head_edge->tail_nodes_[1];
+				  }
+			  }else{
+				  head_node_id = out.AddNode(in.nodes_[ucand->in_edge_->head_node_].cat_)->id_;
+			  }
+			  out.ConnectEdgeToHeadNode(new_edge, head_node_id);
+		  }
 
 		  //link with left child
 		  if(ucand->context_links_.size()>=2){
@@ -489,11 +507,14 @@ private:
 #endif
 			  UCandidate* left_ucand=ucand->context_links_[1];
 			  map<UCandidate*,Hypergraph::Edge*>::iterator it = ucand2edge.find(left_ucand);
+			  int left_node_id;
 			  if(it!=ucand2edge.end()){
-				  Hypergraph::Edge* left_edge = it->second;
-				  new_edge->tail_nodes_[0] = left_edge->head_node_;
-				  out.nodes_[left_edge->head_node_].out_edges_.push_back(new_edge->id_);
+				  left_node_id = it->second->head_node_;
+			  }else{
+				  left_node_id = out.AddNode(in.nodes_[ucand->in_edge_->tail_nodes_[0]].cat_)->id_;
 			  }
+			  new_edge->tail_nodes_[0] = left_node_id;
+			  out.nodes_[left_node_id].out_edges_.push_back(new_edge->id_);
 		  }
 
 		  //link with right child
@@ -503,11 +524,14 @@ private:
 #endif
 			  UCandidate* right_ucand=ucand->context_links_[2];
 			  map<UCandidate*,Hypergraph::Edge*>::iterator it = ucand2edge.find(right_ucand);
+			  int right_node_id;
 			  if(it!=ucand2edge.end()){
-				  Hypergraph::Edge* right_edge = it->second;
-				  new_edge->tail_nodes_[1] = right_edge->head_node_;
-				  out.nodes_[right_edge->head_node_].out_edges_.push_back(new_edge->id_);
+				  right_node_id = it->second->head_node_;
+			  }else{
+				  right_node_id = out.AddNode(in.nodes_[ucand->in_edge_->tail_nodes_[1]].cat_)->id_;
 			  }
+			  new_edge->tail_nodes_[1] = right_node_id;
+			  out.nodes_[right_node_id].out_edges_.push_back(new_edge->id_);
 		  }
 	  }
   }

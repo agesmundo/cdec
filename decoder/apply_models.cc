@@ -463,7 +463,10 @@ public:
 private:
   //given any enrty point of the UCands structure builds the out_hg
   void BuildOutHG(UCandidate* first){
-	  map<UCandidate*,Hypergraph::Edge*> ucand2edge;//TODO GU hash map is faster?
+#ifdef DEBUG_GU
+	  cerr << "BUILD OUT HG" << endl;
+#endif
+	  map<UCandidate*,int> ucand2edge;//TODO GU hash map is faster?
 	  UCandidateList ucands_stack;
 	  int goal_node_id=-1;
 	  ucands_stack.push_back(first);
@@ -471,8 +474,25 @@ private:
 	  while(!ucands_stack.empty()){
 		  UCandidate* ucand =ucands_stack.back();
 		  ucands_stack.pop_back();
-		  Hypergraph::Edge* new_edge = out.AddEdge(*ucand->in_edge_);
-		  ucand2edge[ucand]=new_edge;
+
+		  //copy in_edge in out_hg
+		  out.edges_.push_back(*ucand->in_edge_);
+		  Hypergraph::Edge* new_edge = &out.edges_.back();
+		  new_edge->id_ = out.edges_.size()-1;
+		  //clear links to nodes TODO this should be useless
+		  new_edge->head_node_=-1;
+		  for(int i=0;i<new_edge->tail_nodes_.size();i++){
+			  new_edge->tail_nodes_[i]=-1;
+		  }
+
+#ifdef DEBUG_GU
+	  cerr << "/////////////////////////////////////////////////////////////////////\n";
+	  cerr << "NEXT UCAND: " << *ucand << endl;
+	  cerr << "IN  EDGE : " << *ucand->in_edge_ << endl;
+	  cerr << "OUT EDGE : " << *new_edge << endl;
+#endif
+
+		  ucand2edge[ucand]=new_edge->id_;
 		  new_edge->edge_prob_ = ucand->in_edge_->edge_prob_;
 
 		  //link with head
@@ -480,20 +500,24 @@ private:
 #ifdef DEBUG_GU
 			  assert(ucand->context_links_[0]!=NULL);
 #endif
-			  map<UCandidate*,Hypergraph::Edge*>::iterator it = ucand2edge.end();
+			  map<UCandidate*,int>::iterator it = ucand2edge.end();
 			  UCandidate* head_ucand=ucand->context_links_[0];
 			  bool is_goal=(head_ucand==(UCandidate*)-1);
+#ifdef DEBUG_GU
+			  if (is_goal) cerr<< "HEAD UCAND : " << "Goal"<<endl;
+			  else cerr<< "HEAD UCAND : " << *head_ucand<<endl;
+#endif
 			  if(!is_goal){
 				  it = ucand2edge.find(head_ucand);
 			  }
 			  int head_node_id;
 			  if(it!=ucand2edge.end()){
-				  Hypergraph::Edge* head_edge = it->second;
+				  const Hypergraph::Edge& head_edge = out.edges_[it->second];
 				  if(head_ucand->context_links_[1]==ucand){
-					  head_node_id=head_edge->tail_nodes_[0];
+					  head_node_id=head_edge.tail_nodes_[0];
 				  }else {
 					  assert(head_ucand->context_links_[2]==ucand);
-					  head_node_id=head_edge->tail_nodes_[1];
+					  head_node_id=head_edge.tail_nodes_[1];
 				  }
 			  }else{
 				  head_node_id = out.AddNode(in.nodes_[ucand->in_edge_->head_node_].cat_)->id_;
@@ -512,10 +536,13 @@ private:
 			  assert(ucand->context_links_[1]!=NULL);
 #endif
 			  UCandidate* left_ucand=ucand->context_links_[1];
-			  map<UCandidate*,Hypergraph::Edge*>::iterator it = ucand2edge.find(left_ucand);
+#ifdef DEBUG_GU
+			  cerr<< "LEFT UCAND : " << *left_ucand<<endl;
+#endif
+			  map<UCandidate*,int>::iterator it = ucand2edge.find(left_ucand);
 			  int left_node_id;
 			  if(it!=ucand2edge.end()){
-				  left_node_id = it->second->head_node_;
+				  left_node_id = out.edges_[it->second].head_node_;
 			  }else{
 				  left_node_id = out.AddNode(in.nodes_[ucand->in_edge_->tail_nodes_[0]].cat_)->id_;
 				  ucands_stack.push_back(left_ucand);
@@ -530,10 +557,13 @@ private:
 			  assert(ucand->context_links_[2]!=NULL);
 #endif
 			  UCandidate* right_ucand=ucand->context_links_[2];
-			  map<UCandidate*,Hypergraph::Edge*>::iterator it = ucand2edge.find(right_ucand);
+#ifdef DEBUG_GU
+			  cerr<< "RIGHT UCAND : " << *right_ucand<<endl;
+#endif
+			  map<UCandidate*,int>::iterator it = ucand2edge.find(right_ucand);
 			  int right_node_id;
 			  if(it!=ucand2edge.end()){
-				  right_node_id = it->second->head_node_;
+				  right_node_id = out.edges_[it->second].head_node_;
 			  }else{
 				  right_node_id = out.AddNode(in.nodes_[ucand->in_edge_->tail_nodes_[1]].cat_)->id_;
 				  ucands_stack.push_back(right_ucand);
@@ -541,6 +571,9 @@ private:
 			  new_edge->tail_nodes_[1] = right_node_id;
 			  out.nodes_[right_node_id].out_edges_.push_back(new_edge->id_);
 		  }
+#ifdef DEBUG_GU
+		  cerr << "OUT EDGE : " << *new_edge << endl;
+#endif
 	  }
 
 	  assert(goal_node_id>=0);

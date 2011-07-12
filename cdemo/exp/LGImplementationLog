@@ -6,7 +6,7 @@ TODO speed up
 	smeta and models make static fields in 
 	
 110711 
-	convert ucands structure in out_hg
+OK!	convert ucands structure in out_hg
 	free memory (test with val girnd)
 
 110707 IMPLEMENT DECODING/TRAINING LOOP (only local feats)

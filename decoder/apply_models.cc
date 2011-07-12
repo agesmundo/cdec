@@ -222,7 +222,6 @@ public:
     assert(in.nodes_[pregoal].out_edges_.size() == 1);
     UCandidateHeap cands; //unique queue/heap of candidates
 
-
     //find nodes that intersect with reference lattice
     if (is_training_) {
   	  assert(smeta.HasReference()==true);
@@ -231,8 +230,8 @@ public:
     }
 
     InitCands(cands);     //put leafs candidates in the queue
-    UCandidate* first= *max_element(cands.begin(), cands.end(),HeapCandCompare());
 
+	UCandidate* topCand;
     for (;!cands.empty();) {//TODO borders shoul not be empty, first pass ok to be empty
 
 #ifdef DEBUG_GU
@@ -243,7 +242,7 @@ public:
     	//best action candidate
 //    	make_heap(cands.begin(), cands.end(), HeapCandCompare());//TODO need this or only find best?
     	swap(*max_element(cands.begin(), cands.end(),HeapCandCompare()), *cands.begin());
-    	UCandidate* topCand=cands.front();
+    	topCand=cands.front();
 
   #ifdef DEBUG_GU
   	  cerr << "BEST IS: " << *topCand << "\n";
@@ -296,7 +295,7 @@ public:
 
     			if(!topCand->GetSource()->HasMissingLink()){
 #ifdef DEBUG_GU
-    				cerr << "SOURCE: REMOVED FROM BORDERS"<<endl;
+    				cerr << "SOURCE: REMOVED FROM BOUNDARY"<<endl;
 #endif
     				//remove source ucand from list if no more missing links
     				UCandidateList::iterator it = find(boundary_.begin(),boundary_.end(),topCand->GetSource());
@@ -455,23 +454,23 @@ public:
 
 
 	//TODO LG transform the UCands structure in the out_hg
-    BuildOutHG(first);//TODO GU return head node id to  prune undreachable
-    //out.PruneUnreachable(D[goal_id].front()->node_index_);
+    BuildOutHG(topCand);
 
     //TODO free cands structure
     //FreeAll(cands);
   }
 
 private:
+  //given any enrty point of the UCands structure builds the out_hg
   void BuildOutHG(UCandidate* first){
 	  map<UCandidate*,Hypergraph::Edge*> ucand2edge;//TODO GU hash map is faster?
-	  UCandidateList stak;
+	  UCandidateList ucands_stack;
 	  int goal_node_id=-1;
-	  stak.push_back(first);
+	  ucands_stack.push_back(first);
 
-	  while(!stak.empty()){
-		  UCandidate* ucand =stak.back();
-		  stak.pop_back();
+	  while(!ucands_stack.empty()){
+		  UCandidate* ucand =ucands_stack.back();
+		  ucands_stack.pop_back();
 		  Hypergraph::Edge* new_edge = out.AddEdge(*ucand->in_edge_);
 		  ucand2edge[ucand]=new_edge;
 		  new_edge->edge_prob_ = ucand->in_edge_->edge_prob_;
@@ -501,7 +500,7 @@ private:
 				  if(is_goal){
 					  goal_node_id=head_node_id;
 				  }else{
-					  stak.push_back(head_ucand);
+					  ucands_stack.push_back(head_ucand);
 				  }
 			  }
 			  out.ConnectEdgeToHeadNode(new_edge, head_node_id);
@@ -519,7 +518,7 @@ private:
 				  left_node_id = it->second->head_node_;
 			  }else{
 				  left_node_id = out.AddNode(in.nodes_[ucand->in_edge_->tail_nodes_[0]].cat_)->id_;
-				  stak.push_back(left_ucand);
+				  ucands_stack.push_back(left_ucand);
 			  }
 			  new_edge->tail_nodes_[0] = left_node_id;
 			  out.nodes_[left_node_id].out_edges_.push_back(new_edge->id_);
@@ -537,7 +536,7 @@ private:
 				  right_node_id = it->second->head_node_;
 			  }else{
 				  right_node_id = out.AddNode(in.nodes_[ucand->in_edge_->tail_nodes_[1]].cat_)->id_;
-				  stak.push_back(right_ucand);
+				  ucands_stack.push_back(right_ucand);
 			  }
 			  new_edge->tail_nodes_[1] = right_node_id;
 			  out.nodes_[right_node_id].out_edges_.push_back(new_edge->id_);

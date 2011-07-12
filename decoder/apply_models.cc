@@ -513,9 +513,8 @@ private:
 					  ucands_stack.push_back(head_ucand);
 				  }
 			  }
-			  out.ConnectEdgeToHeadNode(new_edge, head_node_id);
-//			  new_edge->head_node_ = head_node_id;
-//			    nodes_[head_node_id].in_edges_.push_back(new_edge->id_);
+			  new_edge->head_node_ = head_node_id;
+			  out.nodes_[head_node_id].in_edges_.push_back(new_edge->id_);
 		  }
 
 		  //link with left child

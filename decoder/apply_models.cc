@@ -464,8 +464,9 @@ public:
 
 private:
   void BuildOutHG(UCandidate* first){
-	  map<UCandidate*,Hypergraph::Edge*> ucand2edge;
+	  map<UCandidate*,Hypergraph::Edge*> ucand2edge;//TODO GU hash map is faster?
 	  UCandidateList stak;
+	  int goal_node_id=-1;
 	  stak.push_back(first);
 
 	  while(!stak.empty()){
@@ -482,7 +483,8 @@ private:
 #endif
 			  map<UCandidate*,Hypergraph::Edge*>::iterator it = ucand2edge.end();
 			  UCandidate* head_ucand=ucand->context_links_[0];
-			  if(head_ucand!=(UCandidate*)-1){
+			  bool is_goal=(head_ucand==(UCandidate*)-1);
+			  if(!is_goal){
 				  it = ucand2edge.find(head_ucand);
 			  }
 			  int head_node_id;
@@ -496,6 +498,11 @@ private:
 				  }
 			  }else{
 				  head_node_id = out.AddNode(in.nodes_[ucand->in_edge_->head_node_].cat_)->id_;
+				  if(is_goal){
+					  goal_node_id=head_node_id;
+				  }else{
+					  stak.push_back(head_ucand);
+				  }
 			  }
 			  out.ConnectEdgeToHeadNode(new_edge, head_node_id);
 		  }
@@ -512,6 +519,7 @@ private:
 				  left_node_id = it->second->head_node_;
 			  }else{
 				  left_node_id = out.AddNode(in.nodes_[ucand->in_edge_->tail_nodes_[0]].cat_)->id_;
+				  stak.push_back(left_ucand);
 			  }
 			  new_edge->tail_nodes_[0] = left_node_id;
 			  out.nodes_[left_node_id].out_edges_.push_back(new_edge->id_);
@@ -529,11 +537,15 @@ private:
 				  right_node_id = it->second->head_node_;
 			  }else{
 				  right_node_id = out.AddNode(in.nodes_[ucand->in_edge_->tail_nodes_[1]].cat_)->id_;
+				  stak.push_back(right_ucand);
 			  }
 			  new_edge->tail_nodes_[1] = right_node_id;
 			  out.nodes_[right_node_id].out_edges_.push_back(new_edge->id_);
 		  }
 	  }
+
+	  assert(goal_node_id>=0);
+	  out.PruneUnreachable(goal_node_id);
   }
 
   //check if cand is correct (for training)

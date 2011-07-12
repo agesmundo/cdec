@@ -453,23 +453,22 @@ public:
     }
 
 
-	//TODO LG transform the UCands structure in the out_hg
+	//LG transform the UCands structure in the out_hg
     BuildOutHG(topCand);
 
-    //TODO free cands structure
-    //FreeAll(cands);
   }
 
 private:
   //given any enrty point of the UCands structure builds the out_hg
+  //and free memory
   void BuildOutHG(UCandidate* first){
 #ifdef DEBUG_GU
 	  cerr << "BUILD OUT HG" << endl;
 #endif
-	  map<UCandidate*,int> ucand2edge;//TODO GU hash map is faster?
+	  map<int,int> inNid2outNid;//in Node id to out Node id
 	  UCandidateList ucands_stack;
-	  int goal_node_id=-1;
 	  ucands_stack.push_back(first);
+	  int goal_node_id=-1;
 
 	  while(!ucands_stack.empty()){
 		  UCandidate* ucand =ucands_stack.back();
@@ -479,11 +478,6 @@ private:
 		  out.edges_.push_back(*ucand->in_edge_);
 		  Hypergraph::Edge* new_edge = &out.edges_.back();
 		  new_edge->id_ = out.edges_.size()-1;
-		  //clear links to nodes TODO this should be useless
-		  new_edge->head_node_=-1;
-		  for(int i=0;i<new_edge->tail_nodes_.size();i++){
-			  new_edge->tail_nodes_[i]=-1;
-		  }
 
 #ifdef DEBUG_GU
 	  cerr << "/////////////////////////////////////////////////////////////////////\n";
@@ -492,7 +486,6 @@ private:
 	  cerr << "OUT EDGE : " << *new_edge << endl;
 #endif
 
-		  ucand2edge[ucand]=new_edge->id_;
 		  new_edge->edge_prob_ = ucand->in_edge_->edge_prob_;
 
 		  //link with head
@@ -500,27 +493,20 @@ private:
 #ifdef DEBUG_GU
 			  assert(ucand->context_links_[0]!=NULL);
 #endif
-			  map<UCandidate*,int>::iterator it = ucand2edge.end();
 			  UCandidate* head_ucand=ucand->context_links_[0];
 			  bool is_goal=(head_ucand==(UCandidate*)-1);
 #ifdef DEBUG_GU
 			  if (is_goal) cerr<< "HEAD UCAND : " << "Goal"<<endl;
-			  else cerr<< "HEAD UCAND : " << *head_ucand<<endl;
+			  else cerr<< "HEAD UCAND : " << head_ucand<<endl;
 #endif
-			  if(!is_goal){
-				  it = ucand2edge.find(head_ucand);
-			  }
+			  map<int,int>::iterator it = inNid2outNid.find(new_edge->head_node_);
+
 			  int head_node_id;
-			  if(it!=ucand2edge.end()){
-				  const Hypergraph::Edge& head_edge = out.edges_[it->second];
-				  if(head_ucand->context_links_[1]==ucand){
-					  head_node_id=head_edge.tail_nodes_[0];
-				  }else {
-					  assert(head_ucand->context_links_[2]==ucand);
-					  head_node_id=head_edge.tail_nodes_[1];
-				  }
+			  if(it!=inNid2outNid.end()){
+				  head_node_id = it->second;
 			  }else{
 				  head_node_id = out.AddNode(in.nodes_[ucand->in_edge_->head_node_].cat_)->id_;
+				  inNid2outNid[new_edge->head_node_]=head_node_id;
 				  if(is_goal){
 					  goal_node_id=head_node_id;
 				  }else{
@@ -528,6 +514,8 @@ private:
 				  }
 			  }
 			  out.ConnectEdgeToHeadNode(new_edge, head_node_id);
+//			  new_edge->head_node_ = head_node_id;
+//			    nodes_[head_node_id].in_edges_.push_back(new_edge->id_);
 		  }
 
 		  //link with left child
@@ -537,14 +525,15 @@ private:
 #endif
 			  UCandidate* left_ucand=ucand->context_links_[1];
 #ifdef DEBUG_GU
-			  cerr<< "LEFT UCAND : " << *left_ucand<<endl;
+			  cerr<< "LEFT UCAND : " << left_ucand<<endl;
 #endif
-			  map<UCandidate*,int>::iterator it = ucand2edge.find(left_ucand);
+			  map<int,int>::iterator it = inNid2outNid.find(new_edge->tail_nodes_[0]);
 			  int left_node_id;
-			  if(it!=ucand2edge.end()){
-				  left_node_id = out.edges_[it->second].head_node_;
+			  if(it!=inNid2outNid.end()){
+				  left_node_id = it->second;
 			  }else{
 				  left_node_id = out.AddNode(in.nodes_[ucand->in_edge_->tail_nodes_[0]].cat_)->id_;
+				  inNid2outNid[new_edge->tail_nodes_[0]]=left_node_id;
 				  ucands_stack.push_back(left_ucand);
 			  }
 			  new_edge->tail_nodes_[0] = left_node_id;
@@ -558,14 +547,15 @@ private:
 #endif
 			  UCandidate* right_ucand=ucand->context_links_[2];
 #ifdef DEBUG_GU
-			  cerr<< "RIGHT UCAND : " << *right_ucand<<endl;
+			  cerr<< "RIGHT UCAND : " << right_ucand<<endl;
 #endif
-			  map<UCandidate*,int>::iterator it = ucand2edge.find(right_ucand);
+			  map<int,int>::iterator it = inNid2outNid.find(new_edge->tail_nodes_[1]);
 			  int right_node_id;
-			  if(it!=ucand2edge.end()){
-				  right_node_id = out.edges_[it->second].head_node_;
+			  if(it!=inNid2outNid.end()){
+				  right_node_id = it->second;
 			  }else{
 				  right_node_id = out.AddNode(in.nodes_[ucand->in_edge_->tail_nodes_[1]].cat_)->id_;
+				  inNid2outNid[new_edge->tail_nodes_[1]]=right_node_id;
 				  ucands_stack.push_back(right_ucand);
 			  }
 			  new_edge->tail_nodes_[1] = right_node_id;
@@ -573,12 +563,133 @@ private:
 		  }
 #ifdef DEBUG_GU
 		  cerr << "OUT EDGE : " << *new_edge << endl;
+		  cerr << "DELETE UCAND : " << *ucand <<endl;
 #endif
+		  delete ucand;
 	  }
 
 	  assert(goal_node_id>=0);
 	  out.PruneUnreachable(goal_node_id);
   }
+
+//  //given any enrty point of the UCands structure builds the out_hg
+//  void BuildOutHG(UCandidate* first){
+//#ifdef DEBUG_GU
+//	  cerr << "BUILD OUT HG" << endl;
+//#endif
+//	  map<UCandidate*,int> ucand2edge;//TODO GU hash map is faster?
+//	  UCandidateList ucands_stack;
+//	  ucands_stack.push_back(first);
+//	  int goal_node_id=-1;
+//
+//	  while(!ucands_stack.empty()){
+//		  UCandidate* ucand =ucands_stack.back();
+//		  ucands_stack.pop_back();
+//
+//		  //copy in_edge in out_hg
+//		  out.edges_.push_back(*ucand->in_edge_);
+//		  Hypergraph::Edge* new_edge = &out.edges_.back();
+//		  new_edge->id_ = out.edges_.size()-1;
+//		  //clear links to nodes TODO this should be useless
+//		  new_edge->head_node_=-1;
+//		  for(int i=0;i<new_edge->tail_nodes_.size();i++){
+//			  new_edge->tail_nodes_[i]=-1;
+//		  }
+//
+//#ifdef DEBUG_GU
+//	  cerr << "/////////////////////////////////////////////////////////////////////\n";
+//	  cerr << "NEXT UCAND: " << *ucand << endl;
+//	  cerr << "IN  EDGE : " << *ucand->in_edge_ << endl;
+//	  cerr << "OUT EDGE : " << *new_edge << endl;
+//#endif
+//
+//		  ucand2edge[ucand]=new_edge->id_;
+//		  new_edge->edge_prob_ = ucand->in_edge_->edge_prob_;
+//
+//		  //link with head
+//		  {
+//#ifdef DEBUG_GU
+//			  assert(ucand->context_links_[0]!=NULL);
+//#endif
+//			  map<UCandidate*,int>::iterator it = ucand2edge.end();
+//			  UCandidate* head_ucand=ucand->context_links_[0];
+//			  bool is_goal=(head_ucand==(UCandidate*)-1);
+//#ifdef DEBUG_GU
+//			  if (is_goal) cerr<< "HEAD UCAND : " << "Goal"<<endl;
+//			  else cerr<< "HEAD UCAND : " << *head_ucand<<endl;
+//#endif
+//			  if(!is_goal){
+//				  it = ucand2edge.find(head_ucand);
+//			  }
+//			  int head_node_id;
+//			  if(it!=ucand2edge.end()){
+//				  const Hypergraph::Edge& head_edge = out.edges_[it->second];
+//				  if(head_ucand->context_links_[1]==ucand){
+//					  head_node_id=head_edge.tail_nodes_[0];
+//				  }else {
+//					  assert(head_ucand->context_links_[2]==ucand);
+//					  head_node_id=head_edge.tail_nodes_[1];
+//				  }
+//			  }else{
+//				  head_node_id = out.AddNode(in.nodes_[ucand->in_edge_->head_node_].cat_)->id_;
+//				  if(is_goal){
+//					  goal_node_id=head_node_id;
+//				  }else{
+//					  ucands_stack.push_back(head_ucand);
+//				  }
+//			  }
+//			  out.ConnectEdgeToHeadNode(new_edge, head_node_id);
+//		  }
+//
+//		  //link with left child
+//		  if(ucand->context_links_.size()>=2){
+//#ifdef DEBUG_GU
+//			  assert(ucand->context_links_[1]!=NULL);
+//#endif
+//			  UCandidate* left_ucand=ucand->context_links_[1];
+//#ifdef DEBUG_GU
+//			  cerr<< "LEFT UCAND : " << *left_ucand<<endl;
+//#endif
+//			  map<UCandidate*,int>::iterator it = ucand2edge.find(left_ucand);
+//			  int left_node_id;
+//			  if(it!=ucand2edge.end()){
+//				  left_node_id = out.edges_[it->second].head_node_;
+//			  }else{
+//				  left_node_id = out.AddNode(in.nodes_[ucand->in_edge_->tail_nodes_[0]].cat_)->id_;
+//				  ucands_stack.push_back(left_ucand);
+//			  }
+//			  new_edge->tail_nodes_[0] = left_node_id;
+//			  out.nodes_[left_node_id].out_edges_.push_back(new_edge->id_);
+//		  }
+//
+//		  //link with right child
+//		  if(ucand->context_links_.size()>=3){
+//#ifdef DEBUG_GU
+//			  assert(ucand->context_links_[2]!=NULL);
+//#endif
+//			  UCandidate* right_ucand=ucand->context_links_[2];
+//#ifdef DEBUG_GU
+//			  cerr<< "RIGHT UCAND : " << *right_ucand<<endl;
+//#endif
+//			  map<UCandidate*,int>::iterator it = ucand2edge.find(right_ucand);
+//			  int right_node_id;
+//			  if(it!=ucand2edge.end()){
+//				  right_node_id = out.edges_[it->second].head_node_;
+//			  }else{
+//				  right_node_id = out.AddNode(in.nodes_[ucand->in_edge_->tail_nodes_[1]].cat_)->id_;
+//				  ucands_stack.push_back(right_ucand);
+//			  }
+//			  new_edge->tail_nodes_[1] = right_node_id;
+//			  out.nodes_[right_node_id].out_edges_.push_back(new_edge->id_);
+//		  }
+//#ifdef DEBUG_GU
+//		  cerr << "OUT EDGE : " << *new_edge << endl;
+//#endif
+//	  }
+//
+//	  assert(goal_node_id>=0);
+//	  out.PruneUnreachable(goal_node_id);
+//  }
 
   //check if cand is correct (for training)
   bool IsCorrect(const UCandidate& ucand){

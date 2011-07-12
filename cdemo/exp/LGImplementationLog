@@ -7,7 +7,7 @@ TODO speed up
 	
 110711 
 OK!	convert ucands structure in out_hg
-	free memory (test with val girnd)
+OK!	free memory (test with val girnd)
 
 110707 IMPLEMENT DECODING/TRAINING LOOP (only local feats)
 then execute exp and record new lower-boundary BLEU

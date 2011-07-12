@@ -231,6 +231,7 @@ public:
     }
 
     InitCands(cands);     //put leafs candidates in the queue
+    UCandidate* first= *max_element(cands.begin(), cands.end(),HeapCandCompare());
 
     for (;!cands.empty();) {//TODO borders shoul not be empty, first pass ok to be empty
 
@@ -288,8 +289,12 @@ public:
 #ifdef DEBUG_GU
     		cerr << "SOURCE: "<< *topCand->GetSource()<<endl;
 #endif
-    			if(topCand->GetSource()->HasSingleMissingLink()){
-    				//TODO GU update link before removing? if yes move upward (if) CreateLink() and in the if test if HasMissingLink()
+			assert(topCand->GetSource()->CreateLink(topCand));
+#ifdef DEBUG_GU
+    		cerr << "SOURCE UPDATED 1: "<< *topCand->GetSource()<<endl;
+#endif
+
+    			if(!topCand->GetSource()->HasMissingLink()){
 #ifdef DEBUG_GU
     				cerr << "SOURCE: REMOVED FROM BORDERS"<<endl;
 #endif
@@ -298,12 +303,11 @@ public:
     				boundary_.erase(it);//TODO GU!!! this in not efficient, use different data structure?
     			}else{
     				//source ucand update
-    				assert(topCand->GetSource()->CreateLink(topCand));
 
     				//TODO GU update state
 
 #ifdef DEBUG_GU
-    		cerr << "SOURCE UPDATED: "<< *topCand->GetSource()<<endl;
+    		cerr << "SOURCE UPDATED 2: "<< *topCand->GetSource()<<endl;
 #endif
     			}
     		}
@@ -451,14 +455,62 @@ public:
 
 
 	//TODO LG transform the UCands structure in the out_hg
-
-    //    out.PruneUnreachable(D[goal_id].front()->node_index_);
+    BuildOutHG(first);//TODO GU return head node id to  prune undreachable
+    //out.PruneUnreachable(D[goal_id].front()->node_index_);
 
     //TODO free cands structure
     //FreeAll(cands);
   }
 
 private:
+  void BuildOutHG(UCandidate* first){
+	  map<UCandidate*,Hypergraph::Edge*> ucand2edge;
+	  UCandidateList stak;
+	  stak.push_back(first);
+
+	  while(!stak.empty()){
+		  UCandidate* ucand =stak.back();
+		  stak.pop_back();
+		  Hypergraph::Edge* new_edge = out.AddEdge(*ucand->in_edge_);
+		  ucand2edge[ucand]=new_edge;
+		  new_edge->edge_prob_ = ucand->in_edge_->edge_prob_;
+
+		  //link with head
+#ifdef DEBUG_GU
+		  assert(ucand->context_links_[0]!=NULL);
+#endif
+		  Hypergraph::Node* new_node = out.AddNode(in.nodes_[ucand->in_edge_->head_node_].cat_);
+		  out.ConnectEdgeToHeadNode(new_edge, new_node->id_);
+
+		  //link with left child
+		  if(ucand->context_links_.size()>=2){
+#ifdef DEBUG_GU
+			  assert(ucand->context_links_[1]!=NULL);
+#endif
+			  UCandidate* left_ucand=ucand->context_links_[1];
+			  map<UCandidate*,Hypergraph::Edge*>::iterator it = ucand2edge.find(left_ucand);
+			  if(it!=ucand2edge.end()){
+				  Hypergraph::Edge* left_edge = it->second;
+				  new_edge->tail_nodes_[0] = left_edge->head_node_;
+				  out.nodes_[left_edge->head_node_].out_edges_.push_back(new_edge->id_);
+			  }
+		  }
+
+		  //link with right child
+		  if(ucand->context_links_.size()>=3){
+#ifdef DEBUG_GU
+			  assert(ucand->context_links_[2]!=NULL);
+#endif
+			  UCandidate* right_ucand=ucand->context_links_[2];
+			  map<UCandidate*,Hypergraph::Edge*>::iterator it = ucand2edge.find(right_ucand);
+			  if(it!=ucand2edge.end()){
+				  Hypergraph::Edge* right_edge = it->second;
+				  new_edge->tail_nodes_[1] = right_edge->head_node_;
+				  out.nodes_[right_edge->head_node_].out_edges_.push_back(new_edge->id_);
+			  }
+		  }
+	  }
+  }
 
   //check if cand is correct (for training)
   bool IsCorrect(const UCandidate& ucand){

@@ -60,7 +60,7 @@ struct UCandidate {
 
   bool IsSelected() const;
 
-  bool HasSingleMissingLink() const;
+//  bool HasSingleMissingLink() const;
 
   bool HasMissingLink() const;
 

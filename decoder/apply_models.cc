@@ -24,7 +24,7 @@
 // Define the following macro if you want to see lots of debugging output
 // when running Guided Undirected Greedy decofing
 #define DEBUG_GU
-//#undef DEBUG_GU
+#undef DEBUG_GU
 
 using namespace std;
 using namespace std::tr1;
@@ -415,14 +415,14 @@ public:
     		cerr << " Loss " << loss << endl;
 #endif
     		SparseVector<Featval> diff (correctCand->feature_values_);
-    		cerr << diff << endl;
+//    		cerr << diff << endl;
     		diff +=correctCand->est_vals_;
-    		cerr << diff << endl;
+//    		cerr << diff << endl;
     		diff -=topCand->feature_values_;
-    		cerr << diff << endl;
+//    		cerr << diff << endl;
     		diff -=topCand->est_vals_;
-    		cerr << diff << endl;
 #ifdef DEBUG_GU
+    		cerr << diff << endl;
     		models.PrintWeights(cerr);
 #endif
     		models.UpdateWeight(diff,loss);

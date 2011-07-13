@@ -452,7 +452,9 @@ public:
     	}
     }
 
-    delete correct_edges_mask_;
+    if (is_training_) {
+    	delete correct_edges_mask_;
+    }
 
 	//LG transform the UCands structure in the out_hg
     BuildOutHG(topCand);

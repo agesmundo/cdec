@@ -61,6 +61,8 @@ class State {
     unsigned char valid_length_;
 };
 
+std::ostream& operator<<(std::ostream& os, const State& state);
+
 size_t hash_value(const State &state);
 
 namespace detail {

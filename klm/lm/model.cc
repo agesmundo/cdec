@@ -15,6 +15,24 @@
 namespace lm {
 namespace ngram {
 
+std::ostream& operator<<(std::ostream& os, const State& state) {
+	  os << "STATE";
+	  os << "(" << &state << ")";
+	  os <<  "[";
+	  os << " valid_length_ = " <<(int)state.valid_length_ ;
+	  os << " history_ = <";
+	  for(int i=0; i<state.valid_length_;i++){
+		  os << (i==0 ? "" : " ")  <<  "(" << state.history_[i] << ")" /*<< TD::Convert(state.history_[i])*/;
+	  }
+	  os << " > ";
+	  os << " backoff_ = <";
+	  for(int i=0; i<state.valid_length_;i++){
+		  os << (i==0 ? "" : " ")  <<  "(" << state.backoff_[i] << ")" ;
+	  }
+	  os << " > ";
+	  return os << ']';
+}
+
 size_t hash_value(const State &state) {
   return util::MurmurHashNative(state.history_, sizeof(WordIndex) * state.valid_length_);
 }

@@ -205,7 +205,9 @@ class KLanguageModelImpl {
           }
         } else {
           const lm::ngram::State scopy(state);
+          cerr << endl<< state << endl;
           p = ngram_->Score(scopy, cur_word, state);
+          cerr << endl<< state << endl;
           if (saw_eos) { p = -100; }
           saw_eos = (cur_word == kEOS_);
         }

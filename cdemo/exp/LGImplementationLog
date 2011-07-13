@@ -5,6 +5,10 @@ TODO speed up
 	boundry_ implement with hash table, use boost:hash (pointers)
 	smeta and models make static fields in 
 	
+110713
+	test on whole corpus mem leaks, time, performance
+	adapt language model
+	
 110711 
 OK!	convert ucands structure in out_hg
 OK!	free memory (test with val girnd)

@@ -1,0 +1,3 @@
+date
+valgrind --leak-check=full ../../decoder/cdec -c conf.ini -w weights -i in.txt  -I Greedy_Undirected_Training >xxxQuickVal 2>logQuickVal
+date

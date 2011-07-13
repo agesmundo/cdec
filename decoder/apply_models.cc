@@ -452,6 +452,7 @@ public:
     	}
     }
 
+    delete correct_edges_mask_;
 
 	//LG transform the UCands structure in the out_hg
     BuildOutHG(topCand);

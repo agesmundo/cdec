@@ -241,6 +241,113 @@ class KLanguageModelImpl {
     return sum;
   }
 
+  double UndirectedLookupWords(const TRule& rule, const vector<const void*>& ant_states, double* pest_sum, double* oovs, double* est_oovs, void* remnant) {
+    double sum = 0.0;
+    double est_sum = 0.0;
+    int num_scored = 0;
+    int num_estimated = 0;
+    if (oovs) *oovs = 0;
+    if (est_oovs) *est_oovs = 0;
+    bool saw_eos = false;
+    bool has_some_history = false;
+    lm::ngram::State state = ngram_->NullContextState();
+    const vector<WordID>& e = rule.e();
+    bool context_complete = false;
+    for (int j = 0; j < e.size(); ++j) {
+      if (e[j] < 1) {   // handle non-terminal substitution
+        const void* astate = (ant_states[-e[j]]);
+        int unscored_ant_len = UnscoredSize(astate);
+        for (int k = 0; k < unscored_ant_len; ++k) {
+          const lm::WordIndex cur_word = IthUnscoredWord(k, astate);
+          const bool is_oov = (cur_word == 0);
+          double p = 0;
+          if (cur_word == kSOS_) {
+            state = ngram_->BeginSentenceState();
+            if (has_some_history) {  // this is immediately fully scored, and bad
+              p = -100;
+              context_complete = true;
+            } else {  // this might be a real <s>
+              num_scored = max(0, order_ - 2);
+            }
+          } else {
+            const lm::ngram::State scopy(state);
+            p = ngram_->Score(scopy, cur_word, state);
+            if (saw_eos) { p = -100; }
+            saw_eos = (cur_word == kEOS_);
+          }
+          has_some_history = true;
+          ++num_scored;
+          if (!context_complete) {
+            if (num_scored >= order_) context_complete = true;
+          }
+          if (context_complete) {
+            sum += p;
+            if (oovs && is_oov) (*oovs)++;
+          } else {
+            if (remnant)
+              SetIthUnscoredWord(num_estimated, cur_word, remnant);
+            ++num_estimated;
+            est_sum += p;
+            if (est_oovs && is_oov) (*est_oovs)++;
+          }
+        }
+        saw_eos = GetFlag(astate, HAS_EOS_ON_RIGHT);
+        if (HasFullContext(astate)) { // this is equivalent to the "star" in Chiang 2007
+          state = RemnantLMState(astate);
+          context_complete = true;
+        }
+      } else {   // handle terminal
+        const WordID cdec_word_or_class = ClassifyWordIfNecessary(e[j]);  // in future,
+                                                                          // maybe handle emission
+        const lm::WordIndex cur_word = MapWord(cdec_word_or_class); // map to LM's id
+        double p = 0;
+        const bool is_oov = (cur_word == 0);
+        if (cur_word == kSOS_) {
+          state = ngram_->BeginSentenceState();
+          if (has_some_history) {  // this is immediately fully scored, and bad
+            p = -100;
+            context_complete = true;
+          } else {  // this might be a real <s>
+            num_scored = max(0, order_ - 2);
+          }
+        } else {
+          const lm::ngram::State scopy(state);
+          cerr << endl<< state << endl;
+          p = ngram_->Score(scopy, cur_word, state);
+          cerr << endl<< state << endl;
+          if (saw_eos) { p = -100; }
+          saw_eos = (cur_word == kEOS_);
+        }
+        has_some_history = true;
+        ++num_scored;
+        if (!context_complete) {
+          if (num_scored >= order_) context_complete = true;
+        }
+        if (context_complete) {
+          sum += p;
+          if (oovs && is_oov) (*oovs)++;
+        } else {
+          if (remnant)
+            SetIthUnscoredWord(num_estimated, cur_word, remnant);
+          ++num_estimated;
+          est_sum += p;
+          if (est_oovs && is_oov) (*est_oovs)++;
+        }
+      }
+    }
+    if (pest_sum) *pest_sum = est_sum;
+    if (remnant) {
+      cerr << endl<< state << endl;
+      state.ZeroRemaining();
+      cerr << endl<< state << endl;
+      SetFlag(saw_eos, HAS_EOS_ON_RIGHT, remnant);
+      SetRemnantLMState(state, remnant);
+      SetUnscoredSize(num_estimated, remnant);
+      SetHasFullContext(context_complete || (num_scored >= order_), remnant);
+    }
+    return sum;
+  }
+
   // this assumes no target words on final unary -> goal rule.  is that ok?
   // for <s> (n-1 left words) and (n-1 right words) </s>
   double FinalTraversalCost(const void* state, double* oovs) {
@@ -435,8 +542,15 @@ void KLanguageModel<Model>::TraversalUndirectedFeaturesImpl(const SentenceMetada
                                         SparseVector<double>* features,
                                         SparseVector<double>* estimated_features,
                                         void* state) const {
-  throw std::runtime_error("XXXX TraversalUndirectedFeaturesImpl not implemented - override it or TraversalUndirectedFeaturesLog.\n");
-  abort();
+	  double est = 0;
+	  double oovs = 0;
+	  double est_oovs = 0;
+	  features->set_value(fid_, pimpl_->UndirectedLookupWords(*ucand.in_edge_->rule_, ant_states, &est, &oovs, &est_oovs, state));
+	  estimated_features->set_value(fid_, est);
+	  if (oov_fid_) {
+	    if (oovs) features->set_value(oov_fid_, oovs);
+	    if (est_oovs) estimated_features->set_value(oov_fid_, est_oovs);
+	  }
 }
 
 template <class Model>

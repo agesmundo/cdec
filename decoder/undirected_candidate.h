@@ -20,12 +20,15 @@ struct UCandidate;
 typedef vector<UCandidate*> UCandidateHeap;//TODO GU create struct with methods
 typedef vector<UCandidate*> UCandidateList;
 typedef SmallVector<UCandidate*,3> LinksVector;
+typedef pair<int,FFState*>  Node2State;
 
 struct UCandidate {
   //int ucand_index_;                     // -1 until popped from queue
 
   const Hypergraph::Edge* in_edge_;    // in -LM forest
-  FFState state_;
+  Node2State** states_;         //in_node_id 2 state seen from that node //array max 2 elements (simple map)
+  int states_size_;
+//  FFState state_;
 
   FeatureVector est_vals_;
   FeatureVector feature_values_;
@@ -54,9 +57,9 @@ struct UCandidate {
             const int sl
             /*bool is_goal*/);
 
-  // used to query uniqueness
-  UCandidate(const Hypergraph::Edge& e,
-            const SmallVectorInt& j);
+  void InitStates(size_t state_size);
+
+  ~UCandidate();
 
   bool IsSelected() const;
 

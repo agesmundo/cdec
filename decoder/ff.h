@@ -87,12 +87,13 @@ public:
   //GU
   inline void TraversalUndirectedFeatures(const SentenceMetadata& smeta,
                                 UCandidate& ucand,
-                                const std::vector<const void*>& ant_contexts,
+                                int spos
+                                /*const std::vector<const void*>& ant_contexts,
                                 FeatureVector* features,
                                 FeatureVector* estimated_features,
-                                void* out_state) const {
-    TraversalUndirectedFeaturesLog(smeta, ucand, ant_contexts,
-                          features, estimated_features, out_state);
+                                void* out_state*/) const {
+	  TraversalUndirectedFeaturesImpl(smeta, ucand, spos/*ant_contexts,
+                          features, estimated_features, out_state*/);
   }
 
   // if there's some state left when you transition to the goal state, score
@@ -131,14 +132,15 @@ public:
     TraversalFeaturesImpl(smeta,edge,ant_contexts,features,estimated_features,context);
   }
   //GU
-  virtual void TraversalUndirectedFeaturesLog(const SentenceMetadata& smeta,
-                                     UCandidate& ucand,  // this is writable only so you can use log()
-                                     const std::vector<const void*>& ant_contexts,
-                                     FeatureVector* features,
-                                     FeatureVector* estimated_features,
-                                     void* context) const {
-    TraversalUndirectedFeaturesImpl(smeta,ucand,ant_contexts,features,estimated_features,context);
-  }
+//  virtual void TraversalUndirectedFeaturesLog(const SentenceMetadata& smeta,
+//                                     UCandidate& ucand,  // this is writable only so you can use log()
+//                                     int spos
+//                                     /*const std::vector<const void*>& ant_contexts,
+//                                     FeatureVector* features,
+//                                     FeatureVector* estimated_features,
+//                                     void* context*/) const {
+//    TraversalUndirectedFeaturesImpl(smeta,ucand,spos /*ant_contexts,features,estimated_features,context*/);
+//  }
 
   // override above or below.
   virtual void TraversalFeaturesImpl(const SentenceMetadata& smeta,
@@ -150,10 +152,11 @@ public:
   //GU
   virtual void TraversalUndirectedFeaturesImpl(const SentenceMetadata& smeta,
                                      const UCandidate& ucand,
+                                     int spos/*
                                      const std::vector<const void*>& ant_contexts,
                                      FeatureVector* features,
                                      FeatureVector* estimated_features,
-                                     void* context) const;
+                                     void* context*/) const;
 
   // !!! ONLY call this from subclass *CONSTRUCTORS* !!!
   void SetStateSize(size_t state_size) {
@@ -184,11 +187,12 @@ class WordPenalty : public FeatureFunction {
                                      void* context) const;
   //GU
   virtual void TraversalUndirectedFeaturesImpl(const SentenceMetadata& smeta,
-                                     const UCandidate& ucand,
-                                     const std::vector<const void*>& ant_contexts,
+                                     UCandidate& ucand,
+                                     int spos
+                                     /*const std::vector<const void*>& ant_contexts,
                                      FeatureVector* features,
                                      FeatureVector* estimated_features,
-                                     void* context) const;
+                                     void* context*/) const;
  private:
   const int fid_;
   const double value_;
@@ -335,9 +339,9 @@ class ModelSet {
 
   void AddFeaturesToUCandidate(const SentenceMetadata& smeta,
                                    //const FFStates& node_states,
-                                   UCandidate* ucand,
+                                   UCandidate* ucand//,
                                    //Hypergraph::Edge* edge,
-                                   FFState* context//,
+                                   //FFState* context//,
                                    /*prob_t* combination_cost_estimate*/) const;
 
   void UpdateWeight(SparseVector<Featval> vector, double alpha);

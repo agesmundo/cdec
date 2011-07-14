@@ -79,11 +79,12 @@ void FeatureFunction::TraversalFeaturesImpl(const SentenceMetadata& smeta,
 //GU
 void FeatureFunction::TraversalUndirectedFeaturesImpl(const SentenceMetadata& smeta,
                                         const UCandidate& ucand,
-                                        const std::vector<const void*>& ant_states,
+                                        int spos
+                                        /*const std::vector<const void*>& ant_states,
                                         SparseVector<double>* features,
                                         SparseVector<double>* estimated_features,
-                                        void* state) const {
-  throw std::runtime_error("TraversalUndirectedFeaturesImpl not implemented - override it or TraversalUndirectedFeaturesLog.\n");
+                                        void* state*/) const {
+  throw std::runtime_error("TraversalUndirectedFeaturesImpl not implemented - override it.\n");
   abort();
 }
 
@@ -101,16 +102,17 @@ void WordPenalty::TraversalFeaturesImpl(const SentenceMetadata& smeta,
 }
 //GU
 void WordPenalty::TraversalUndirectedFeaturesImpl(const SentenceMetadata& smeta,
-                                        const UCandidate& ucand,
+                                        UCandidate& ucand,
+                                        int spos/*
                                         const std::vector<const void*>& ant_states,
                                         SparseVector<double>* features,
                                         SparseVector<double>* estimated_features,
-                                        void* state) const {
+                                        void* state*/) const {
   (void) smeta;
-  (void) ant_states;
-  (void) state;
-  (void) estimated_features;
-  features->set_value(fid_, ucand.in_edge_->rule_->EWords() * value_);
+//  (void) ant_states;
+//  (void) state;
+//  (void) estimated_features;
+  ucand.feature_values_.set_value(fid_, ucand.in_edge_->rule_->EWords() * value_);
 }
 
 SourceWordPenalty::SourceWordPenalty(const string& param) :
@@ -225,30 +227,34 @@ void ModelSet::AddFeaturesToEdge(const SentenceMetadata& smeta,
 
 void ModelSet::AddFeaturesToUCandidate(const SentenceMetadata& smeta,
                                  //const FFStates& node_states,
-                                 UCandidate* ucand,
+                                 UCandidate* ucand//,
                                  //Hypergraph::Edge* edge,
-                                 FFState* context//,
+                                 //FFState* context,
                                  /*prob_t* combination_cost_estimate*/) const {
-  context->resize(state_size_);
-  if (state_size_ > 0) {
-    memset(&(*context)[0], 0, state_size_);
-  }
+	ucand->InitStates(state_size_);
+
   //SparseVector<double> est_vals;  // only computed if combination_cost_estimate is non-NULL
   //if (combination_cost_estimate) *combination_cost_estimate = prob_t::One();
   for (int i = 0; i < models_.size(); ++i) {
     const FeatureFunction& ff = *models_[i];
-    void* cur_ff_context = NULL;
-    /*rm*/assert(ucand->in_edge_->tail_nodes_.size()==ucand->in_edge_->rule_->Arity());//debug TODO RM
+//    void* cur_ff_context = NULL;
+//    /*rm*/assert(ucand->in_edge_->tail_nodes_.size()==ucand->in_edge_->rule_->Arity());//debug TODO RM
     vector<const void*> ants(ucand->in_edge_->tail_nodes_.size());
     bool has_context = ff.NumBytesContext() > 0;
-    if (has_context) {
-      int spos = model_state_pos_[i];
-      cur_ff_context = &(*context)[spos];
+    int spos=0;
+        if (has_context) {
+          int spos = model_state_pos_[i];
+//          cur_ff_context = &(*context)[spos];
+        }
+//    if (has_context) {
+//      int spos = model_state_pos_[i];
+//      cur_ff_context = &(*context)[spos];
 //      for (int i = 0; i < ants.size(); ++i) {//TODO NB ants useles each UCand ha its own state, not merging per out node as CP
 //        ants[i] = &node_states[edge->tail_nodes_[i]][spos];//TODO then remove ants when know how to adapt LM (context space issue)
 //      }
-    }
-    ff.TraversalUndirectedFeatures(smeta, *ucand, ants, &ucand->feature_values_, &ucand->est_vals_, cur_ff_context);
+//    }
+  //TODO pass spos (and smeta) all the time seems like a waste of time
+    ff.TraversalUndirectedFeatures(smeta, *ucand, spos/*ants, &ucand->feature_values_, &ucand->est_vals_, cur_ff_context*/);
   }
   prob_t estimate = prob_t::One();
   estimate.logeq(ucand->est_vals_.dot(weights_));

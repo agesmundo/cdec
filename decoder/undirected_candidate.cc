@@ -14,17 +14,51 @@ using namespace std;
             //const FFStates& node_states,
             const SentenceMetadata& smeta,
             const ModelSet& models,
-            const int sl
+            const int sl//,
             /*bool is_goal*/) :
       //ucand_index_(-1),
       in_edge_(&e),
       context_links_(context),
       source_link_(sl){
-	    const Hypergraph::Edge& in_edge = *in_edge_;
-	    feature_values_ = in_edge.feature_values_;
-	    models.AddFeaturesToUCandidate(smeta, /*node_states,*/ this,/* &out_edge_,*/ &state_/*, &edge_estimate*/);
-
+	    feature_values_ = in_edge_->feature_values_;
+	    states_size_=context_links_.size()-1;
+	    bool is_goal = (context_links_[0]==(UCandidate*)-1);
+	    if(is_goal) {
+	    	states_size_--;
+	    }
+    	assert(states_size_>0);
+	    states_ = new Node2State*[states_size_];
+	    int it=0;
+	    if(!is_goal) {
+	    	states_[it++] = new Node2State(context_links_[0]->in_edge_->head_node_ ,NULL);
+	    }
+	    int tail_it=0;
+	    int context_it=1;
+	    for(;it<states_size_;it++){
+	    	states_[it]=new Node2State(context_links_[context_it++]->in_edge_->tail_nodes_[tail_it++],NULL);
+	    }
+	    models.AddFeaturesToUCandidate(smeta, /*node_states,*/ this/*, &out_edge_, &state_, &edge_estimate*/);
   }
+
+  void UCandidate::InitStates(size_t state_size){
+	  for(int i=0;i<states_size_;i++){
+		  FFState*  state = states_[i]->second;
+		  state = new FFState;//(state_size) /TODO GU initialize with size
+		  state->resize(state_size);
+		  if (state_size > 0) {
+		    memset(&(*state)[0], 0, state_size);
+		  }
+	  }
+  }
+
+  UCandidate::~UCandidate(){
+	  for(int i=0;i<states_size_;i++){
+		  delete states_[i]->second; //FFState*
+		  delete states_[i]; //pair
+	  }
+	  delete states_; //array
+  }
+
 
 //  bool UCandidate::HasSingleMissingLink() const{//TODO keep counter instead of computing?
 //	  int count =0;

@@ -230,7 +230,9 @@ class KLanguageModelImpl {
     }
     if (pest_sum) *pest_sum = est_sum;
     if (remnant) {
+      cerr << endl<< state << endl;
       state.ZeroRemaining();
+      cerr << endl<< state << endl;
       SetFlag(saw_eos, HAS_EOS_ON_RIGHT, remnant);
       SetRemnantLMState(state, remnant);
       SetUnscoredSize(num_estimated, remnant);
@@ -424,6 +426,17 @@ void KLanguageModel<Model>::TraversalFeaturesImpl(const SentenceMetadata& /* sme
     if (oovs) features->set_value(oov_fid_, oovs);
     if (est_oovs) estimated_features->set_value(oov_fid_, est_oovs);
   }
+}
+
+template <class Model>
+void KLanguageModel<Model>::TraversalUndirectedFeaturesImpl(const SentenceMetadata& /*smeta*/,
+                                        const UCandidate& ucand,
+                                        const std::vector<const void*>& ant_states,
+                                        SparseVector<double>* features,
+                                        SparseVector<double>* estimated_features,
+                                        void* state) const {
+  throw std::runtime_error("XXXX TraversalUndirectedFeaturesImpl not implemented - override it or TraversalUndirectedFeaturesLog.\n");
+  abort();
 }
 
 template <class Model>

@@ -708,10 +708,13 @@ private:
           cerr << "InintCands(): " << "\n";
 #endif
           for (int i = 0; i < in.edges_.size(); ++i) {//loop edges
-          	const Hypergraph::Edge& currentEdge= in.edges_.at(i);
-          	if(currentEdge.tail_nodes_.size()==0){//leafs
-          		const Hypergraph::Edge& edge = in.edges_[i];
+          	const Hypergraph::Edge& edge= in.edges_.at(i);
+          	if(edge.tail_nodes_.size()==0){//leafs
+//          		const Hypergraph::Edge& edge = in.edges_[i];
           		const LinksVector context(edge.Arity()+1, NULL);
+#ifdef DEBUG_GU
+          		cerr << "=========================\n LEAF FROM :" <<edge<<endl;
+#endif
           		cands.push_back(new UCandidate(edge, context,/* D, ucands_states_,*/ smeta, models, -1/*, false*/));
 #ifdef DEBUG_GU
           		cerr << "Push Init UCand (" << cands.size() << ") :" << *cands.back() << endl;

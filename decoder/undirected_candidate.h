@@ -31,7 +31,7 @@ struct UCandidate {
   //int ucand_index_;                     // -1 until popped from queue
 
   const Hypergraph::Edge* in_edge_;    // in -LM forest
-  Node2State** states_;         //in_node_id 2 state seen from that node //array max 2 elements (simple map)
+  Node2State** outgoing_states_;         //in_node_id 2 state seen from that node //array max 2 elements (simple map)
   int states_size_; //TODO make constant!
 //  FFState state_;
 
@@ -80,7 +80,7 @@ struct UCandidate {
 
   FFState* GetHeadIncomingState();
 
-  FFState* GetLinkOutgoingState(int node_id);
+  FFState* GetOutgoingState(int node_id);
 
   bool HasSource();
 

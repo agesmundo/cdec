@@ -261,9 +261,17 @@ class KLanguageModelImpl {
     const vector<WordID>& e = rule.e();
     lm::ngram::State state;
     bool context_complete = false;
+
+    //head outgoing state
+    void* head_outgoing_state = GetLMState(ucand.GetOutgoingState(head_node_id),spos);
+
 #ifdef DEBUG_GU
-		cerr << in_edge <<endl;
+    cerr << "-------------------\nUNDIRECTED LOOKUP WORDS"<<endl;
+//    cerr << "in_edge = " << in_edge <<endl;
+    cerr << " head_outgoing_state = " <<RemnantLMState(head_outgoing_state);
 #endif
+
+
 
     if(ucand.IsHeadIncomingState()){
     	void const* head_state = GetLMState(ucand.GetHeadIncomingState(),spos);

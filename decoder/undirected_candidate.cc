@@ -28,16 +28,16 @@ using namespace std;
 	    	states_size_--;//no need to keep state for Goal node
 	    }
     	assert(states_size_>0);
-	    states_ = new Node2State*[states_size_];
+	    outgoing_states_ = new Node2State*[states_size_];
 	    int it=0;
 	    if(!is_goal && source_link_!=0) {
-	    	states_[it++] = new Node2State(in_edge_->head_node_ ,NULL);
+	    	outgoing_states_[it++] = new Node2State(in_edge_->head_node_ ,NULL);
 	    }
 	    int tail_it=0;
 	    int context_it=1;
 	    for(;it<states_size_;it++){
 	    	if(source_link_!=context_it){
-	    		states_[it]=new Node2State(in_edge_->tail_nodes_[tail_it],NULL);
+	    		outgoing_states_[it]=new Node2State(in_edge_->tail_nodes_[tail_it],NULL);
 	    	}
 	    	context_it++;
 	    	tail_it++;
@@ -47,21 +47,24 @@ using namespace std;
 
   void UCandidate::InitStates(size_t state_size){
 	  for(int i=0;i<states_size_;i++){
-		  FFState*  state = states_[i]->second;
-		  state = new FFState;//(state_size) /TODO GU initialize with size
+		  FFState* state = new FFState;//(state_size) /TODO GU initialize with size
 		  state->resize(state_size);
 		  if (state_size > 0) {
 		    memset(&(*state)[0], 0, state_size);
 		  }
+		  outgoing_states_[i]->second = state;
+#ifdef DEBUG_GU
+		  cerr << " init outgoing_states_["<<i<<"] " << outgoing_states_[i]->first << " - " << outgoing_states_[i]->second << endl;
+#endif
 	  }
   }
 
   UCandidate::~UCandidate(){
 	  for(int i=0;i<states_size_;i++){
-		  delete states_[i]->second; //FFState*
-		  delete states_[i]; //pair
+		  delete outgoing_states_[i]->second; //FFState*
+		  delete outgoing_states_[i]; //pair
 	  }
-	  delete states_; //array
+	  delete outgoing_states_; //array
   }
 
 
@@ -104,12 +107,12 @@ using namespace std;
 	  //	  if(!IsHeadContextAvailable())return NULL; //commented for performance, should call this method after check
 	  assert(IsHeadIncomingState());
 #endif
-	  return context_links_[0]->GetLinkOutgoingState(0);
+	  return context_links_[0]->GetOutgoingState(0);
   }
 
-  FFState* UCandidate::GetLinkOutgoingState(int node_id){
+  FFState* UCandidate::GetOutgoingState(int node_id){
 	  for(int i=0;i<states_size_;i++){
-		  if (states_[i]->first==node_id ) return states_[i]->second;
+		  if (outgoing_states_[i]->first==node_id ) return outgoing_states_[i]->second;
 	  }
 	  return NULL;
   }

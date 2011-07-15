@@ -265,8 +265,8 @@ class KLanguageModelImpl {
 		cerr << in_edge <<endl;
 #endif
 
-    if(ucand.IsHeadContextAvailable()){
-    	void const* head_state = GetLMState(ucand.GetHeadContext(),spos);
+    if(ucand.IsHeadIncomingState()){
+    	void const* head_state = GetLMState(ucand.GetHeadIncomingState(),spos);
     	state = RemnantLMState(head_state);
     	context_complete =HasFullContext(head_state);
     }

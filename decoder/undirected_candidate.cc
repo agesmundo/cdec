@@ -85,7 +85,7 @@ using namespace std;
 	  return false;
   }
 
-  UCandidate* UCandidate::GetSource(){
+  UCandidate* UCandidate::GetSourceUCand(){
 	  if(source_link_<0)return NULL;
 	  return context_links_[source_link_];
   }
@@ -99,15 +99,15 @@ using namespace std;
 	  return -1;
   }
 
-  FFState* UCandidate::GetHeadContext(){
+  FFState* UCandidate::GetHeadIncomingState(){
 #ifdef DEBUG_GU
 	  //	  if(!IsHeadContextAvailable())return NULL; //commented for performance, should call this method after check
-	  assert(IsHeadContextAvailable());
+	  assert(IsHeadIncomingState());
 #endif
-	  return context_links_[0]->GetLinkState(0);
+	  return context_links_[0]->GetLinkOutgoingState(0);
   }
 
-  FFState* UCandidate::GetLinkState(int node_id){
+  FFState* UCandidate::GetLinkOutgoingState(int node_id){
 	  for(int i=0;i<states_size_;i++){
 		  if (states_[i]->first==node_id ) return states_[i]->second;
 	  }
@@ -123,7 +123,7 @@ using namespace std;
 	  return context_links_[0]==(UCandidate*)-1;
   }
 
-  bool UCandidate::IsHeadContextAvailable(){
+  bool UCandidate::IsHeadIncomingState(){
 	  if(IsGoal())return false;
 	  return context_links_[0]!=NULL;
   }

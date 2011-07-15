@@ -280,19 +280,19 @@ public:
     		//UPDATE BORDERS
     		if(topCand->HasSource()){
 #ifdef DEBUG_GU
-    		cerr << "SOURCE: "<< *topCand->GetSource()<<endl;
+    		cerr << "SOURCE: "<< *topCand->GetSourceUCand()<<endl;
 #endif
-			assert(topCand->GetSource()->CreateLink(topCand));
+			assert(topCand->GetSourceUCand()->CreateLink(topCand));
 #ifdef DEBUG_GU
-    		cerr << "SOURCE UPDATED 1: "<< *topCand->GetSource()<<endl;
+    		cerr << "SOURCE UPDATED 1: "<< *topCand->GetSourceUCand()<<endl;
 #endif
 
-    			if(!topCand->GetSource()->HasMissingLink()){
+    			if(!topCand->GetSourceUCand()->HasMissingLink()){
 #ifdef DEBUG_GU
     				cerr << "SOURCE: REMOVED FROM BOUNDARY"<<endl;
 #endif
     				//remove source ucand from list if no more missing links
-    				UCandidateList::iterator it = find(boundary_.begin(),boundary_.end(),topCand->GetSource());
+    				UCandidateList::iterator it = find(boundary_.begin(),boundary_.end(),topCand->GetSourceUCand());
     				boundary_.erase(it);//TODO GU!!! this in not efficient, use different data structure?
     			}else{
     				//source ucand update
@@ -300,7 +300,7 @@ public:
     				//TODO GU update state
 
 #ifdef DEBUG_GU
-    		cerr << "SOURCE UPDATED 2: "<< *topCand->GetSource()<<endl;
+    		cerr << "SOURCE UPDATED 2: "<< *topCand->GetSourceUCand()<<endl;
 #endif
     			}
     		}

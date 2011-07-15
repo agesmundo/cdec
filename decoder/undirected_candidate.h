@@ -66,25 +66,25 @@ struct UCandidate {
 
   ~UCandidate();
 
-  bool IsSelected() const;
+//  bool IsSelected() const;
 
 //  bool HasSingleMissingLink() const;
 
   bool HasMissingLink() const;
 
-  UCandidate* GetSource();
+  UCandidate* GetSourceUCand();
 
   int GetSourceNodeId();
 
-  FFState* GetHeadContext();
+  bool IsHeadIncomingState();
 
-  FFState* GetLinkState(int node_id);
+  FFState* GetHeadIncomingState();
+
+  FFState* GetLinkOutgoingState(int node_id);
 
   bool HasSource();
 
   bool IsGoal();
-
-  bool IsHeadContextAvailable();
 
   bool CreateLink(UCandidate* ucand);
 

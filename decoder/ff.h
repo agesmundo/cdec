@@ -151,7 +151,7 @@ public:
                                      void* context) const;
   //GU
   virtual void TraversalUndirectedFeaturesImpl(const SentenceMetadata& smeta,
-                                     const UCandidate& ucand,
+                                     UCandidate& ucand,
                                      int spos/*
                                      const std::vector<const void*>& ant_contexts,
                                      FeatureVector* features,

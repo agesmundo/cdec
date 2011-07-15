@@ -78,7 +78,7 @@ void FeatureFunction::TraversalFeaturesImpl(const SentenceMetadata& smeta,
 }
 //GU
 void FeatureFunction::TraversalUndirectedFeaturesImpl(const SentenceMetadata& smeta,
-                                        const UCandidate& ucand,
+                                        UCandidate& ucand,
                                         int spos
                                         /*const std::vector<const void*>& ant_states,
                                         SparseVector<double>* features,

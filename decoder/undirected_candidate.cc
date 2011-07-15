@@ -22,8 +22,8 @@ using namespace std;
       source_link_(sl){
 	    feature_values_ = in_edge_->feature_values_;
 	    states_size_=context_links_.size();
-	    if(source_link_!=-1)states_size_--;//no need to keep state for source link
-	    bool is_goal = (context_links_[0]==(UCandidate*)-1);
+	    if(!HasSource())states_size_--;//no need to keep state for source link
+	    bool is_goal = (IsGoal());
 	    if(is_goal) {
 	    	states_size_--;//no need to keep state for Goal node
 	    }
@@ -90,8 +90,39 @@ using namespace std;
 	  return context_links_[source_link_];
   }
 
+  int UCandidate::GetSourceNodeId(){
+	  if(source_link_<0)return -1;
+	  if(source_link_==0)return in_edge_->head_node_;
+	  if(source_link_==1)return in_edge_->tail_nodes_[0];
+	  if(source_link_==2)return in_edge_->tail_nodes_[1];
+	  abort();
+	  return -1;
+  }
+
+  FFState* UCandidate::GetHeadContext(){
+	  if(!IsHeadContextAvailable())return NULL;
+	  return context_links_[0]->GetLinkState(0);
+  }
+
+  FFState* UCandidate::GetLinkState(int node_id){
+	  for(int i=0;i<states_size_;i++){
+		  if (states_[i]->first==node_id ) return states_[i]->second;
+	  }
+	  return NULL;
+  }
+
   bool UCandidate::HasSource(){
 	  return source_link_>=0;
+  }
+
+  //TODO GU store variable is_goal_ ?
+  bool UCandidate::IsGoal(){
+	  return context_links_[0]==(UCandidate*)-1;
+  }
+
+  bool UCandidate::IsHeadContextAvailable(){
+	  if(IsGoal())return false;
+	  return context_links_[0]!=NULL;
   }
 
   bool UCandidate::CreateLink(UCandidate* ucand){

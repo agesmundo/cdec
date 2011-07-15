@@ -27,7 +27,7 @@ struct UCandidate {
 
   const Hypergraph::Edge* in_edge_;    // in -LM forest
   Node2State** states_;         //in_node_id 2 state seen from that node //array max 2 elements (simple map)
-  int states_size_;
+  int states_size_; //TODO make constant!
 //  FFState state_;
 
   FeatureVector est_vals_;
@@ -69,7 +69,17 @@ struct UCandidate {
 
   UCandidate* GetSource();
 
+  int GetSourceNodeId();
+
+  FFState* GetHeadContext();
+
+  FFState* GetLinkState(int node_id);
+
   bool HasSource();
+
+  bool IsGoal();
+
+  bool IsHeadContextAvailable();
 
   bool CreateLink(UCandidate* ucand);
 

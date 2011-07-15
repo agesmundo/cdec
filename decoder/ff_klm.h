@@ -30,11 +30,12 @@ class KLanguageModel : public FeatureFunction {
                                      void* out_context) const;
 
   virtual void TraversalUndirectedFeaturesImpl(const SentenceMetadata& smeta,
-                                          const UCandidate& ucand,
-                                          const std::vector<const void*>& ant_states,
+                                          UCandidate& ucand,
+                                          int spos
+                                          /*const std::vector<const void*>& ant_states,
                                           SparseVector<double>* features,
                                           SparseVector<double>* estimated_features,
-                                          void* state) const;
+                                          void* state*/) const;
 
  private:
   int fid_; // conceptually const; mutable only to simplify constructor

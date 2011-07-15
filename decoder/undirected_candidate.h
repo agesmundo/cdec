@@ -8,6 +8,11 @@ struct ModelSet;
 struct Hypergraph;
 struct SentenceMetadata;
 
+// Define the following macro if you want to see lots of debugging output
+// when running Guided Undirected Greedy decofing
+#define DEBUG_GU
+//#undef DEBUG_GU
+
 /////////////////////////////////////
 //added here because model uses UCand as generalization of Edge
 //therefore need to be imported in ff.cc

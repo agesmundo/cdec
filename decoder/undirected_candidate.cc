@@ -100,7 +100,10 @@ using namespace std;
   }
 
   FFState* UCandidate::GetHeadContext(){
-	  if(!IsHeadContextAvailable())return NULL;
+#ifdef DEBUG_GU
+	  //	  if(!IsHeadContextAvailable())return NULL; //commented for performance, should call this method after check
+	  assert(IsHeadContextAvailable());
+#endif
 	  return context_links_[0]->GetLinkState(0);
   }
 

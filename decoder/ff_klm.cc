@@ -241,7 +241,10 @@ class KLanguageModelImpl {
     return sum;
   }
 //GU
-  double UndirectedLookupWords(UCandidate& ucand, /*const vector<const void*>& ant_states, double* pest_sum,*/ double* oovs/*, double* est_oovs, void* remnant*/) {
+  void* GetLMState(FFState* ffs_state,int spos){
+	  return &(*ffs_state)[spos];
+  }
+  double UndirectedLookupWords(UCandidate& ucand, /*const vector<const void*>& ant_states, double* pest_sum,*/ double* oovs/*, double* est_oovs, void* remnant*/,int spos) {
     double sum = 0.0;
 //    double est_sum = 0.0;
     int num_scored = 0;
@@ -259,7 +262,7 @@ class KLanguageModelImpl {
     lm::ngram::State state;
 
     if(ucand.IsHeadContextAvailable()){
-    	FFState* x = ucand.GetHeadContext();
+    	state = RemnantLMState(GetLMState(ucand.GetHeadContext(),spos));
     }
     else{
     	state= ngram_->NullContextState();
@@ -564,7 +567,7 @@ void KLanguageModel<Model>::TraversalUndirectedFeaturesImpl(const SentenceMetada
 //	  double est = 0;//TODO GU meaning of estimated?
 	  double oovs = 0;
 //	  double est_oovs = 0;
-	  ucand.feature_values_.set_value(fid_, pimpl_->UndirectedLookupWords(ucand, /*ant_states, &est,*/ &oovs/*, &est_oovs, state*/));
+	  ucand.feature_values_.set_value(fid_, pimpl_->UndirectedLookupWords(ucand, /*ant_states, &est,*/ &oovs/*, &est_oovs, state*/,spos));
 //	  ucand.est_vals_.set_value(fid_, est);
 	  if (oov_fid_) {
 	    if (oovs) ucand.feature_values_.set_value(oov_fid_, oovs);

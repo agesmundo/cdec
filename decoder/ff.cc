@@ -224,7 +224,7 @@ void ModelSet::AddFeaturesToEdge(const SentenceMetadata& smeta,
     combination_cost_estimate->logeq(est_vals.dot(weights_));
   edge->edge_prob_.logeq(edge->feature_values_.dot(weights_));
 }
-
+//GU
 void ModelSet::AddFeaturesToUCandidate(const SentenceMetadata& smeta,
                                  //const FFStates& node_states,
                                  UCandidate* ucand//,

@@ -20,12 +20,6 @@
 #include "hg_intersect.h"
 #include "sentence_metadata.h"
 
-
-// Define the following macro if you want to see lots of debugging output
-// when running Guided Undirected Greedy decofing
-#define DEBUG_GU
-//#undef DEBUG_GU
-
 using namespace std;
 using namespace std::tr1;
 

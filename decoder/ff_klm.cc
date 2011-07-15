@@ -263,16 +263,13 @@ class KLanguageModelImpl {
     bool context_complete = false;
 
     //head outgoing state
-    void* head_outgoing_state = GetLMState(ucand.GetOutgoingState(head_node_id),spos);
+    void* head_outgoing_state=NULL;
+    FFState* ffs_h_out=ucand.GetOutgoingState(head_node_id);
+    if(ffs_h_out!=NULL){
+    	head_outgoing_state= GetLMState(ffs_h_out,spos);;
+    }
 
-#ifdef DEBUG_GU
-    cerr << "-------------------\nUNDIRECTED LOOKUP WORDS"<<endl;
-//    cerr << "in_edge = " << in_edge <<endl;
-    cerr << " head_outgoing_state = " <<RemnantLMState(head_outgoing_state);
-#endif
-
-
-
+    //TODO GU these alternatives are related to head_outgoing_state selection (above)
     if(ucand.IsHeadIncomingState()){
     	void const* head_state = GetLMState(ucand.GetHeadIncomingState(),spos);
     	state = RemnantLMState(head_state);
@@ -282,6 +279,14 @@ class KLanguageModelImpl {
     	state= ngram_->NullContextState();
     	context_complete = false;
     }
+
+#ifdef DEBUG_GU
+    cerr << "-------------------\nUNDIRECTED LOOKUP WORDS"<<endl;
+//    cerr << "in_edge = " << in_edge <<endl;
+    cerr << " head_outgoing_state = " <<RemnantLMState(head_outgoing_state);
+#endif
+
+
 
     for (int j = 0; j < e.size(); ++j) {
       if (e[j] < 1) {   // handle non-terminal substitution
@@ -359,9 +364,8 @@ class KLanguageModelImpl {
           sum += p;
           if (oovs && is_oov) (*oovs)++;
         } else {
-        	//TODO set the haed link state if needed
-//          if (remnant)
-//            SetIthUnscoredWord(num_estimated, cur_word, remnant);
+        	//set the head link state if needed
+          if (head_outgoing_state) SetIthUnscoredWord(num_estimated, cur_word, head_outgoing_state);
           ++num_estimated;
 //          est_sum += p;
 //          if (est_oovs && is_oov) (*est_oovs)++;
@@ -369,16 +373,17 @@ class KLanguageModelImpl {
       }
     }
 //    if (pest_sum) *pest_sum = est_sum;
-    //TODO set the haed link state if needed
-//    if (remnant) {
-//      cerr << endl<< state << endl;
-//      state.ZeroRemaining();
-//      cerr << endl<< state << endl;
-//      SetFlag(saw_eos, HAS_EOS_ON_RIGHT, remnant);
-//      SetRemnantLMState(state, remnant);
-//      SetUnscoredSize(num_estimated, remnant);
-//      SetHasFullContext(context_complete || (num_scored+1 >= order_), remnant);//+1 since flag if next will have full context |order-1|
-//    }
+    //set the head link state if needed
+    if (head_outgoing_state) {
+      state.ZeroRemaining();
+      SetFlag(saw_eos, HAS_EOS_ON_RIGHT, head_outgoing_state);
+      SetRemnantLMState(state, head_outgoing_state);
+      SetUnscoredSize(num_estimated, head_outgoing_state);
+      SetHasFullContext(context_complete || (num_scored+1 >= order_), head_outgoing_state);//+1 since flag if next will have full context |order-1|
+#ifdef DEBUG_GU
+      cerr << " final head_outgoing_state = "<< RemnantLMState(head_outgoing_state) << endl;
+#endif
+    }
     return sum;
   }
 

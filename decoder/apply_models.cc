@@ -718,6 +718,7 @@ private:
           	if(currentEdge.tail_nodes_.size()==0){//leafs
           		const Hypergraph::Edge& edge = in.edges_[i];
           		const LinksVector context(edge.Arity()+1, NULL);
+          		cerr << edge <<endl;
           		cands.push_back(new UCandidate(edge, context,/* D, ucands_states_,*/ smeta, models, -1/*, false*/));
 #ifdef DEBUG_GU
           		cerr << "Push Init UCand (" << cands.size() << ") :" << *cands.back() << endl;

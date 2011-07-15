@@ -21,21 +21,26 @@ using namespace std;
       context_links_(context),
       source_link_(sl){
 	    feature_values_ = in_edge_->feature_values_;
-	    states_size_=context_links_.size()-1;
+	    states_size_=context_links_.size();
+	    if(sl!=-1)states_size_--;//no need to keep state for source link
 	    bool is_goal = (context_links_[0]==(UCandidate*)-1);
 	    if(is_goal) {
-	    	states_size_--;
+	    	states_size_--;//no need to keep state for Goal node
 	    }
     	assert(states_size_>0);
 	    states_ = new Node2State*[states_size_];
 	    int it=0;
-	    if(!is_goal) {
+	    if(!is_goal && source_link_!=0) {
 	    	states_[it++] = new Node2State(context_links_[0]->in_edge_->head_node_ ,NULL);
 	    }
 	    int tail_it=0;
 	    int context_it=1;
 	    for(;it<states_size_;it++){
-	    	states_[it]=new Node2State(context_links_[context_it++]->in_edge_->tail_nodes_[tail_it++],NULL);
+	    	if(source_link_!=context_it){
+	    		states_[it]=new Node2State(context_links_[context_it]->in_edge_->tail_nodes_[tail_it],NULL);
+	    	}
+	    	context_it++;
+	    	tail_it++;
 	    }
 	    models.AddFeaturesToUCandidate(smeta, /*node_states,*/ this/*, &out_edge_, &state_, &edge_estimate*/);
   }

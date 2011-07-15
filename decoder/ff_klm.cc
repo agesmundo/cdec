@@ -205,9 +205,7 @@ class KLanguageModelImpl {
           }
         } else {
           const lm::ngram::State scopy(state);
-//          cerr << endl<< state << endl;
           p = ngram_->Score(scopy, cur_word, state);
-//          cerr << endl<< state << endl;
           if (saw_eos) { p = -100; }
           saw_eos = (cur_word == kEOS_);
         }
@@ -230,9 +228,7 @@ class KLanguageModelImpl {
     }
     if (pest_sum) *pest_sum = est_sum;
     if (remnant) {
-//      cerr << endl<< state << endl;
       state.ZeroRemaining();
-//      cerr << endl<< state << endl;
       SetFlag(saw_eos, HAS_EOS_ON_RIGHT, remnant);
       SetRemnantLMState(state, remnant);
       SetUnscoredSize(num_estimated, remnant);

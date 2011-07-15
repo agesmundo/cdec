@@ -68,7 +68,7 @@ using namespace std;
 		  delete outgoing_states_[i]->second; //FFState*
 		  delete outgoing_states_[i]; //pair
 	  }
-	  if (states_size_>0) delete outgoing_states_; //array
+	  if (states_size_>0) delete[] outgoing_states_; //array
   }
 
 

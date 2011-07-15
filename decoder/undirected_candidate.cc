@@ -22,7 +22,7 @@ using namespace std;
       source_link_(sl){
 	    feature_values_ = in_edge_->feature_values_;
 	    states_size_=context_links_.size();
-	    if(sl!=-1)states_size_--;//no need to keep state for source link
+	    if(source_link_!=-1)states_size_--;//no need to keep state for source link
 	    bool is_goal = (context_links_[0]==(UCandidate*)-1);
 	    if(is_goal) {
 	    	states_size_--;//no need to keep state for Goal node
@@ -31,13 +31,13 @@ using namespace std;
 	    states_ = new Node2State*[states_size_];
 	    int it=0;
 	    if(!is_goal && source_link_!=0) {
-	    	states_[it++] = new Node2State(context_links_[0]->in_edge_->head_node_ ,NULL);
+	    	states_[it++] = new Node2State(in_edge_->head_node_ ,NULL);
 	    }
 	    int tail_it=0;
 	    int context_it=1;
 	    for(;it<states_size_;it++){
 	    	if(source_link_!=context_it){
-	    		states_[it]=new Node2State(context_links_[context_it]->in_edge_->tail_nodes_[tail_it],NULL);
+	    		states_[it]=new Node2State(in_edge_->tail_nodes_[tail_it],NULL);
 	    	}
 	    	context_it++;
 	    	tail_it++;

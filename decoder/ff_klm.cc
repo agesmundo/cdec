@@ -205,9 +205,9 @@ class KLanguageModelImpl {
           }
         } else {
           const lm::ngram::State scopy(state);
-          cerr << endl<< state << endl;
+//          cerr << endl<< state << endl;
           p = ngram_->Score(scopy, cur_word, state);
-          cerr << endl<< state << endl;
+//          cerr << endl<< state << endl;
           if (saw_eos) { p = -100; }
           saw_eos = (cur_word == kEOS_);
         }
@@ -230,9 +230,9 @@ class KLanguageModelImpl {
     }
     if (pest_sum) *pest_sum = est_sum;
     if (remnant) {
-      cerr << endl<< state << endl;
+//      cerr << endl<< state << endl;
       state.ZeroRemaining();
-      cerr << endl<< state << endl;
+//      cerr << endl<< state << endl;
       SetFlag(saw_eos, HAS_EOS_ON_RIGHT, remnant);
       SetRemnantLMState(state, remnant);
       SetUnscoredSize(num_estimated, remnant);
@@ -260,19 +260,23 @@ class KLanguageModelImpl {
     const int source_node_id = ucand.GetSourceNodeId();
     const vector<WordID>& e = rule.e();
     lm::ngram::State state;
+    bool context_complete = false;
+#ifdef DEBUG_GU
+		cerr << in_edge <<endl;
+#endif
 
     if(ucand.IsHeadContextAvailable()){
-    	state = RemnantLMState(GetLMState(ucand.GetHeadContext(),spos));
+    	void const* head_state = GetLMState(ucand.GetHeadContext(),spos);
+    	state = RemnantLMState(head_state);
+    	context_complete =HasFullContext(head_state);
     }
     else{
     	state= ngram_->NullContextState();
-    	bool context_complete = false;
+    	context_complete = false;
     }
 
-    return 0.0;
-//
-//    for (int j = 0; j < e.size(); ++j) {
-//      if (e[j] < 1) {   // handle non-terminal substitution
+    for (int j = 0; j < e.size(); ++j) {
+      if (e[j] < 1) {   // handle non-terminal substitution
 //        const void* astate = (ant_states[-e[j]]);
 //        int unscored_ant_len = UnscoredSize(astate);
 //        for (int k = 0; k < unscored_ant_len; ++k) {
@@ -314,46 +318,48 @@ class KLanguageModelImpl {
 //          state = RemnantLMState(astate);
 //          context_complete = true;
 //        }
-//      } else {   // handle terminal
-//        const WordID cdec_word_or_class = ClassifyWordIfNecessary(e[j]);  // in future,
-//                                                                          // maybe handle emission
-//        const lm::WordIndex cur_word = MapWord(cdec_word_or_class); // map to LM's id
-//        double p = 0;
-//        const bool is_oov = (cur_word == 0);
-//        if (cur_word == kSOS_) {
-//          state = ngram_->BeginSentenceState();
-//          if (has_some_history) {  // this is immediately fully scored, and bad
-//            p = -100;
-//            context_complete = true;
-//          } else {  // this might be a real <s>
-//            num_scored = max(0, order_ - 2);
-//          }
-//        } else {
-//          const lm::ngram::State scopy(state);
-//          cerr << endl<< state << endl;
-//          p = ngram_->Score(scopy, cur_word, state);
-//          cerr << endl<< state << endl;
-//          if (saw_eos) { p = -100; }
-//          saw_eos = (cur_word == kEOS_);
-//        }
-//        has_some_history = true;
-//        ++num_scored;
-//        if (!context_complete) {
-//          if (num_scored >= order_) context_complete = true;
-//        }
-//        if (context_complete) {
-//          sum += p;
-//          if (oovs && is_oov) (*oovs)++;
-//        } else {
+      } else {   // handle terminal
+        const WordID cdec_word_or_class = ClassifyWordIfNecessary(e[j]);  // in future,
+                                                                          // maybe handle emission
+        const lm::WordIndex cur_word = MapWord(cdec_word_or_class); // map to LM's id
+        double p = 0;
+        const bool is_oov = (cur_word == 0);
+        if (cur_word == kSOS_) {
+          state = ngram_->BeginSentenceState();
+          if (has_some_history) {  // this is immediately fully scored, and bad
+            p = -100;
+            context_complete = true;
+          } else {  // this might be a real <s>
+            num_scored = max(0, order_ - 2);//actual order-1 since ++ later
+          }
+        } else {
+          const lm::ngram::State scopy(state);
+          cerr << endl<< state << endl;
+          p = ngram_->Score(scopy, cur_word, state);
+          cerr << endl<< state << endl;
+          if (saw_eos) { p = -100; }
+          saw_eos = (cur_word == kEOS_);
+        }
+        has_some_history = true;
+        ++num_scored;
+        if (!context_complete) {
+          if (num_scored >= order_) context_complete = true;
+        }
+        if (context_complete) {
+          sum += p;
+          if (oovs && is_oov) (*oovs)++;
+        } else {
+        	//TODO set the haed link state if needed
 //          if (remnant)
 //            SetIthUnscoredWord(num_estimated, cur_word, remnant);
-//          ++num_estimated;
+          ++num_estimated;
 //          est_sum += p;
 //          if (est_oovs && is_oov) (*est_oovs)++;
-//        }
-//      }
-//    }
+        }
+      }
+    }
 //    if (pest_sum) *pest_sum = est_sum;
+    //TODO set the haed link state if needed
 //    if (remnant) {
 //      cerr << endl<< state << endl;
 //      state.ZeroRemaining();
@@ -361,9 +367,9 @@ class KLanguageModelImpl {
 //      SetFlag(saw_eos, HAS_EOS_ON_RIGHT, remnant);
 //      SetRemnantLMState(state, remnant);
 //      SetUnscoredSize(num_estimated, remnant);
-//      SetHasFullContext(context_complete || (num_scored >= order_), remnant);
+//      SetHasFullContext(context_complete || (num_scored+1 >= order_), remnant);//+1 since flag if next will have full context |order-1|
 //    }
-//    return sum;
+    return sum;
   }
 
   // this assumes no target words on final unary -> goal rule.  is that ok?

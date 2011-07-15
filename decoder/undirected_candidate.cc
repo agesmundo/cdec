@@ -22,7 +22,7 @@ using namespace std;
       source_link_(sl){
 	    feature_values_ = in_edge_->feature_values_;
 	    states_size_=context_links_.size();
-	    if(!HasSource())states_size_--;//no need to keep state for source link
+	    if(HasSource())states_size_--;//no need to keep state for source link
 	    bool is_goal = (IsGoal());
 	    if(is_goal) {
 	    	states_size_--;//no need to keep state for Goal node

@@ -27,21 +27,25 @@ using namespace std;
 	    if(is_goal) {
 	    	states_size_--;//no need to keep state for Goal node
 	    }
-    	assert(states_size_>0);
-	    outgoing_states_ = new Node2State*[states_size_];
-	    int it=0;
-	    if(!is_goal && source_link_!=0) {
-	    	outgoing_states_[it++] = new Node2State(in_edge_->head_node_ ,NULL);
-	    }
-	    int tail_it=0;
-	    int context_it=1;
-	    for(;it<states_size_;it++){
-	    	if(source_link_!=context_it){
-	    		outgoing_states_[it]=new Node2State(in_edge_->tail_nodes_[tail_it],NULL);
-	    	}
-	    	context_it++;
-	    	tail_it++;
-	    }
+#ifdef DEBUG_GU
+	    assert(states_size_>=0);
+#endif
+    	if(states_size_>0){
+    		outgoing_states_ = new Node2State*[states_size_];
+    		int it=0;
+    		if(!is_goal && source_link_!=0) {
+    			outgoing_states_[it++] = new Node2State(in_edge_->head_node_ ,NULL);
+    		}
+    		int tail_it=0;
+    		int context_it=1;
+    		for(;it<states_size_;it++){
+    			if(source_link_!=context_it){
+    				outgoing_states_[it]=new Node2State(in_edge_->tail_nodes_[tail_it],NULL);
+    			}
+    			context_it++;
+    			tail_it++;
+    		}
+    	}
 	    models.AddFeaturesToUCandidate(smeta, /*node_states,*/ this/*, &out_edge_, &state_, &edge_estimate*/);
   }
 
@@ -64,7 +68,7 @@ using namespace std;
 		  delete outgoing_states_[i]->second; //FFState*
 		  delete outgoing_states_[i]; //pair
 	  }
-	  delete outgoing_states_; //array
+	  if (states_size_>0) delete outgoing_states_; //array
   }
 
 

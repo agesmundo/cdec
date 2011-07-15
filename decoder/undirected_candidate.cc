@@ -150,7 +150,9 @@ using namespace std;
 	  //XXX	  assert(IsTailIncomingState(tail_id));
 	  assert(tail_id+1 < context_links_.size());
 	  assert(tail_id < in_edge_->tail_nodes_.size());
-	  assert(in_edge_->tail_nodes_[tail_id]==context_links_[tail_id+1]->in_edge_->head_node_);
+	  if(context_links_[tail_id+1]!=NULL){
+		  assert(in_edge_->tail_nodes_[tail_id]==context_links_[tail_id+1]->in_edge_->head_node_);
+	  }
 #endif
 	  if (context_links_[tail_id+1]==NULL) return NULL;
 	  return context_links_[tail_id+1]->GetOutgoingState(in_edge_->tail_nodes_[tail_id]);

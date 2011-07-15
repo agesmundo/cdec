@@ -241,9 +241,6 @@ class KLanguageModelImpl {
     return sum;
   }
 //GU
-  void* FFS2LMS(FFState* ffs_state,int spos){ //FFState to LMState
-	  return &(*ffs_state)[spos];
-  }
   double UndirectedLookupWords(UCandidate& ucand, /*const vector<const void*>& ant_states, double* pest_sum,*/ double* oovs/*, double* est_oovs, void* remnant*/,int spos) {
     double sum = 0.0;
 //    double est_sum = 0.0;
@@ -283,10 +280,11 @@ class KLanguageModelImpl {
     }
 
 #ifdef DEBUG_GU
-    cerr << "-------------------\nUNDIRECTED LOOKUP WORDS"<<endl;
+    cerr << "-----------------------\nUNDIRECTED LOOKUP WORDS"<<endl;
 //    cerr << "in_edge = " << in_edge <<endl;
     if (head_outgoing_state)
-    	cerr << " head_outgoing_state = " /*<<"("<<head_outgoing_state<<") "*/ <<RemnantLMState(head_outgoing_state)<< endl;
+    	cerr << " head_outgoing_state = " /*<<"("<<head_outgoing_state<<") "*/;
+		PringLMS(head_outgoing_state);
     cerr << " state = " << state <<endl;
 #endif
 
@@ -296,6 +294,10 @@ class KLanguageModelImpl {
 		  FFState* ffs_tail_in = ucand.GetTailIncomingState(tail_id);
 		  if(ffs_tail_in!=NULL){
 			  void* tail_incoming_state = FFS2LMS(ffs_tail_in,spos);
+#ifdef DEBUG_GU
+		    	cerr << " tail_incoming_state = ";
+		    	PringLMS(tail_incoming_state);
+#endif
 			  int unscored_ant_len = UnscoredSize(tail_incoming_state);
 			  for (int k = 0; k < unscored_ant_len; ++k) {
 				  const lm::WordIndex cur_word = IthUnscoredWord(k, tail_incoming_state);
@@ -370,7 +372,7 @@ class KLanguageModelImpl {
           sum += p;
           if (oovs && is_oov) (*oovs)++;
         } else {
-        	//set the head link state if needed
+        	//set the head out state if needed
           if (head_outgoing_state){
         	  SetIthUnscoredWord(num_estimated, cur_word, head_outgoing_state);
 #ifdef DEBUG_GU
@@ -392,10 +394,32 @@ class KLanguageModelImpl {
       SetUnscoredSize(num_estimated, head_outgoing_state);
       SetHasFullContext(context_complete || (num_scored/*+1*/ >= order_), head_outgoing_state);//?+1 since flag if next will have full context |order-1|
 #ifdef DEBUG_GU
-      cerr << " final head_outgoing_state = "<< RemnantLMState(head_outgoing_state) << endl;
+      cerr << " final head_outgoing_state = ";
+      PringLMS(head_outgoing_state);
 #endif
     }
+#ifdef DEBUG_GU
+    cerr << "-----------------------"<<endl;
+#endif
     return sum;
+  }
+  //GU Utils
+  void* FFS2LMS(FFState* ffs_state,int spos){ //FFState to LMState
+	  return &(*ffs_state)[spos];
+  }
+  void PringLMS(void* lms){//Print LMS (both sides)
+	  cerr << "LMSS (" << lms << ") = [ " ;
+	  cerr << RemnantLMState(lms)<<endl;
+	  int unscored_size=UnscoredSize(lms);;
+	  cerr << "\t\t unscored size    : " << unscored_size << endl;
+	  cerr << "\t\t has eos on right : " << GetFlag(lms, HAS_EOS_ON_RIGHT) << endl;
+	  cerr << "\t\t has full context : " << HasFullContext(lms) << endl;
+	  cerr << "\t\t boundary words   : <";
+	  for(int i=0; i<unscored_size; i++){
+		  cerr << " W[" << i << "] : " << IthUnscoredWord(i, lms);
+	  }
+	  cerr << " >" << endl;
+	  cerr << "]" << endl;
   }
 
   // this assumes no target words on final unary -> goal rule.  is that ok?

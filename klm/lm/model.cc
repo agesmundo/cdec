@@ -16,7 +16,7 @@ namespace lm {
 namespace ngram {
 
 std::ostream& operator<<(std::ostream& os, const State& state) {
-	  os << "STATE";
+	  os << "KLMState";
 	  os << "(" << &state << ")";
 	  os <<  "[";
 	  os << " valid_length_ ";

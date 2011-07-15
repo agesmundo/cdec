@@ -20,17 +20,17 @@ std::ostream& operator<<(std::ostream& os, const State& state) {
 	  os << "(" << &state << ")";
 	  os <<  "[";
 	  os << " valid_length_ ";
-	  os << "(" <<(int*) &(state.valid_length_) << ")";
+//	  os << "(" <<(int*) &(state.valid_length_) << ")";
 	  os <<" = " <<(int)state.valid_length_ ;
 	  os << " history_ ";
-	  os << "(" << &state.history_ << ")";
+//	  os << "(" << &state.history_ << ")";
 	  os <<" = <";
 	  for(int i=0; i<state.valid_length_;i++){
 		  os << (i==0 ? "" : " ")  <<  "(" << state.history_[i] << ")" /*<< TD::Convert(state.history_[i])*/;
 	  }
 	  os << " > ";
 	  os << " backoff_ ";
-	  os << "(" << &state.backoff_ << ")";
+//	  os << "(" << &state.backoff_ << ")";
 	  os <<" = <";
 	  for(int i=0; i<state.valid_length_;i++){
 		  os << (i==0 ? "" : " ")  <<  "(" << state.backoff_[i] << ")" ;

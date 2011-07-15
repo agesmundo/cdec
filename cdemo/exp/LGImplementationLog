@@ -4,6 +4,9 @@ TODO speed up
 	sparse vector should not store 0s
 	boundry_ implement with hash table, use boost:hash (pointers)
 	smeta and models make static fields in 
+TODO code style
+	?better structure for context links and link states?
+	avoid passing spos down
 	
 110713 
 	adapt language model

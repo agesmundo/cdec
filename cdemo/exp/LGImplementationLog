@@ -1,5 +1,6 @@
 TODO
 	?remove feats est_feats from traversal methods structure? can be passed with ucand
+	test with double hole (propagate from head) fixing scores
 TODO speed up
 	sparse vector should not store 0s
 	boundry_ implement with hash table, use boost:hash (pointers)

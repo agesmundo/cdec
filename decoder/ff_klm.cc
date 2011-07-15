@@ -250,6 +250,7 @@ class KLanguageModelImpl {
 //    if (est_oovs) *est_oovs = 0;
     bool saw_eos = false;
     bool has_some_history = false;
+    bool context_complete = false;
 
     const Hypergraph::Edge& in_edge = *ucand.in_edge_;
     const TRule& rule=*in_edge.rule_.get();
@@ -257,7 +258,7 @@ class KLanguageModelImpl {
     const int source_node_id = ucand.GetSourceNodeId();
     const vector<WordID>& e = rule.e();
     lm::ngram::State state;
-    bool context_complete = false;
+    bool hole =false;
 
     //head outgoing state
     void* head_outgoing_state=NULL;
@@ -326,8 +327,12 @@ class KLanguageModelImpl {
 					  sum += p;
 					  if (oovs && is_oov) (*oovs)++;
 				  } else {
-					  if (head_outgoing_state)
+					  if (head_outgoing_state && !hole){
 						  SetIthUnscoredWord(num_estimated, cur_word, head_outgoing_state);
+#ifdef DEBUG_GU
+						  cerr << " head_outgoing_state unscored word [" << num_estimated << "] to " << cur_word << endl;
+#endif
+					  }
 					  ++num_estimated;
 //					  est_sum += p;
 //					  if (est_oovs && is_oov) (*est_oovs)++;
@@ -338,6 +343,13 @@ class KLanguageModelImpl {
 				  state = RemnantLMState(tail_incoming_state);
 				  context_complete = true;
 			  }
+		  } else { //there is an hole
+			  hole =true;
+		      SetUnscoredSize(num_estimated, head_outgoing_state);
+		      num_estimated=0;
+			  state= ngram_->NullContextState();
+			  context_complete = false;
+			  num_scored=0;
 		  }
       } else {   // handle terminal
         const WordID cdec_word_or_class = ClassifyWordIfNecessary(e[j]);  // in future,
@@ -373,13 +385,13 @@ class KLanguageModelImpl {
           if (oovs && is_oov) (*oovs)++;
         } else {
         	//set the head out state if needed
-          if (head_outgoing_state){
-        	  SetIthUnscoredWord(num_estimated, cur_word, head_outgoing_state);
+        	if (head_outgoing_state && !hole){
+        		SetIthUnscoredWord(num_estimated, cur_word, head_outgoing_state);
 #ifdef DEBUG_GU
-        	  cerr << " head_outgoing_state unscored word [" << num_estimated << "] to " << cur_word << endl;
+        		cerr << " head_outgoing_state unscored word [" << num_estimated << "] to " << cur_word << endl;
 #endif
-          }
-          ++num_estimated;
+        	}
+        	++num_estimated;
 //          est_sum += p;
 //          if (est_oovs && is_oov) (*est_oovs)++;
         }
@@ -390,8 +402,8 @@ class KLanguageModelImpl {
     if (head_outgoing_state) {
       state.ZeroRemaining();
       SetFlag(saw_eos, HAS_EOS_ON_RIGHT, head_outgoing_state);
+      if(!hole) SetUnscoredSize(num_estimated, head_outgoing_state);
       SetRemnantLMState(state, head_outgoing_state);
-      SetUnscoredSize(num_estimated, head_outgoing_state);
       SetHasFullContext(context_complete || (num_scored/*+1*/ >= order_), head_outgoing_state);//?+1 since flag if next will have full context |order-1|
 #ifdef DEBUG_GU
       cerr << " final head_outgoing_state = ";

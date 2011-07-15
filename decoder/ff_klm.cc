@@ -241,7 +241,7 @@ class KLanguageModelImpl {
     return sum;
   }
 //GU
-  void* GetLMState(FFState* ffs_state,int spos){
+  void* FFS2LMS(FFState* ffs_state,int spos){ //FFState to LMState
 	  return &(*ffs_state)[spos];
   }
   double UndirectedLookupWords(UCandidate& ucand, /*const vector<const void*>& ant_states, double* pest_sum,*/ double* oovs/*, double* est_oovs, void* remnant*/,int spos) {
@@ -264,15 +264,17 @@ class KLanguageModelImpl {
 
     //head outgoing state
     void* head_outgoing_state=NULL;
-    FFState* ffs_h_out=ucand.GetOutgoingState(head_node_id);
-    if(ffs_h_out!=NULL){
-    	head_outgoing_state= GetLMState(ffs_h_out,spos);;
+    FFState* ffs_head_out=ucand.GetOutgoingState(head_node_id);
+    if(ffs_head_out!=NULL){
+    	head_outgoing_state= FFS2LMS(ffs_head_out,spos);;
     }
 
     //TODO GU these alternatives are related to head_outgoing_state selection (above)
-    if(ucand.IsHeadIncomingState()){
-    	void const* head_state = GetLMState(ucand.GetHeadIncomingState(),spos);
+	FFState* ffs_head_in = ucand.GetHeadIncomingState();
+    if(ffs_head_in!=NULL){ //head is incoming state
+    	void* const head_state = FFS2LMS(ffs_head_in,spos);
     	state = RemnantLMState(head_state);
+    	num_scored = state.ValidLength();
     	context_complete =HasFullContext(head_state);
     }
     else{
@@ -283,54 +285,58 @@ class KLanguageModelImpl {
 #ifdef DEBUG_GU
     cerr << "-------------------\nUNDIRECTED LOOKUP WORDS"<<endl;
 //    cerr << "in_edge = " << in_edge <<endl;
-    cerr << " head_outgoing_state = " <<RemnantLMState(head_outgoing_state);
+    if (head_outgoing_state)
+    	cerr << " head_outgoing_state = " /*<<"("<<head_outgoing_state<<") "*/ <<RemnantLMState(head_outgoing_state)<< endl;
+    cerr << " state = " << state <<endl;
 #endif
-
-
 
     for (int j = 0; j < e.size(); ++j) {
       if (e[j] < 1) {   // handle non-terminal substitution
-//        const void* astate = (ant_states[-e[j]]);
-//        int unscored_ant_len = UnscoredSize(astate);
-//        for (int k = 0; k < unscored_ant_len; ++k) {
-//          const lm::WordIndex cur_word = IthUnscoredWord(k, astate);
-//          const bool is_oov = (cur_word == 0);
-//          double p = 0;
-//          if (cur_word == kSOS_) {
-//            state = ngram_->BeginSentenceState();
-//            if (has_some_history) {  // this is immediately fully scored, and bad
-//              p = -100;
-//              context_complete = true;
-//            } else {  // this might be a real <s>
-//              num_scored = max(0, order_ - 2);
-//            }
-//          } else {
-//            const lm::ngram::State scopy(state);
-//            p = ngram_->Score(scopy, cur_word, state);
-//            if (saw_eos) { p = -100; }
-//            saw_eos = (cur_word == kEOS_);
-//          }
-//          has_some_history = true;
-//          ++num_scored;
-//          if (!context_complete) {
-//            if (num_scored >= order_) context_complete = true;
-//          }
-//          if (context_complete) {
-//            sum += p;
-//            if (oovs && is_oov) (*oovs)++;
-//          } else {
-//            if (remnant)
-//              SetIthUnscoredWord(num_estimated, cur_word, remnant);
-//            ++num_estimated;
-//            est_sum += p;
-//            if (est_oovs && is_oov) (*est_oovs)++;
-//          }
-//        }
-//        saw_eos = GetFlag(astate, HAS_EOS_ON_RIGHT);
-//        if (HasFullContext(astate)) { // this is equivalent to the "star" in Chiang 2007
-//          state = RemnantLMState(astate);
-//          context_complete = true;
-//        }
+    	  int tail_id=-e[j];
+		  FFState* ffs_tail_in = ucand.GetTailIncomingState(tail_id);
+		  if(ffs_tail_in!=NULL){
+			  void* tail_incoming_state = FFS2LMS(ffs_tail_in,spos);
+			  int unscored_ant_len = UnscoredSize(tail_incoming_state);
+			  for (int k = 0; k < unscored_ant_len; ++k) {
+				  const lm::WordIndex cur_word = IthUnscoredWord(k, tail_incoming_state);
+				  const bool is_oov = (cur_word == 0);
+				  double p = 0;
+				  if (cur_word == kSOS_) {
+					  state = ngram_->BeginSentenceState();
+					  if (has_some_history) {  // this is immediately fully scored, and bad
+						  p = -100;
+						  context_complete = true;
+					  } else {  // this might be a real <s>
+						  num_scored = max(0, order_ - 2);
+					  }
+				  } else {
+					  const lm::ngram::State scopy(state);
+					  p = ngram_->Score(scopy, cur_word, state);
+					  if (saw_eos) { p = -100; }
+					  saw_eos = (cur_word == kEOS_);
+				  }
+				  has_some_history = true;
+				  ++num_scored;
+				  if (!context_complete) {
+					  if (num_scored >= order_) context_complete = true;
+				  }
+				  if (context_complete) {
+					  sum += p;
+					  if (oovs && is_oov) (*oovs)++;
+				  } else {
+					  if (head_outgoing_state)
+						  SetIthUnscoredWord(num_estimated, cur_word, head_outgoing_state);
+					  ++num_estimated;
+//					  est_sum += p;
+//					  if (est_oovs && is_oov) (*est_oovs)++;
+				  }
+			  }
+			  saw_eos = GetFlag(tail_incoming_state, HAS_EOS_ON_RIGHT);
+			  if (HasFullContext(tail_incoming_state)) { // this is equivalent to the "star" in Chiang 2007
+				  state = RemnantLMState(tail_incoming_state);
+				  context_complete = true;
+			  }
+		  }
       } else {   // handle terminal
         const WordID cdec_word_or_class = ClassifyWordIfNecessary(e[j]);  // in future,
                                                                           // maybe handle emission
@@ -349,8 +355,8 @@ class KLanguageModelImpl {
           const lm::ngram::State scopy(state);
           p = ngram_->Score(scopy, cur_word, state);
 #ifdef DEBUG_GU
-          cerr << scopy << endl;
-          cerr << state << endl;
+          cerr << " scopy before Score() : " << scopy << endl;
+          cerr << " state after  Score() : " << state << endl;
 #endif
           if (saw_eos) { p = -100; }
           saw_eos = (cur_word == kEOS_);
@@ -365,7 +371,12 @@ class KLanguageModelImpl {
           if (oovs && is_oov) (*oovs)++;
         } else {
         	//set the head link state if needed
-          if (head_outgoing_state) SetIthUnscoredWord(num_estimated, cur_word, head_outgoing_state);
+          if (head_outgoing_state){
+        	  SetIthUnscoredWord(num_estimated, cur_word, head_outgoing_state);
+#ifdef DEBUG_GU
+        	  cerr << " head_outgoing_state unscored word [" << num_estimated << "] to " << cur_word << endl;
+#endif
+          }
           ++num_estimated;
 //          est_sum += p;
 //          if (est_oovs && is_oov) (*est_oovs)++;
@@ -379,7 +390,7 @@ class KLanguageModelImpl {
       SetFlag(saw_eos, HAS_EOS_ON_RIGHT, head_outgoing_state);
       SetRemnantLMState(state, head_outgoing_state);
       SetUnscoredSize(num_estimated, head_outgoing_state);
-      SetHasFullContext(context_complete || (num_scored+1 >= order_), head_outgoing_state);//+1 since flag if next will have full context |order-1|
+      SetHasFullContext(context_complete || (num_scored/*+1*/ >= order_), head_outgoing_state);//?+1 since flag if next will have full context |order-1|
 #ifdef DEBUG_GU
       cerr << " final head_outgoing_state = "<< RemnantLMState(head_outgoing_state) << endl;
 #endif

@@ -76,9 +76,13 @@ struct UCandidate {
 
   int GetSourceNodeId();
 
-  bool IsHeadIncomingState();
+//  bool IsHeadIncomingState();
+//
+//  bool IsTailIncomingState(int tail_id);
 
   FFState* GetHeadIncomingState();
+
+  FFState* GetTailIncomingState(int tail_id);
 
   FFState* GetOutgoingState(int node_id);
 

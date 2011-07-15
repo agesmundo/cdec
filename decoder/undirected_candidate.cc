@@ -102,14 +102,6 @@ using namespace std;
 	  return -1;
   }
 
-  FFState* UCandidate::GetHeadIncomingState(){
-#ifdef DEBUG_GU
-	  //	  if(!IsHeadContextAvailable())return NULL; //commented for performance, should call this method after check
-	  assert(IsHeadIncomingState());
-#endif
-	  return context_links_[0]->GetOutgoingState(0);
-  }
-
   FFState* UCandidate::GetOutgoingState(int node_id){
 	  for(int i=0;i<states_size_;i++){
 		  if (outgoing_states_[i]->first==node_id ) return outgoing_states_[i]->second;
@@ -126,16 +118,48 @@ using namespace std;
 	  return context_links_[0]==(UCandidate*)-1;
   }
 
-  bool UCandidate::IsHeadIncomingState(){
-	  if(IsGoal())return false;
-	  return context_links_[0]!=NULL;
+//  bool UCandidate::IsHeadIncomingState(){
+//	  if(IsGoal())return false;
+//	  return context_links_[0]!=NULL;
+//  }
+
+//  bool UCandidate::IsTailIncomingState(int tail_id){
+//#ifdef DEBUG_GU
+//	  assert(tail_id+1 < context_links_.size());
+//#endif
+//	  return context_links_[tail_id+1]!=NULL;
+//  }
+
+
+  //returns NULL if head is not incoming state
+  FFState* UCandidate::GetHeadIncomingState(){
+#ifdef DEBUG_GU
+	  //XXX	  if(!IsHeadIncomingState())return NULL; //commented for performance, should call this method after check
+	  //XXX	  assert(IsHeadIncomingState());
+	  assert(0 < context_links_.size());
+#endif
+	  if(IsGoal())return NULL;
+	  if (context_links_[0]==NULL) return NULL;
+	  return context_links_[0]->GetOutgoingState(in_edge_->head_node_);
+  }
+
+  //returns NULL if tail is not incoming state
+  FFState* UCandidate::GetTailIncomingState(int tail_id){
+#ifdef DEBUG_GU
+	  //XXX	  if(!IsTailIncomingState(tail_id))return NULL; //commented for performance, should call this method after check
+	  //XXX	  assert(IsTailIncomingState(tail_id));
+	  assert(tail_id+1 < context_links_.size());
+	  assert(tail_id < in_edge_->tail_nodes_.size());
+	  assert(in_edge_->tail_nodes_[tail_id]==context_links_[tail_id+1]->in_edge_->head_node_);
+#endif
+	  if (context_links_[tail_id+1]==NULL) return NULL;
+	  return context_links_[tail_id+1]->GetOutgoingState(in_edge_->tail_nodes_[tail_id]);
   }
 
   bool UCandidate::CreateLink(UCandidate* ucand){
 	  int node_id;
 	  if (ucand->source_link_==0)node_id =ucand->in_edge_->head_node_;
 	  else node_id = ucand->in_edge_->tail_nodes_[ucand->source_link_-1];
-
 
 	  if(context_links_.size()>0 && context_links_[0]==NULL && in_edge_->head_node_==node_id){
 		  context_links_[0]=ucand;

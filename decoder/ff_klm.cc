@@ -13,6 +13,11 @@
 
 using namespace std;
 
+// Define the following macro if you want to see lots of debugging output
+// when running Undirected KLM
+//#define DEBUG_ULM
+#undef DEBUG_ULM
+
 static const unsigned char HAS_FULL_CONTEXT = 1;
 static const unsigned char HAS_EOS_ON_RIGHT = 2;
 static const unsigned char MASK             = 7;
@@ -266,7 +271,7 @@ class KLanguageModelImpl {
     }
     current_outgoing_state=head_outgoing_state;
 
-#ifdef DEBUG_GU
+#ifdef DEBUG_ULM
     cerr << "-----------------------\nUNDIRECTED LOOKUP WORDS"<<endl;
 #endif
 
@@ -278,7 +283,7 @@ class KLanguageModelImpl {
     	state = RemnantLMState(head_incoming_state);
     	num_scored = state.ValidLength();
     	context_complete =HasFullContext(head_incoming_state);
-#ifdef DEBUG_GU
+#ifdef DEBUG_ULM
     	cerr << " current_out : head_outgoing_state = ";
     	PringLMS(head_incoming_state);
 #endif
@@ -294,7 +299,7 @@ class KLanguageModelImpl {
 		  FFState* ffs_tail_in = ucand.GetTailIncomingState(tail_id);
 		  if(ffs_tail_in!=NULL){
 			  void* tail_incoming_state = FFS2LMS(ffs_tail_in,spos);
-#ifdef DEBUG_GU
+#ifdef DEBUG_ULM
 			  cerr << " tail_incoming_state = ";
 			  PringLMS(tail_incoming_state);
 #endif
@@ -314,7 +319,7 @@ class KLanguageModelImpl {
 				  } else {
 					  const lm::ngram::State scopy(state);
 					  p = ngram_->Score(scopy, cur_word, state);
-#ifdef DEBUG_GU
+#ifdef DEBUG_ULM
 					  cerr << " scopy before Score() : " << scopy << endl;
 					  cerr << " state after  Score() : " << state << endl;
 #endif
@@ -332,7 +337,7 @@ class KLanguageModelImpl {
 				  } else {
 					  if (current_outgoing_state /*&& !hole*/){
 						  SetIthUnscoredWord(num_estimated, cur_word, current_outgoing_state);
-#ifdef DEBUG_GU
+#ifdef DEBUG_ULM
 						  cerr << " curr_outgoing_state unscored word [" << num_estimated << "] to " << cur_word << endl;
 #endif
 					  }
@@ -354,7 +359,7 @@ class KLanguageModelImpl {
 				  SetFlag(saw_eos, HAS_EOS_ON_RIGHT, current_outgoing_state);//??correct? should be reset?
 				  SetUnscoredSize(num_estimated, current_outgoing_state);
 				  SetHasFullContext(context_complete || (num_scored >= order_), current_outgoing_state);
-#ifdef DEBUG_GU
+#ifdef DEBUG_ULM
 				  cerr << " current_outgoing_state = ";
 				  PringLMS(current_outgoing_state);
 #endif
@@ -362,7 +367,7 @@ class KLanguageModelImpl {
 
 			  //set KLMState of tail out state
 			  FFState* ffs_tail_out = ucand.GetOutgoingState(in_edge.tail_nodes_[tail_id]);
-#ifdef DEBUG_GU
+#ifdef DEBUG_ULM
 			  assert(ffs_tail_out!=NULL);
 #endif
 			  current_outgoing_state = FFS2LMS(ffs_tail_out,spos);
@@ -391,7 +396,7 @@ class KLanguageModelImpl {
     	  } else {
     		  const lm::ngram::State scopy(state);
     		  p = ngram_->Score(scopy, cur_word, state);
-#ifdef DEBUG_GU
+#ifdef DEBUG_ULM
     		  cerr << " scopy before Score() : " << scopy << endl;
     		  cerr << " state after  Score() : " << state << endl;
 #endif
@@ -410,7 +415,7 @@ class KLanguageModelImpl {
     		  //set the head out state if needed
     		  if (current_outgoing_state/* && !hole*/){
     			  SetIthUnscoredWord(num_estimated, cur_word, current_outgoing_state);
-#ifdef DEBUG_GU
+#ifdef DEBUG_ULM
     			  cerr << " current_outgoing_state unscored word [" << num_estimated << "] to " << cur_word << endl;
 #endif
     		  }
@@ -439,7 +444,7 @@ class KLanguageModelImpl {
     		} else {
     			const lm::ngram::State scopy(state);
     			p = ngram_->Score(scopy, cur_word, state);
-#ifdef DEBUG_GU
+#ifdef DEBUG_ULM
     			cerr << " scopy before Score() : " << scopy << endl;
     			cerr << " state after  Score() : " << state << endl;
 #endif
@@ -458,7 +463,7 @@ class KLanguageModelImpl {
     			//set the head out state if needed
     			if (current_outgoing_state/* && !hole*/){
     				SetIthUnscoredWord(num_estimated, cur_word, current_outgoing_state);
-#ifdef DEBUG_GU
+#ifdef DEBUG_ULM
     				cerr << " current_outgoing_state unscored word [" << num_estimated << "] to " << cur_word << endl;
 #endif
     			}
@@ -476,7 +481,7 @@ class KLanguageModelImpl {
     	SetUnscoredSize(num_estimated, current_outgoing_state);
     	if(head_outgoing_state) SetRemnantLMState(state, head_outgoing_state);
     	SetHasFullContext(context_complete || (num_scored/*+1*/ >= order_), current_outgoing_state);//?+1 since flag if next will have full context |order-1|
-#ifdef DEBUG_GU
+#ifdef DEBUG_ULM
     	if(head_outgoing_state){
     		cerr << " final head_outgoing_state = ";
     		PringLMS(head_outgoing_state);
@@ -484,7 +489,7 @@ class KLanguageModelImpl {
 #endif
     }
 
-#ifdef DEBUG_GU
+#ifdef DEBUG_ULM
     cerr << "-----------------------"<<endl;
 #endif
     return sum;

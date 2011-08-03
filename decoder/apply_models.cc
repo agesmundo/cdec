@@ -215,6 +215,7 @@ public:
     if (num_nodes > 100) every = 10;
     assert(in.nodes_[pregoal].out_edges_.size() == 1);
     UCandidateHeap cands; //unique queue/heap of candidates
+    UCandidateList boundary; //keeps list of ucands available for expansion//TODO? GU implement with hash table, use boost:hash
 
     //find nodes that intersect with reference lattice
     if (is_training_) {
@@ -225,8 +226,8 @@ public:
 
     InitCands(cands);     //put leafs candidates in the queue
 
-	UCandidate* topCand;
-    for (;!cands.empty();) {//TODO borders shoul not be empty, first pass ok to be empty
+    UCandidate* topCand;
+    for (;!cands.empty();) {//TODO? borders should not be empty, first pass ok to be empty
 
 #ifdef DEBUG_GU
     	cerr<< "/////////////////////////////////////////////////////////////////////\n";
@@ -251,7 +252,7 @@ public:
 
     		//DELETE ALL QUEUE
     		//TODO this is kind of brute force (think on how to reuse)
-    		//TODO keep all non conflicting elements(as islands in btagger)? how?? (now simple version)
+    		//TODO keep all non conflicting elements? how??
     		//free mem of discarted cands
     		for (int i = 1; i < cands.size(); ++i){//starts from 1 because best has been moved to cands.begin()
 #ifdef DEBUG_GU
@@ -271,7 +272,7 @@ public:
 
     		//PUT IN LIST OF BORDER CANDS
     		if(topCand->HasMissingLink()){
-    			boundary_.push_back(topCand);
+    			boundary.push_back(topCand);
 #ifdef DEBUG_GU
     		cerr << " ADD TO BOUNDARY: "<< topCand<<"\n";
 #endif
@@ -292,8 +293,8 @@ public:
     				cerr << "SOURCE: REMOVED FROM BOUNDARY"<<endl;
 #endif
     				//remove source ucand from list if no more missing links
-    				UCandidateList::iterator it = find(boundary_.begin(),boundary_.end(),topCand->GetSourceUCand());
-    				boundary_.erase(it);//TODO GU!!! this in not efficient, use different data structure?
+    				UCandidateList::iterator it = find(boundary.begin(),boundary.end(),topCand->GetSourceUCand());
+    				boundary.erase(it);//TODO GU!!! this in not efficient, use different data structure?
     			}else{
     				//source ucand update
 
@@ -307,10 +308,10 @@ public:
 
     		//RECOMPUTE QUEUE EACH ITERATION
 #ifdef DEBUG_GU
-    		cerr << " boundary_.size(): " <<boundary_.size()<<endl;
+    		cerr << " boundary.size(): " <<boundary.size()<<endl;
 #endif
-    		for (int i=0;i<boundary_.size();i++){
-    			UCandidate* currBoundary=boundary_[i];
+    		for (int i=0;i<boundary.size();i++){
+    			UCandidate* currBoundary=boundary[i];
 #ifdef DEBUG_GU
         		cerr << "currBoundary("<<i<<"): "<< *currBoundary<<endl;
 #endif
@@ -856,9 +857,6 @@ private:
   //TODO delete and put states in the UCandidates
   //FFStates ucands_states_;  // for each node in the out-HG what is
                             // its q function value?
-
-  //TODO GU implement with hash table, use boost:hash
-  UCandidateList boundary_; //keeps list of ucands available for expansion
 
   const bool is_training_;
   vector<bool>* correct_edges_mask_;//used only for training

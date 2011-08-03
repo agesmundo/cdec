@@ -58,7 +58,7 @@ using namespace std;
 		  }
 		  outgoing_states_[i]->second = state;
 #ifdef DEBUG_GU
-		  cerr << " init outgoing_states_["<<i<<"] " << outgoing_states_[i]->first << " - " << outgoing_states_[i]->second << endl;
+//		  cerr << " init outgoing_states_["<<i<<"] " << outgoing_states_[i]->first << " - " << outgoing_states_[i]->second << endl;
 #endif
 	  }
   }

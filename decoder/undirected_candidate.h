@@ -9,7 +9,7 @@ struct Hypergraph;
 struct SentenceMetadata;
 
 // Define the following macro if you want to see lots of debugging output
-// when running Guided Undirected Greedy decofing
+// when running Guided Undirected Greedy decoding
 #define DEBUG_GU
 //#undef DEBUG_GU
 

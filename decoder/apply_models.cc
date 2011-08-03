@@ -713,7 +713,7 @@ private:
 //          		const Hypergraph::Edge& edge = in.edges_[i];
           		const LinksVector context(edge.Arity()+1, NULL);
 #ifdef DEBUG_GU
-          		cerr << "=========================\n LEAF FROM :" <<edge<<endl;
+//          		cerr << "=========================\n LEAF FROM :" <<edge<<endl;
 #endif
           		cands.push_back(new UCandidate(edge, context,/* D, ucands_states_,*/ smeta, models, -1/*, false*/));
 #ifdef DEBUG_GU

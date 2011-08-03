@@ -426,7 +426,6 @@ DecoderImpl::DecoderImpl(po::variables_map& conf, int argc, char** argv, istream
         ("feature_expectations","Write feature expectations for all features in chart (**OBJ** will be the partition)")
         ("vector_format",po::value<string>()->default_value("b64"), "Sparse vector serialization format for feature expectations or gradients, includes (text or b64)")
         ("combine_size,C",po::value<int>()->default_value(1), "When option -G is used, process this many sentence pairs before writing the gradient (1=emit after every sentence pair)")
-  	  	("gl_training","Guided Learning Training, needs reference sentence")
         ("forest_output,O",po::value<string>(),"Directory to write forests to");
 
   // ob.AddOptions(&opts);

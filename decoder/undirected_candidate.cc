@@ -18,27 +18,28 @@ using namespace std;
             /*bool is_goal*/) :
       //ucand_index_(-1),
       in_edge_(&e),
-      context_links_(context),
+      context_links_(context), //TODO why copy this? use pointer instead
       source_link_(sl){
 	    feature_values_ = in_edge_->feature_values_;
-	    states_size_=context_links_.size();
-	    if(HasSource())states_size_--;//no need to keep state for source link
+	    outgoing_states_size_=context_links_.size();
+	    if(HasSource())outgoing_states_size_--;//no need to keep state for source link
 	    bool is_goal = (IsGoal());
 	    if(is_goal) {
-	    	states_size_--;//no need to keep state for Goal node
+	    	outgoing_states_size_--;//no need to keep state for Goal node
 	    }
 #ifdef DEBUG_GU
-	    assert(states_size_>=0);
+	    assert(outgoing_states_size_>=0);
+	    assert(outgoing_states_size_<=2);
 #endif
-    	if(states_size_>0){
-    		outgoing_states_ = new Node2State*[states_size_];
+    	if(outgoing_states_size_>0){
+    		outgoing_states_ = new Node2State*[outgoing_states_size_];
     		int it=0;
     		if(!is_goal && source_link_!=0) {
     			outgoing_states_[it++] = new Node2State(in_edge_->head_node_ ,NULL);
     		}
     		int tail_it=0;
     		int context_it=1;
-    		for(;it<states_size_;it++){
+    		for(;it<outgoing_states_size_;it++){
     			if(source_link_!=context_it){
     				outgoing_states_[it]=new Node2State(in_edge_->tail_nodes_[tail_it],NULL);
     			}
@@ -50,7 +51,7 @@ using namespace std;
   }
 
   void UCandidate::InitStates(size_t state_size){
-	  for(int i=0;i<states_size_;i++){
+	  for(int i=0;i<outgoing_states_size_;i++){
 		  FFState* state = new FFState;//(state_size) /TODO GU initialize with size
 		  state->resize(state_size);
 		  if (state_size > 0) {
@@ -64,11 +65,11 @@ using namespace std;
   }
 
   UCandidate::~UCandidate(){
-	  for(int i=0;i<states_size_;i++){
+	  for(int i=0;i<outgoing_states_size_;i++){
 		  delete outgoing_states_[i]->second; //FFState*
 		  delete outgoing_states_[i]; //pair
 	  }
-	  if (states_size_>0) delete[] outgoing_states_; //array
+	  if (outgoing_states_size_>0) delete[] outgoing_states_; //array
   }
 
 
@@ -107,7 +108,7 @@ using namespace std;
   }
 
   FFState* UCandidate::GetOutgoingState(int node_id){
-	  for(int i=0;i<states_size_;i++){
+	  for(int i=0;i<outgoing_states_size_;i++){
 		  if (outgoing_states_[i]->first==node_id ) return outgoing_states_[i]->second;
 	  }
 	  return NULL;

@@ -247,7 +247,7 @@ public:
 
     		//IF CORRECT
 #ifdef DEBUG_GU
-    		cerr << "CORRECT || !TRAINING " << endl;
+    		cerr << "\nCORRECT || !TRAINING:" << endl;
 #endif
 
     		//DELETE ALL QUEUE
@@ -381,16 +381,19 @@ public:
     	}else{
 
     	//IF WRONG
+#ifdef DEBUG_GU
+    		cerr<< "\tLEARN FROM WRONG PREDICTION:" << endl;
+#endif
 
     	//find first correct
 #ifdef DEBUG_GU
-    		cerr<< "WRONG\nFIND FIRST CORRECT" << endl;
+    		cerr<< "\nFIND FIRST CORRECT" << endl;
 #endif
     		UCandidate* correctCand=NULL;
     		sort(cands.begin(), cands.end(), EstProbSorter()); //TODO try iteration of pop heap (faster?) {make_heap(i++,end),cands(i)}
     		for(int i = 1;i<cands.size() ; i++){//start from 1 to skip last that is topCand (wrong)
 #ifdef DEBUG_GU
-    			cerr << "IS CORRECT ?: " << *cands[i] << endl;
+    			cerr << "\tIs correct?: " << *cands[i] << endl;
 #endif
     			if(IsCorrect(*cands[i])){
     				correctCand = cands[i];
@@ -401,13 +404,13 @@ public:
 
     	//update weights vector
 #ifdef DEBUG_GU
-    		cerr<< "UPDATE WEIGHT VECTOR" << endl;
+    		cerr<< "\nUPDATE WEIGHT VECTOR" << endl;
 #endif
     		double margin = 1;
     		double loss = log(topCand->action_prob_) - log(correctCand->action_prob_) + margin;
     		assert(loss>=0);
 #ifdef DEBUG_GU
-    		cerr << " Loss " << loss << endl;
+    		cerr << "\tLoss: " << loss << endl;
 #endif
     		SparseVector<Featval> diff (correctCand->feature_values_);
 //    		cerr << diff << endl;
@@ -417,17 +420,19 @@ public:
 //    		cerr << diff << endl;
     		diff -=topCand->est_vals_;
 #ifdef DEBUG_GU
-    		cerr << diff << endl;
+    		cerr << "\tDiff vector: " << diff << endl;
+    		cerr << "\tWeight vector: ";
     		models.PrintWeights(cerr);
 #endif
     		models.UpdateWeight(diff,loss);
 #ifdef DEBUG_GU
+    		cerr << "\tUpdated weight vector: ";
     		models.PrintWeights(cerr);
 #endif
 
     	//update queue
 #ifdef DEBUG_GU
-    		cerr<< "UPDATE QUEUE" << endl;
+    		cerr<< "\nRESCORE QUEUE" << endl;
 #endif
     		for(UCandidateHeap::iterator it = cands.begin();it!=cands.end();it++){
     			UCandidate& ucand = **it;
@@ -440,7 +445,7 @@ public:
 
     			ucand.action_prob_ = local * estimate; //sum exps
 #ifdef DEBUG_GU
-    			cerr << "UPDATED CANDS " << ucand <<endl;
+    			cerr << "\t-\n\tRescored " << ucand <<endl;
     			IsCorrect(ucand);
 #endif
     		}
@@ -691,7 +696,7 @@ private:
   //check if cand is correct (for training)
   bool IsCorrect(const UCandidate& ucand){
 #ifdef DEBUG_GU
-	  cerr << "is correct? : (" << &ucand <<")";
+	  cerr << "\tIs correct? : (" << &ucand <<")";
 	  if((*correct_edges_mask_)[ucand.in_edge_->id_]){
 		  cerr << " true" <<endl;
 	  }
@@ -712,9 +717,9 @@ private:
           	const Hypergraph::Edge& edge= in.edges_.at(i);
           	if(edge.tail_nodes_.size()==0){//leafs
 //          		const Hypergraph::Edge& edge = in.edges_[i];
-          		const LinksVector context(edge.Arity()+1, NULL);
+          		const LinksVector context(/*edge.Arity()+*/1, NULL);//head link only
 #ifdef DEBUG_GU
-//          		cerr << "=========================\n LEAF FROM :" <<edge<<endl;
+          		cerr << "=========================\n LEAF FROM :" <<edge<<endl;
 #endif
           		cands.push_back(new UCandidate(edge, context,/* D, ucands_states_,*/ smeta, models, -1/*, false*/));
 #ifdef DEBUG_GU
@@ -724,7 +729,7 @@ private:
           }
           make_heap(cands.begin(), cands.end(), HeapCandCompare());
 #ifdef DEBUG_GU
-          cerr << "cands.size(): "<< cands.size()<<"\n";
+          cerr << "=========================\n cands.size(): "<< cands.size()<<"\n=========================\n";
 #endif
   }
 

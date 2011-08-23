@@ -15,8 +15,8 @@ using namespace std;
 
 // Define the following macro if you want to see lots of debugging output
 // when running Undirected KLM
-//#define DEBUG_ULM
-#undef DEBUG_ULM
+#define DEBUG_ULM
+//#undef DEBUG_ULM
 
 static const unsigned char HAS_FULL_CONTEXT = 1;
 static const unsigned char HAS_EOS_ON_RIGHT = 2;
@@ -256,7 +256,7 @@ class KLanguageModelImpl {
     const Hypergraph::Edge& in_edge = *ucand.in_edge_;
     const TRule& rule=*in_edge.rule_.get();
     const int head_node_id = in_edge.head_node_;
-    const int source_node_id = ucand.GetSourceNodeId();
+    //const int source_node_id = ucand.GetSourceNodeId();
     const vector<WordID>& e = rule.e();
     lm::ngram::State state;
     //bool hole =false;
@@ -426,7 +426,7 @@ class KLanguageModelImpl {
       }
     }
 
-    //read head_incoming_context unscored words (same as *1 handle nonterminal)
+    //read head_incoming_context unscored words (same as *1 handle terminal)
     if(head_incoming_state){
     	int unscored_size_his =UnscoredSize(head_incoming_state);
     	for(int i=0;i<unscored_size_his;i++){
@@ -476,8 +476,8 @@ class KLanguageModelImpl {
 
     //    if (pest_sum) *pest_sum = est_sum;
     if (current_outgoing_state) {
-    	state.ZeroRemaining();
-    	SetFlag(saw_eos, HAS_EOS_ON_RIGHT, current_outgoing_state);
+    	state.ZeroRemaining(); //TODO try kMaxOrder to 3 for performances
+    	SetFlag(saw_eos, HAS_EOS_ON_RIGHT, current_outgoing_state);//TODO? set this flag for head_outgoing_state?
     	SetUnscoredSize(num_estimated, current_outgoing_state);
     	if(head_outgoing_state) SetRemnantLMState(state, head_outgoing_state);
     	SetHasFullContext(context_complete || (num_scored/*+1*/ >= order_), current_outgoing_state);//?+1 since flag if next will have full context |order-1|

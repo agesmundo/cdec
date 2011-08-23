@@ -32,18 +32,21 @@ struct UCandidate {
 
   const Hypergraph::Edge* in_edge_;    // in -LM forest
   Node2State** outgoing_states_;         //in_node_id 2 state seen from that node //array max 2 elements (simple map)
-  int states_size_; //TODO make constant!
+  int outgoing_states_size_; //TODO make constant!
 //  FFState state_;
 
+  //TODO? add pointer to in_edge feature for local features and avoid copy in costructor?
   FeatureVector est_vals_;
   FeatureVector feature_values_;
 
+  //TODO? make this a pointer to avoid copy in costructor?
   //links to context
   //NB!!:
   //0 HEAD,
   //1 FIRST CHILD (left)
   //2 SECOND CHILD
   LinksVector context_links_; //NULL if no link, *UCand if link, -1 for head link if Goal
+
   int source_link_; //context_links_(id) for the source UCand (-1 for starting leaf)
 
   //vit_prob_ and est_prob_ are not updated in LG training

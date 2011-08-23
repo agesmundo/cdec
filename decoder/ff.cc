@@ -239,7 +239,7 @@ void ModelSet::AddFeaturesToUCandidate(const SentenceMetadata& smeta,
     const FeatureFunction& ff = *models_[i];
 //    void* cur_ff_context = NULL;
 //    /*rm*/assert(ucand->in_edge_->tail_nodes_.size()==ucand->in_edge_->rule_->Arity());//debug TODO RM
-    vector<const void*> ants(ucand->in_edge_->tail_nodes_.size());
+//    vector<const void*> ants(ucand->in_edge_->tail_nodes_.size());
     bool has_context = ff.NumBytesContext() > 0;
     int spos=0;
         if (has_context) {
@@ -293,7 +293,7 @@ void ModelSet::UpdateWeight(SparseVector<Featval> vector, double loss){
 	double norm = vector.l2norm_sq();
 	double alpha =  loss / norm;
 
-	cerr << "ALPHA= "<<alpha<<endl;
+	cerr << "\tALPHA= "<<alpha<<endl;
 
 	for (SparseVector<Featval>::const_iterator i=vector.begin(),e=vector.end();i!=e;++i) {
 		if (weights_.size() <= i->first) weights_.resize(i->first+1);

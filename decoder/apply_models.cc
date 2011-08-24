@@ -215,7 +215,7 @@ public:
     if (num_nodes > 100) every = 10;
     assert(in.nodes_[pregoal].out_edges_.size() == 1);
     UCandidateHeap cands; //unique queue/heap of candidates
-    UCandidateList boundary; //keeps list of ucands available for expansion//TODO? GU implement with hash table, use boost:hash
+    //NOT NEEDED WITH NEW PROPAGATION UCandidateList boundary; //keeps list of ucands available for expansion//TODO? GU implement with hash table, use boost:hash
 
     //find nodes that intersect with reference lattice
     if (is_training_) {
@@ -236,8 +236,9 @@ public:
 
     	//best action candidate
 //    	make_heap(cands.begin(), cands.end(), HeapCandCompare());//TODO need this or only find best?
-    	swap(*max_element(cands.begin(), cands.end(),HeapCandCompare()), *cands.begin());
-    	topCand=cands.front();
+    	swap(*max_element(cands.begin(), cands.end(),HeapCandCompare()), *cands.end()); //TODO use heap?? NO!
+    	topCand=cands.back();
+    	cands.pop_back();
 
   #ifdef DEBUG_GU
   	  cerr << "BEST IS: " << *topCand << "\n";
@@ -254,108 +255,143 @@ public:
     		//TODO this is kind of brute force (think on how to reuse)
     		//TODO keep all non conflicting elements? how??
     		//free mem of discarted cands
-    		for (int i = 1; i < cands.size(); ++i){//starts from 1 because best has been moved to cands.begin()
+//    		for (int i = 1; i < cands.size(); ++i){//starts from 1 because best has been moved to cands.begin()
+//#ifdef DEBUG_GU
+//    			cerr << "FREE : (id:"<<i<<")  " <<cands[i]<<endl;
+//#endif
+//    			delete cands[i];
+//    		}
+
+//#ifdef DEBUG_GU
+//    		cerr << " EMPTY cands" << " | cands.size(): "<< cands.size()<<" ->";
+//#endif
+//    		cands.erase(cands.begin(),cands.end());
+//#ifdef DEBUG_GU
+//    		cerr << " | cands.size(): "<< cands.size()<<endl;
+////    		cerr << "SELECTED: "<< *topCand<<endl;
+//#endif
+
 #ifdef DEBUG_GU
-    			cerr << "FREE : (id:"<<i<<")  " <<cands[i]<<endl;
+    		cerr << "\nREMOVE ALTERNATIVE CANDIDATES\n" << "\n\tInit cands.size(): "<< cands.size()<<endl;
 #endif
-    			delete cands[i];
+    		if(topCand->HasSource()){//this is not first loop leaf, delete alternatives cands
+    			for (int i = 0; i < cands.size();){
+    				if(cands[i]->GetSourceNodeId()==topCand->GetSourceNodeId()){//TODO? try out algorithm with forward iterator(see ref remove)
+#ifdef DEBUG_GU
+    					cerr << "\tDelete : (id:"<<i<<")  " <<cands[i]<<endl;
+#endif
+    					delete cands[i];
+    					swap(cands[i], *cands.end());
+    					cands.pop_back();
+    				}
+    				else{
+    					i++;
+    				}
+    			}
     		}
+    		else{//this is first loop, delete all queue
+#ifdef DEBUG_GU
+    				cerr << " \tFirst loop: empty candidates queue" <<endl;
+#endif
+    				for (int i = 0; i < cands.size(); ++i){
+#ifdef DEBUG_GU
+    					cerr << "\tDelete : (id:"<<i<<")  " <<cands[i]<<endl;
+#endif
+    					delete cands[i];
+    				}
 
-#ifdef DEBUG_GU
-    		cerr << " EMPTY cands" << " | cands.size(): "<< cands.size()<<" ->";
-#endif
-    		cands.erase(cands.begin(),cands.end());
-#ifdef DEBUG_GU
-    		cerr << " | cands.size(): "<< cands.size()<<endl;
-//    		cerr << "SELECTED: "<< *topCand<<endl;
-#endif
-
-    		//PUT IN LIST OF BORDER CANDS
-    		if(topCand->HasMissingLink()){
-    			boundary.push_back(topCand);
-#ifdef DEBUG_GU
-    		cerr << " ADD TO BOUNDARY: "<< topCand<<"\n";
-#endif
+    				cands.erase(cands.begin(),cands.end());
     		}
+#ifdef DEBUG_GU
+    		cerr << "\tTopCand (still exists): "<< *topCand<<endl;
+    		cerr << "\tFinal cands.size(): "<< cands.size()<<endl;
+#endif
 
-    		//UPDATE BORDERS
+//    		//PUT IN LIST OF BORDER CANDS
+//    		if(topCand->HasMissingLink()){
+//    			boundary.push_back(topCand);
+//#ifdef DEBUG_GU
+//    		cerr << " ADD TO BOUNDARY: "<< topCand<<"\n";
+//#endif
+//    		}
+
+    		//UPDATE SOURCE UCAND LINK
     		if(topCand->HasSource()){
 #ifdef DEBUG_GU
-    		cerr << "SOURCE: "<< *topCand->GetSourceUCand()<<endl;
+    		cerr << "\nUPDATE SOURCE UCAND LINK\n\tSource: "<< *topCand->GetSourceUCand()<<endl;
 #endif
 			assert(topCand->GetSourceUCand()->CreateLink(topCand));
 #ifdef DEBUG_GU
-    		cerr << "SOURCE UPDATED 1: "<< *topCand->GetSourceUCand()<<endl;
+    		cerr << "\tSource updated: "<< *topCand->GetSourceUCand()<<endl;
 #endif
 
-    			if(!topCand->GetSourceUCand()->HasMissingLink()){
-#ifdef DEBUG_GU
-    				cerr << "SOURCE: REMOVED FROM BOUNDARY"<<endl;
-#endif
-    				//remove source ucand from list if no more missing links
-    				UCandidateList::iterator it = find(boundary.begin(),boundary.end(),topCand->GetSourceUCand());
-    				boundary.erase(it);//TODO GU!!! this in not efficient, use different data structure?
-    			}else{
-    				//source ucand update
+    		//TODO GU update state
 
-    				//TODO GU update state
-
-#ifdef DEBUG_GU
-    		cerr << "SOURCE UPDATED 2: "<< *topCand->GetSourceUCand()<<endl;
-#endif
-    			}
+//    			if(!topCand->GetSourceUCand()->HasMissingLink()){
+//#ifdef DEBUG_GU
+//    				cerr << "SOURCE: REMOVED FROM BOUNDARY"<<endl;
+//#endif
+//    				//remove source ucand from list if no more missing links
+//    				UCandidateList::iterator it = find(boundary.begin(),boundary.end(),topCand->GetSourceUCand());
+//    				boundary.erase(it);//TODO GU!!! this in not efficient, use different data structure?
+//    			}else{
+//    				//source ucand update
+//
+//    				//TODO GU update state
+//
+//#ifdef DEBUG_GU
+//    		cerr << "SOURCE UPDATED 2: "<< *topCand->GetSourceUCand()<<endl;
+//#endif
+//    			}
     		}
 
-    		//RECOMPUTE QUEUE EACH ITERATION
+    		//ADD IN QUEUE UCANDS FROM TOP UCAND
 #ifdef DEBUG_GU
-    		cerr << " boundary.size(): " <<boundary.size()<<endl;
+    		cerr << "\nEXPAND TOP CAND"<<endl;
 #endif
-    		for (int i=0;i<boundary.size();i++){
-    			UCandidate* currBoundary=boundary[i];
-#ifdef DEBUG_GU
-        		cerr << "currBoundary("<<i<<"): "<< *currBoundary<<endl;
-#endif
-    			assert(currBoundary->context_links_.size()<=3);//constraint to binary rules only
-    			for (int k=0;k<currBoundary->context_links_.size();k++){
-    				if(currBoundary->context_links_[k]==NULL){//missing link, available for expansion
+
+    			assert(topCand->context_links_.size()<=3);//constraint to binary rules only
+    			for (int k=0;k<topCand->context_links_.size();k++){
+    				if(topCand->context_links_[k]==NULL){//missing link, available for expansion
     					//head
     					if(k==0){
-    						const Hypergraph::Node& head_node = in.nodes_[currBoundary->in_edge_->head_node_];
+    						const Hypergraph::Node& head_node = in.nodes_[topCand->in_edge_->head_node_];
 #ifdef DEBUG_GU
-    						cerr<< "HEAD PROPAGATION"<<endl;
-							cerr << " head_node.out_edges_.size(): " <<head_node.out_edges_.size()<<endl;
+    						cerr<< "\t-\n\tHead Propagation:"<<endl;
+    						cerr << "\thead_node.out_edges_.size(): " <<head_node.out_edges_.size()<<endl;
 #endif
     						for (int j=0; j<head_node.out_edges_.size();j++){
     			          		const Hypergraph::Edge& currEdge = in.edges_[head_node.out_edges_[j]];
 #ifdef DEBUG_GU
-    			          		cerr << "currEdge("<<j<<"): "<< currEdge<<endl;
+    			          		cerr << "\tcurrEdge("<<j<<"): "<< currEdge<<endl;
 #endif
     			          		LinksVector context(currEdge.Arity()+1, NULL);
-    			          		assert(currEdge.Arity()<=2);//constraint to binary rules only
-    			          		assert(currEdge.Arity()>=1);//must have one child since reached vie head propagation
+    			          		assert(currEdge.Arity()<=2);//constraint to binary rules only  //TODO? add in debug
+    			          		assert(currEdge.Arity()>=1);//must have one child since reached via head propagation
     			          		int source_link;
     			          		if(currEdge.tail_nodes_[0]==head_node.id_){
-    			          			context[1]=currBoundary;
+    			          			context[1]=topCand;
     			          			source_link=1;
     			          		}else{
     			          			assert(currEdge.tail_nodes_[1]==head_node.id_);
-    			          			context[2]=currBoundary;
+    			          			context[2]=topCand;
     			          			source_link=2;
     			          		}
     			          		if(IsGoal(currEdge))context[0]=(UCandidate*)-1;
     			          		cands.push_back(new UCandidate(currEdge, context,/* D, ucands_states_,*/ smeta, models, source_link/*, false*/));
 #ifdef DEBUG_GU
-    			          		cerr << "PUSH UCAND (" << cands.size() << ") :" << *cands.back() << endl;
+    			          		cerr << "\tPush UCand (" << cands.size() << ") :" << *cands.back() << endl;
 #endif
     						}
     					}
+    					//tails
     					else /*if(k==1 ||k==2)*/{
-    						const Hypergraph::Node& tail_node = in.nodes_[currBoundary->in_edge_->tail_nodes_[k-1]];
+    						const Hypergraph::Node& tail_node = in.nodes_[topCand->in_edge_->tail_nodes_[k-1]];
 #ifdef DEBUG_GU
-							assert (k==1 || k==2);
-    						if(k==1) cerr<< "LEFT CHILD PROPAGATION"<<endl;
-    						if(k==2) cerr<< "RIGHT CHILD PROPAGATION"<<endl;
-							cerr << " tail_node.in_edges_.size(): " <<tail_node.in_edges_.size()<<endl;
+    						assert (k==1 || k==2);
+    						if(k==1) cerr<< "\t-\n\tLEFT CHILD PROPAGATION"<<endl;
+    						if(k==2) cerr<< "\t-\n\tRIGHT CHILD PROPAGATION"<<endl;
+    						cerr << "\ttail_node.in_edges_.size(): " <<tail_node.in_edges_.size()<<endl;
 #endif
     						for (int j=0; j<tail_node.in_edges_.size();j++){
     			          		const Hypergraph::Edge& currEdge = in.edges_[tail_node.in_edges_[j]];
@@ -364,8 +400,8 @@ public:
 #endif
     			          		LinksVector context(currEdge.Arity()+1, NULL);
     			          		assert(currEdge.Arity()<=2);//constraint to binary rules only
-    			          		assert(currEdge.head_node_==tail_node.id_);
-    			          		context[0]=currBoundary;
+    			          		assert(currEdge.head_node_==tail_node.id_);//TODO? add in debug
+    			          		context[0]=topCand;
     			          		int	source_link=0;
 
     			          		cands.push_back(new UCandidate(currEdge, context,/* D, ucands_states_,*/ smeta, models, source_link/*, false*/));
@@ -376,7 +412,6 @@ public:
     					}
     				}
     			}
-    		}
 
     	}else{
 
@@ -727,7 +762,7 @@ private:
 #endif
           	}
           }
-          make_heap(cands.begin(), cands.end(), HeapCandCompare());
+//          make_heap(cands.begin(), cands.end(), HeapCandCompare()); //useless not using heap
 #ifdef DEBUG_GU
           cerr << "=========================\n cands.size(): "<< cands.size()<<"\n=========================\n";
 #endif

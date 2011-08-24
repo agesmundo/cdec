@@ -99,11 +99,11 @@ using namespace std;
   }
 
   int UCandidate::GetSourceNodeId(){
-	  if(source_link_<0)return -1;
+//	  if(source_link_<0)return -1;
 	  if(source_link_==0)return in_edge_->head_node_;
 	  if(source_link_==1)return in_edge_->tail_nodes_[0];
 	  if(source_link_==2)return in_edge_->tail_nodes_[1];
-	  abort();
+//	  abort();
 	  return -1;
   }
 
@@ -164,9 +164,12 @@ using namespace std;
   }
 
   bool UCandidate::CreateLink(UCandidate* ucand){
-	  int node_id;
-	  if (ucand->source_link_==0)node_id =ucand->in_edge_->head_node_;
-	  else node_id = ucand->in_edge_->tail_nodes_[ucand->source_link_-1];
+	  int node_id=ucand->GetSourceNodeId();
+#ifdef DEBUG_GU
+	  assert(node_id>=0);
+#endif
+//	  if (ucand->source_link_==0)node_id =ucand->in_edge_->head_node_;
+//	  else node_id = ucand->in_edge_->tail_nodes_[ucand->source_link_-1];
 
 	  if(context_links_.size()>0 && context_links_[0]==NULL && in_edge_->head_node_==node_id){
 		  context_links_[0]=ucand;

@@ -15,8 +15,8 @@ using namespace std;
 
 // Define the following macro if you want to see lots of debugging output
 // when running Undirected KLM
-#define DEBUG_ULM
-//#undef DEBUG_ULM
+//#define DEBUG_ULM
+#undef DEBUG_ULM
 
 static const unsigned char HAS_FULL_CONTEXT = 1;
 static const unsigned char HAS_EOS_ON_RIGHT = 2;

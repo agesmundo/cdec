@@ -247,10 +247,6 @@ public:
     		//POP BEST FROM QUEUE
       	cands.pop_back();
 
-//XXX #ifdef DEBUG_GU
-//	  cerr << "BEST IS: " << *topCand << "\n";
-//#endif
-
     		//IF CORRECT
 #ifdef DEBUG_GU
     		cerr << "\nCORRECT || !TRAINING:" << endl;

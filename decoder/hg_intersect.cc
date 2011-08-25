@@ -19,8 +19,8 @@ using namespace std;
 
 // Define the following macro if you want to see lots of debugging output
 // when you run the LG
-#define DEBUG_LG
-//#undef DEBUG_LG
+//#define DEBUG_HG_INTER
+#undef DEBUG_HG_INTER
 
 struct RuleFilter {
   unordered_map<vector<WordID>, bool, boost::hash<vector<WordID> > > exists_;
@@ -234,7 +234,7 @@ bool HG::HighlightIntersection(const Lattice& target, const Hypergraph& hg, vect
 		rule->scores_ = edge.feature_values_;
 		rule->parent_rule_ = edge.rule_;
 
-#ifdef DEBUG_LG
+#ifdef DEBUG_HG_INTER
 		assert (rule->parent_edge_id_ ==-1);
 #endif
 		rule->parent_edge_id_=edge.id_;
@@ -251,7 +251,7 @@ bool HG::HighlightIntersection(const Lattice& target, const Hypergraph& hg, vect
 	bool found = parser.Parse(target, &tforest);
 	for(int i=0; i<tforest.edges_.size();i++){
 		int corr_edge_id = tforest.edges_[i].rule_->parent_edge_id_;
-#ifdef DEBUG_LG
+#ifdef DEBUG_HG_INTER
 //		cerr<<TD::Convert(tforest.edges_[i].rule_->lhs_ * -1	) <<endl;
 		assert(corr_edge_id>-1 || tforest.edges_[i].rule_->lhs_==(TD::Convert("Goal") * -1));
 		assert(corr_edge_id==-1 ||corr_edge_id<correct_edges_mask.size());
@@ -260,7 +260,7 @@ bool HG::HighlightIntersection(const Lattice& target, const Hypergraph& hg, vect
 #endif
 		if (corr_edge_id>=0) correct_edges_mask[corr_edge_id]=true;
 	}
-#ifdef DEBUG_LG
+#ifdef DEBUG_HG_INTER
 	if (found) cerr << "FOUND_";
 	cerr << "Amount: corr_edges / tot_edges: "<< tforest.edges_.size() << " / " <<  correct_edges_mask.size() << " = " << (tforest.edges_.size() *100.0 / correct_edges_mask.size() ) <<endl;
 #endif
@@ -268,4 +268,4 @@ bool HG::HighlightIntersection(const Lattice& target, const Hypergraph& hg, vect
 	return found;
 }
 
-//#undef DEBUG_LG
+//#undef DEBUG_HG_INTER

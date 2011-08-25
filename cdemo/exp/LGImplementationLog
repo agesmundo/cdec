@@ -8,13 +8,22 @@ TODO speed up
 TODO code style
 	?better structure for context links and link states?
 	avoid passing spos down
-	
+
+110825
+OK!	smarter queue update (avoid full deletion)
+	mem leaks (valgrind) on quick
+	test if faster on whole corpus:	
+	time,	score
+NEW
+BRUTE
+CP	159s	32.14
+
 110713 
-	adapt language model
+OK!	adapt language model
 
 110713
 	test on whole corpus:
-OK!	mem leaks
+OK!	mem leaks (valgrind)
 	time, score (no LM no extra training)
 GU	37s , 12.44
 CP	62s , 10.25

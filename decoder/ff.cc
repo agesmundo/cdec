@@ -293,7 +293,7 @@ void ModelSet::UpdateWeight(SparseVector<Featval> vector, double loss){
 	double norm = vector.l2norm_sq();
 	double alpha =  loss / norm;
 
-	cerr << "\tALPHA= "<<alpha<<endl;
+//	cerr << "\tALPHA= "<<alpha<<endl;
 
 	for (SparseVector<Featval>::const_iterator i=vector.begin(),e=vector.end();i!=e;++i) {
 		if (weights_.size() <= i->first) weights_.resize(i->first+1);

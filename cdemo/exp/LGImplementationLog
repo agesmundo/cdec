@@ -9,21 +9,30 @@ TODO code style
 	?better structure for context links and link states?
 	avoid passing spos down
 
+
 110825
 OK!	smarter queue update (avoid full deletion)
 	mem leaks (valgrind) on quick
-	test if faster on whole corpus:	
+	-test if faster on whole corpus:	
 	time,	score
-NEW
-BRUTE
+GU	63s	13.44
 CP	159s	32.14
+	to compare with brute try with no LM and compare with 110713 
+NEW PROPAG. GU	54s	12.01
+BRUTE PROP. GU	67s	12.01
+CP		87s	6.23
+FULL		102s	6.22
+	-comments:
+	on office desk not lap
+	??? diff score & diff proportion in no LM?
+	anyway GU is always faster (60% in last with LM)
 
 110713 
 OK!	adapt language model
 
 110713
-	test on whole corpus:
 OK!	mem leaks (valgrind)
+	-test on whole corpus:
 	time, score (no LM no extra training)
 GU	37s , 12.44
 CP	62s , 10.25

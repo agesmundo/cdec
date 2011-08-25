@@ -262,6 +262,10 @@ class KLanguageModelImpl {
   	//bool hole =false;
   	void* current_outgoing_state;
 
+#ifdef DEBUG_ULM
+  	cerr << "-----------------------\nUNDIRECTED LOOKUP WORDS"<<endl;
+#endif
+
   	//head outgoing state
   	current_outgoing_state=NULL;
   	void* head_outgoing_state=NULL;
@@ -270,10 +274,6 @@ class KLanguageModelImpl {
   		head_outgoing_state= FFS2LMS(ffs_head_out,spos);
   	}
   	current_outgoing_state=head_outgoing_state;
-
-#ifdef DEBUG_ULM
-  	cerr << "-----------------------\nUNDIRECTED LOOKUP WORDS"<<endl;
-#endif
 
   	//TODO GU these alternatives are related to head_outgoing_state selection (above)
   	FFState* ffs_head_in = ucand.GetHeadIncomingState();
@@ -284,7 +284,7 @@ class KLanguageModelImpl {
   		num_scored = state.ValidLength();
   		context_complete =HasFullContext(head_incoming_state);
 #ifdef DEBUG_ULM
-  		cerr << " current_out : head_outgoing_state = ";
+  		cerr << " head_incoming_state = ";
   		PringLMS(head_incoming_state);
 #endif
   	}

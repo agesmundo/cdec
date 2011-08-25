@@ -266,7 +266,7 @@ public:
     					cerr << "\tDelete : (id:"<<i<<")  " <<cands[i]<<endl;
 #endif
     					delete cands[i];
-    					swap(cands[i], *cands.end());
+    					swap(cands[i], cands.back());
     					cands.pop_back();
     				}
     				else{
@@ -338,7 +338,7 @@ public:
     			          		assert(currEdge.Arity()<=2);//constraint to binary rules only  //TODO? add in debug
     			          		assert(currEdge.Arity()>=1);//must have one child since reached via head propagation
     			          		int source_link;
-    			          		if(currEdge.tail_nodes_[0]==head_node.id_){
+    			          		if(currEdge.tail_nodes_[0]==head_node.id_){//link with source cand
     			          			context[1]=topCand;
     			          			source_link=1;
     			          		}else{
@@ -346,7 +346,7 @@ public:
     			          			context[2]=topCand;
     			          			source_link=2;
     			          		}
-    			          		if(IsGoal(currEdge))context[0]=(UCandidate*)-1;
+    			          		if(IsGoal(currEdge))context[0]=(UCandidate*)-1;//TODO speedup, if goal there is nothing to choose just link it score it, do not put in the queue
     			          		cands.push_back(new UCandidate(currEdge, context,/* D, ucands_states_,*/ smeta, models, source_link/*, false*/));
 #ifdef DEBUG_GU
     			          		cerr << "\tPush UCand (" << cands.size() << ") :" << *cands.back() << endl;

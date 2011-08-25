@@ -235,10 +235,20 @@ public:
 #endif
 
     	//best action candidate
-//    	make_heap(cands.begin(), cands.end(), HeapCandCompare());//TODO need this or only find best?
-    	swap(*max_element(cands.begin(), cands.end(),HeapCandCompare()), *cands.end()); //TODO use heap?? NO!
+//    	cerr << "max element " << **max_element(cands.begin(), cands.end(),HeapCandCompare()) <<endl;
+//    	for (int i=0; i < cands.size();i++){
+//    		cerr <<"cands(" << i << ") " << cands[i]<< endl;
+//    	}
+//    	cerr << "cands.back() "<< *cands.back()<< endl;
+
+    	swap(*max_element(cands.begin(), cands.end(),HeapCandCompare()), cands.back()); //TODO use heap?? NO!
     	topCand=cands.back();
     	cands.pop_back();
+
+//    	for (int i=0; i < cands.size();i++){
+//    		cerr <<"cands(" << i << ") " << cands[i]<< endl;
+//    	}
+
 
   #ifdef DEBUG_GU
   	  cerr << "BEST IS: " << *topCand << "\n";

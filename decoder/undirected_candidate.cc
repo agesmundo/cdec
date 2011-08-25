@@ -39,9 +39,9 @@ using namespace std;
     		}
     		int tail_it=0;
     		int context_it=1;
-    		for(;it<outgoing_states_size_;it++){
+    		while(it<outgoing_states_size_){
     			if(source_link_!=context_it){
-    				outgoing_states_[it]=new Node2State(in_edge_->tail_nodes_[tail_it],NULL);
+    				outgoing_states_[it++]=new Node2State(in_edge_->tail_nodes_[tail_it],NULL);
     			}
     			context_it++;
     			tail_it++;

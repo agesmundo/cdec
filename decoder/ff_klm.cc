@@ -15,8 +15,8 @@ using namespace std;
 
 // Define the following macro if you want to see lots of debugging output
 // when running Undirected KLM
-//#define DEBUG_ULM
-#undef DEBUG_ULM
+#define DEBUG_ULM
+//#undef DEBUG_ULM
 
 static const unsigned char HAS_FULL_CONTEXT = 1;
 static const unsigned char HAS_EOS_ON_RIGHT = 2;
@@ -243,296 +243,296 @@ class KLanguageModelImpl {
   }
 //GU
   double UndirectedLookupWords(UCandidate& ucand, /*const vector<const void*>& ant_states, double* pest_sum,*/ double* oovs/*, double* est_oovs, void* remnant*/,int spos) {
-    double sum = 0.0;
-//    double est_sum = 0.0;
-    int num_scored = 0;
-    int num_estimated = 0;
-    if (oovs) *oovs = 0;
-//    if (est_oovs) *est_oovs = 0;
-    bool saw_eos = false;
-    bool has_some_history = false;
-    bool context_complete = false;
+  	double sum = 0.0;
+  	//    double est_sum = 0.0;
+  	int num_scored = 0;
+  	int num_estimated = 0;
+  	if (oovs) *oovs = 0;
+  	//    if (est_oovs) *est_oovs = 0;
+  	bool saw_eos = false;
+  	bool has_some_history = false;
+  	bool context_complete = false;
 
-    const Hypergraph::Edge& in_edge = *ucand.in_edge_;
-    const TRule& rule=*in_edge.rule_.get();
-    const int head_node_id = in_edge.head_node_;
-    //const int source_node_id = ucand.GetSourceNodeId();
-    const vector<WordID>& e = rule.e();
-    lm::ngram::State state;
-    //bool hole =false;
-    void* current_outgoing_state;
+  	const Hypergraph::Edge& in_edge = *ucand.in_edge_;
+  	const TRule& rule=*in_edge.rule_.get();
+  	const int head_node_id = in_edge.head_node_;
+  	//const int source_node_id = ucand.GetSourceNodeId();
+  	const vector<WordID>& e = rule.e();
+  	lm::ngram::State state;
+  	//bool hole =false;
+  	void* current_outgoing_state;
 
-    //head outgoing state
-    current_outgoing_state=NULL;
-    void* head_outgoing_state=NULL;
-    FFState* ffs_head_out=ucand.GetOutgoingState(head_node_id);
-    if(ffs_head_out!=NULL){
-    	head_outgoing_state= FFS2LMS(ffs_head_out,spos);
-    }
-    current_outgoing_state=head_outgoing_state;
-
-#ifdef DEBUG_ULM
-    cerr << "-----------------------\nUNDIRECTED LOOKUP WORDS"<<endl;
-#endif
-
-    //TODO GU these alternatives are related to head_outgoing_state selection (above)
-	FFState* ffs_head_in = ucand.GetHeadIncomingState();
-	void* head_incoming_state=NULL;
-    if(ffs_head_in!=NULL){ //head is incoming state
-    	head_incoming_state = FFS2LMS(ffs_head_in,spos);
-    	state = RemnantLMState(head_incoming_state);
-    	num_scored = state.ValidLength();
-    	context_complete =HasFullContext(head_incoming_state);
-#ifdef DEBUG_ULM
-    	cerr << " current_out : head_outgoing_state = ";
-    	PringLMS(head_incoming_state);
-#endif
-    }
-    else{
-    	state= ngram_->NullContextState();
-    	context_complete = false;
-    }
-
-    for (int j = 0; j < e.size(); ++j) {
-      if (e[j] < 1) {   // handle non-terminal substitution
-    	  int tail_id=-e[j];
-		  FFState* ffs_tail_in = ucand.GetTailIncomingState(tail_id);
-		  if(ffs_tail_in!=NULL){
-			  void* tail_incoming_state = FFS2LMS(ffs_tail_in,spos);
-#ifdef DEBUG_ULM
-			  cerr << " tail_incoming_state = ";
-			  PringLMS(tail_incoming_state);
-#endif
-			  int unscored_ant_len = UnscoredSize(tail_incoming_state);
-			  for (int k = 0; k < unscored_ant_len; ++k) {
-				  const lm::WordIndex cur_word = IthUnscoredWord(k, tail_incoming_state);
-				  const bool is_oov = (cur_word == 0);
-				  double p = 0;
-				  if (cur_word == kSOS_) {
-					  state = ngram_->BeginSentenceState();
-					  if (has_some_history) {  // this is immediately fully scored, and bad
-						  p = -100;
-						  context_complete = true;
-					  } else {  // this might be a real <s>
-						  num_scored = max(0, order_ - 2);
-					  }
-				  } else {
-					  const lm::ngram::State scopy(state);
-					  p = ngram_->Score(scopy, cur_word, state);
-#ifdef DEBUG_ULM
-					  cerr << " scopy before Score() : " << scopy << endl;
-					  cerr << " state after  Score() : " << state << endl;
-#endif
-					  if (saw_eos) { p = -100; }
-					  saw_eos = (cur_word == kEOS_);
-				  }
-				  has_some_history = true;
-				  ++num_scored;
-				  if (!context_complete) {
-					  if (num_scored >= order_) context_complete = true;
-				  }
-				  if (context_complete) {
-					  sum += p;
-					  if (oovs && is_oov) (*oovs)++;
-				  } else {
-					  if (current_outgoing_state /*&& !hole*/){
-						  SetIthUnscoredWord(num_estimated, cur_word, current_outgoing_state);
-#ifdef DEBUG_ULM
-						  cerr << " curr_outgoing_state unscored word [" << num_estimated << "] to " << cur_word << endl;
-#endif
-					  }
-					  ++num_estimated;
-					  //					  est_sum += p;
-					  //					  if (est_oovs && is_oov) (*est_oovs)++;
-				  }
-			  }
-			  saw_eos = GetFlag(tail_incoming_state, HAS_EOS_ON_RIGHT);
-			  if (HasFullContext(tail_incoming_state)) { // this is equivalent to the "star" in Chiang 2007
-				  state = RemnantLMState(tail_incoming_state);
-				  context_complete = true;
-			  }
-		  } else { //there is an hole
-
-			  if (current_outgoing_state){
-				  //set exiting sate details
-				  state.ZeroRemaining();
-				  SetFlag(saw_eos, HAS_EOS_ON_RIGHT, current_outgoing_state);//??correct? should be reset?
-				  SetUnscoredSize(num_estimated, current_outgoing_state);
-				  SetHasFullContext(context_complete || (num_scored >= order_), current_outgoing_state);
-#ifdef DEBUG_ULM
-				  cerr << " current_outgoing_state = ";
-				  PringLMS(current_outgoing_state);
-#endif
-			  }
-
-			  //set KLMState of tail out state
-			  FFState* ffs_tail_out = ucand.GetOutgoingState(in_edge.tail_nodes_[tail_id]);
-#ifdef DEBUG_ULM
-			  assert(ffs_tail_out!=NULL);
-#endif
-			  current_outgoing_state = FFS2LMS(ffs_tail_out,spos);
-			  SetRemnantLMState(state,current_outgoing_state);
-
-			  state= ngram_->NullContextState();
-			  SetUnscoredSize(num_estimated, current_outgoing_state);
-			  num_estimated=0;
-			  context_complete = false;
-			  num_scored=0;
-		  }
-      } else {   // *1 handle terminal
-    	  const WordID cdec_word_or_class = ClassifyWordIfNecessary(e[j]);  // in future,
-    	  // maybe handle emission
-    	  const lm::WordIndex cur_word = MapWord(cdec_word_or_class); // map to LM's id
-    	  double p = 0;
-    	  const bool is_oov = (cur_word == 0);
-    	  if (cur_word == kSOS_) {
-    		  state = ngram_->BeginSentenceState();
-    		  if (has_some_history) {  // this is immediately fully scored, and bad
-    			  p = -100;
-    			  context_complete = true;
-    		  } else {  // this might be a real <s>
-    			  num_scored = max(0, order_ - 2);//actual order-1 since ++ later
-    		  }
-    	  } else {
-    		  const lm::ngram::State scopy(state);
-    		  p = ngram_->Score(scopy, cur_word, state);
-#ifdef DEBUG_ULM
-    		  cerr << " scopy before Score() : " << scopy << endl;
-    		  cerr << " state after  Score() : " << state << endl;
-#endif
-    		  if (saw_eos) { p = -100; }
-    		  saw_eos = (cur_word == kEOS_);
-    	  }
-    	  has_some_history = true;
-    	  ++num_scored;
-    	  if (!context_complete) {
-    		  if (num_scored >= order_) context_complete = true;
-    	  }
-    	  if (context_complete) {
-    		  sum += p;
-    		  if (oovs && is_oov) (*oovs)++;
-    	  } else {
-    		  //set the head out state if needed
-    		  if (current_outgoing_state/* && !hole*/){
-    			  SetIthUnscoredWord(num_estimated, cur_word, current_outgoing_state);
-#ifdef DEBUG_ULM
-    			  cerr << " current_outgoing_state unscored word [" << num_estimated << "] to " << cur_word << endl;
-#endif
-    		  }
-    		  ++num_estimated;
-    		  //          est_sum += p;
-    		  //          if (est_oovs && is_oov) (*est_oovs)++;
-    	  }
-      }
-    }
-
-    //read head_incoming_context unscored words (same as *1 handle terminal)
-    if(head_incoming_state){
-    	int unscored_size_his =UnscoredSize(head_incoming_state);
-    	for(int i=0;i<unscored_size_his;i++){
-    		const lm::WordIndex cur_word = IthUnscoredWord(i, head_incoming_state);
-    		double p = 0;
-    		const bool is_oov = (cur_word == 0);
-    		if (cur_word == kSOS_) {
-    			state = ngram_->BeginSentenceState();
-    			if (has_some_history) {  // this is immediately fully scored, and bad
-    				p = -100;
-    				context_complete = true;
-    			} else {  // this might be a real <s>
-    				num_scored = max(0, order_ - 2);//actual order-1 since ++ later
-    			}
-    		} else {
-    			const lm::ngram::State scopy(state);
-    			p = ngram_->Score(scopy, cur_word, state);
-#ifdef DEBUG_ULM
-    			cerr << " scopy before Score() : " << scopy << endl;
-    			cerr << " state after  Score() : " << state << endl;
-#endif
-    			if (saw_eos) { p = -100; }
-    			saw_eos = (cur_word == kEOS_);
-    		}
-    		has_some_history = true;
-    		++num_scored;
-    		if (!context_complete) {
-    			if (num_scored >= order_) context_complete = true;
-    		}
-    		if (context_complete) {
-    			sum += p;
-    			if (oovs && is_oov) (*oovs)++;
-    		} else {
-    			//set the head out state if needed
-    			if (current_outgoing_state/* && !hole*/){
-    				SetIthUnscoredWord(num_estimated, cur_word, current_outgoing_state);
-#ifdef DEBUG_ULM
-    				cerr << " current_outgoing_state unscored word [" << num_estimated << "] to " << cur_word << endl;
-#endif
-    			}
-    			++num_estimated;
-    			//          est_sum += p;
-    			//          if (est_oovs && is_oov) (*est_oovs)++;
-    		}
-    	}
-    }
-
-    //    if (pest_sum) *pest_sum = est_sum;
-    if (current_outgoing_state) {
-    	state.ZeroRemaining(); //TODO try kMaxOrder to 3 for performances
-    	SetFlag(saw_eos, HAS_EOS_ON_RIGHT, current_outgoing_state);//TODO? set this flag for head_outgoing_state?
-    	SetUnscoredSize(num_estimated, current_outgoing_state);
-    	if(head_outgoing_state) SetRemnantLMState(state, head_outgoing_state);
-    	SetHasFullContext(context_complete || (num_scored/*+1*/ >= order_), current_outgoing_state);//?+1 since flag if next will have full context |order-1|
-#ifdef DEBUG_ULM
-    	if(head_outgoing_state){
-    		cerr << " final head_outgoing_state = ";
-    		PringLMS(head_outgoing_state);
-    	}
-#endif
-    }
+  	//head outgoing state
+  	current_outgoing_state=NULL;
+  	void* head_outgoing_state=NULL;
+  	FFState* ffs_head_out=ucand.GetOutgoingState(head_node_id);
+  	if(ffs_head_out!=NULL){
+  		head_outgoing_state= FFS2LMS(ffs_head_out,spos);
+  	}
+  	current_outgoing_state=head_outgoing_state;
 
 #ifdef DEBUG_ULM
-    cerr << "-----------------------"<<endl;
+  	cerr << "-----------------------\nUNDIRECTED LOOKUP WORDS"<<endl;
 #endif
-    return sum;
+
+  	//TODO GU these alternatives are related to head_outgoing_state selection (above)
+  	FFState* ffs_head_in = ucand.GetHeadIncomingState();
+  	void* head_incoming_state=NULL;
+  	if(ffs_head_in!=NULL){ //head is incoming state
+  		head_incoming_state = FFS2LMS(ffs_head_in,spos);
+  		state = RemnantLMState(head_incoming_state);
+  		num_scored = state.ValidLength();
+  		context_complete =HasFullContext(head_incoming_state);
+#ifdef DEBUG_ULM
+  		cerr << " current_out : head_outgoing_state = ";
+  		PringLMS(head_incoming_state);
+#endif
+  	}
+  	else{
+  		state= ngram_->NullContextState();
+  		context_complete = false;
+  	}
+
+  	for (int j = 0; j < e.size(); ++j) {
+  		if (e[j] < 1) {   // handle non-terminal substitution
+  			int tail_id=-e[j];
+  			FFState* ffs_tail_in = ucand.GetTailIncomingState(tail_id);
+  			if(ffs_tail_in!=NULL){
+  				void* tail_incoming_state = FFS2LMS(ffs_tail_in,spos);
+#ifdef DEBUG_ULM
+  				cerr << " tail_incoming_state = ";
+  				PringLMS(tail_incoming_state);
+#endif
+  				int unscored_ant_len = UnscoredSize(tail_incoming_state);
+  				for (int k = 0; k < unscored_ant_len; ++k) {
+  					const lm::WordIndex cur_word = IthUnscoredWord(k, tail_incoming_state);
+  					const bool is_oov = (cur_word == 0);
+  					double p = 0;
+  					if (cur_word == kSOS_) {
+  						state = ngram_->BeginSentenceState();
+  						if (has_some_history) {  // this is immediately fully scored, and bad
+  							p = -100;
+  							context_complete = true;
+  						} else {  // this might be a real <s>
+  							num_scored = max(0, order_ - 2);
+  						}
+  					} else {
+  						const lm::ngram::State scopy(state);
+  						p = ngram_->Score(scopy, cur_word, state);
+#ifdef DEBUG_ULM
+  						cerr << " scopy before Score() : " << scopy << endl;
+  						cerr << " state after  Score() : " << state << endl;
+#endif
+  						if (saw_eos) { p = -100; }
+  						saw_eos = (cur_word == kEOS_);
+  					}
+  					has_some_history = true;
+  					++num_scored;
+  					if (!context_complete) {
+  						if (num_scored >= order_) context_complete = true;
+  					}
+  					if (context_complete) {
+  						sum += p;
+  						if (oovs && is_oov) (*oovs)++;
+  					} else {
+  						if (current_outgoing_state /*&& !hole*/){
+  							SetIthUnscoredWord(num_estimated, cur_word, current_outgoing_state);
+#ifdef DEBUG_ULM
+  							cerr << " curr_outgoing_state unscored word [" << num_estimated << "] to " << cur_word << endl;
+#endif
+  						}
+  						++num_estimated;
+  						//					  est_sum += p;
+  						//					  if (est_oovs && is_oov) (*est_oovs)++;
+  					}
+  				}
+  				saw_eos = GetFlag(tail_incoming_state, HAS_EOS_ON_RIGHT);
+  				if (HasFullContext(tail_incoming_state)) { // this is equivalent to the "star" in Chiang 2007
+  					state = RemnantLMState(tail_incoming_state);
+  					context_complete = true;
+  				}
+  			} else { //there is an hole
+
+  				if (current_outgoing_state){
+  					//set exiting sate details
+  					state.ZeroRemaining();
+  					SetFlag(saw_eos, HAS_EOS_ON_RIGHT, current_outgoing_state);//??correct? should be reset?
+  					SetUnscoredSize(num_estimated, current_outgoing_state);
+  					SetHasFullContext(context_complete || (num_scored >= order_), current_outgoing_state);
+#ifdef DEBUG_ULM
+  					cerr << " current_outgoing_state = ";
+  					PringLMS(current_outgoing_state);
+#endif
+  				}
+
+  				//set KLMState of tail out state
+  				FFState* ffs_tail_out = ucand.GetOutgoingState(in_edge.tail_nodes_[tail_id]);
+#ifdef DEBUG_ULM
+  				assert(ffs_tail_out!=NULL);
+#endif
+  				current_outgoing_state = FFS2LMS(ffs_tail_out,spos);
+  				SetRemnantLMState(state,current_outgoing_state);
+
+  				state= ngram_->NullContextState();
+  				SetUnscoredSize(num_estimated, current_outgoing_state);
+  				num_estimated=0;
+  				context_complete = false;
+  				num_scored=0;
+  			}
+  		} else {   // *1 handle terminal
+  			const WordID cdec_word_or_class = ClassifyWordIfNecessary(e[j]);  // in future,
+  			// maybe handle emission
+  			const lm::WordIndex cur_word = MapWord(cdec_word_or_class); // map to LM's id
+  			double p = 0;
+  			const bool is_oov = (cur_word == 0);
+  			if (cur_word == kSOS_) {
+  				state = ngram_->BeginSentenceState();
+  				if (has_some_history) {  // this is immediately fully scored, and bad
+  					p = -100;
+  					context_complete = true;
+  				} else {  // this might be a real <s>
+  					num_scored = max(0, order_ - 2);//actual order-1 since ++ later
+  				}
+  			} else {
+  				const lm::ngram::State scopy(state);
+  				p = ngram_->Score(scopy, cur_word, state);
+#ifdef DEBUG_ULM
+  				cerr << " scopy before Score() : " << scopy << endl;
+  				cerr << " state after  Score() : " << state << endl;
+#endif
+  				if (saw_eos) { p = -100; }
+  				saw_eos = (cur_word == kEOS_);
+  			}
+  			has_some_history = true;
+  			++num_scored;
+  			if (!context_complete) {
+  				if (num_scored >= order_) context_complete = true;
+  			}
+  			if (context_complete) {
+  				sum += p;
+  				if (oovs && is_oov) (*oovs)++;
+  			} else {
+  				//set the head out state if needed
+  				if (current_outgoing_state/* && !hole*/){
+  					SetIthUnscoredWord(num_estimated, cur_word, current_outgoing_state);
+#ifdef DEBUG_ULM
+  					cerr << " current_outgoing_state unscored word [" << num_estimated << "] to " << cur_word << endl;
+#endif
+  				}
+  				++num_estimated;
+  				//          est_sum += p;
+  				//          if (est_oovs && is_oov) (*est_oovs)++;
+  			}
+  		}
+  	}
+
+  	//read head_incoming_context unscored words (same as *1 handle terminal)
+  	if(head_incoming_state){
+  		int unscored_size_his =UnscoredSize(head_incoming_state);
+  		for(int i=0;i<unscored_size_his;i++){
+  			const lm::WordIndex cur_word = IthUnscoredWord(i, head_incoming_state);
+  			double p = 0;
+  			const bool is_oov = (cur_word == 0);
+  			if (cur_word == kSOS_) {
+  				state = ngram_->BeginSentenceState();
+  				if (has_some_history) {  // this is immediately fully scored, and bad
+  					p = -100;
+  					context_complete = true;
+  				} else {  // this might be a real <s>
+  					num_scored = max(0, order_ - 2);//actual order-1 since ++ later
+  				}
+  			} else {
+  				const lm::ngram::State scopy(state);
+  				p = ngram_->Score(scopy, cur_word, state);
+#ifdef DEBUG_ULM
+  				cerr << " scopy before Score() : " << scopy << endl;
+  				cerr << " state after  Score() : " << state << endl;
+#endif
+  				if (saw_eos) { p = -100; }
+  				saw_eos = (cur_word == kEOS_);
+  			}
+  			has_some_history = true;
+  			++num_scored;
+  			if (!context_complete) {
+  				if (num_scored >= order_) context_complete = true;
+  			}
+  			if (context_complete) {
+  				sum += p;
+  				if (oovs && is_oov) (*oovs)++;
+  			} else {
+  				//set the head out state if needed
+  				if (current_outgoing_state/* && !hole*/){
+  					SetIthUnscoredWord(num_estimated, cur_word, current_outgoing_state);
+#ifdef DEBUG_ULM
+  					cerr << " current_outgoing_state unscored word [" << num_estimated << "] to " << cur_word << endl;
+#endif
+  				}
+  				++num_estimated;
+  				//          est_sum += p;
+  				//          if (est_oovs && is_oov) (*est_oovs)++;
+  			}
+  		}
+  	}
+
+  	//    if (pest_sum) *pest_sum = est_sum;
+  	if (current_outgoing_state) {
+  		state.ZeroRemaining(); //TODO try kMaxOrder to 3 for performances
+  		SetFlag(saw_eos, HAS_EOS_ON_RIGHT, current_outgoing_state);//TODO? set this flag for head_outgoing_state?
+  		SetUnscoredSize(num_estimated, current_outgoing_state);
+  		if(head_outgoing_state) SetRemnantLMState(state, head_outgoing_state);
+  		SetHasFullContext(context_complete || (num_scored/*+1*/ >= order_), current_outgoing_state);//?+1 since flag if next will have full context |order-1|
+#ifdef DEBUG_ULM
+  		if(head_outgoing_state){
+  			cerr << " final head_outgoing_state = ";
+  			PringLMS(head_outgoing_state);
+  		}
+#endif
+  	}
+
+#ifdef DEBUG_ULM
+  	cerr << "-----------------------"<<endl;
+#endif
+  	return sum;
   }
   //GU Utils
   void* FFS2LMS(FFState* ffs_state,int spos){ //FFState to LMState
-	  return &(*ffs_state)[spos];
+  	return &(*ffs_state)[spos];
   }
   void PringLMS(void* lms){//Print LMS (both sides)
-	  cerr << "LMSS (" << lms << ") = [ " ;
-	  cerr << RemnantLMState(lms)<<endl;
-	  int unscored_size=UnscoredSize(lms);
-	  cerr << "\t\t unscored size    : " << unscored_size << endl;
-	  cerr << "\t\t has eos on right : " << GetFlag(lms, HAS_EOS_ON_RIGHT) << endl;
-	  cerr << "\t\t has full context : " << HasFullContext(lms) << endl;
-	  cerr << "\t\t boundary words   : <";
-	  for(int i=0; i<unscored_size; i++){
-		  cerr << " W[" << i << "] : " << IthUnscoredWord(i, lms);
-	  }
-	  cerr << " >" << endl;
-	  cerr << "]" << endl;
+  	cerr << "LMSS (" << lms << ") = [ " ;
+  	cerr << RemnantLMState(lms)<<endl;
+  	int unscored_size=UnscoredSize(lms);
+  	cerr << "\t\t unscored size    : " << unscored_size << endl;
+  	cerr << "\t\t has eos on right : " << GetFlag(lms, HAS_EOS_ON_RIGHT) << endl;
+  	cerr << "\t\t has full context : " << HasFullContext(lms) << endl;
+  	cerr << "\t\t boundary words   : <";
+  	for(int i=0; i<unscored_size; i++){
+  		cerr << " W[" << i << "] : " << IthUnscoredWord(i, lms);
+  	}
+  	cerr << " >" << endl;
+  	cerr << "]" << endl;
   }
 
   // this assumes no target words on final unary -> goal rule.  is that ok?
   // for <s> (n-1 left words) and (n-1 right words) </s>
   double FinalTraversalCost(const void* state, double* oovs) {
-    if (add_sos_eos_) {  // rules do not produce <s> </s>, so do it here
-      SetRemnantLMState(ngram_->BeginSentenceState(), dummy_state_);
-      SetHasFullContext(1, dummy_state_);
-      SetUnscoredSize(0, dummy_state_);
-      dummy_ants_[1] = state;
-      *oovs = 0;
-      return LookupWords(*dummy_rule_, dummy_ants_, NULL, oovs, NULL, NULL);
-    } else {  // rules DO produce <s> ... </s>
-      double p = 0;
-      if (!GetFlag(state, HAS_EOS_ON_RIGHT)) { p -= 100; }
-      if (UnscoredSize(state) > 0) {  // are there unscored words
-        if (kSOS_ != IthUnscoredWord(0, state)) {
-          p -= 100 * UnscoredSize(state);
-        }
-      }
-      return p;
-    }
+  	if (add_sos_eos_) {  // rules do not produce <s> </s>, so do it here
+  		SetRemnantLMState(ngram_->BeginSentenceState(), dummy_state_);
+  		SetHasFullContext(1, dummy_state_);
+  		SetUnscoredSize(0, dummy_state_);
+  		dummy_ants_[1] = state;
+  		*oovs = 0;
+  		return LookupWords(*dummy_rule_, dummy_ants_, NULL, oovs, NULL, NULL);
+  	} else {  // rules DO produce <s> ... </s>
+  		double p = 0;
+  		if (!GetFlag(state, HAS_EOS_ON_RIGHT)) { p -= 100; }
+  		if (UnscoredSize(state) > 0) {  // are there unscored words
+  			if (kSOS_ != IthUnscoredWord(0, state)) {
+  				p -= 100 * UnscoredSize(state);
+  			}
+  		}
+  		return p;
+  	}
   }
 
   // if this is not a class-based LM, returns w untransformed,

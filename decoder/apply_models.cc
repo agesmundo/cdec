@@ -301,7 +301,7 @@ public:
 #endif
     				for (int i = 0; i < cands.size(); ++i){
 #ifdef DEBUG_GU
-    					cerr << "\tDelete : (id:"<<i<<")  " <<*cands[i]<<endl;
+    					cerr << "\tDelete : (id:"<<i<<")  " <<cands[i]<<endl;
 #endif
     					delete cands[i];
     				}
@@ -386,7 +386,7 @@ public:
 
     	//IF WRONG
 #ifdef DEBUG_GU
-    		cerr<< "\tLEARN FROM WRONG PREDICTION:" << endl;
+    		cerr<< "\nLEARN FROM WRONG PREDICTION:" << endl;
 #endif
 
     	//find first correct

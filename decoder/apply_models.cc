@@ -235,19 +235,7 @@ public:
 #endif
 
     	//best action candidate
-//    	cerr << "max element " << **max_element(cands.begin(), cands.end(),HeapCandCompare()) <<endl;
-//    	for (int i=0; i < cands.size();i++){
-//    		cerr <<"cands(" << i << ") " << cands[i]<< endl;
-//    	}
-//    	cerr << "cands.back() "<< *cands.back()<< endl;
-
-    	swap(*max_element(cands.begin(), cands.end(),HeapCandCompare()), cands.back()); //TODO use heap?? NO!
-    	topCand=cands.back();
-    	cands.pop_back();
-
-//    	for (int i=0; i < cands.size();i++){
-//    		cerr <<"cands(" << i << ") " << cands[i]<< endl;
-//    	}
+    	topCand=*max_element(cands.begin(), cands.end(),HeapCandCompare()); //TODO use heap?? NO!
 
 
   #ifdef DEBUG_GU
@@ -255,6 +243,10 @@ public:
   #endif
 
     	if(!is_training_ || IsCorrect(*topCand)){
+
+    		//POP BEST FROM QUEUE
+      	swap(topCand, cands.back());
+      	cands.pop_back();
 
     		//IF CORRECT
 #ifdef DEBUG_GU
@@ -435,7 +427,7 @@ public:
     		cerr<< "\nFIND FIRST CORRECT" << endl;
 #endif
     		UCandidate* correctCand=NULL;
-    		sort(cands.begin(), cands.end(), EstProbSorter()); //TODO try iteration of pop heap (faster?) {make_heap(i++,end),cands(i)}
+    		sort(cands.begin(), cands.end(), EstProbSorter()); //TODO try iteration of pop heap (faster?) {make_heap(),pop_heap() [O(n+logn)]}
     		for(int i = 1;i<cands.size() ; i++){//start from 1 to skip last that is topCand (wrong)
 #ifdef DEBUG_GU
     			cerr << "\tIs correct?: " << *cands[i] << endl;

@@ -235,8 +235,8 @@ public:
 #endif
 
     	//best action candidate
-    	topCand=*max_element(cands.begin(), cands.end(),HeapCandCompare()); //TODO use heap?? NO!
-
+    	swap(*max_element(cands.begin(), cands.end(),HeapCandCompare()), cands.back());//TODO use heap?? NO!
+    	topCand=cands.back();
 
   #ifdef DEBUG_GU
   	  cerr << "BEST IS: " << *topCand << "\n";
@@ -245,36 +245,19 @@ public:
     	if(!is_training_ || IsCorrect(*topCand)){
 
     		//POP BEST FROM QUEUE
-      	swap(topCand, cands.back());
       	cands.pop_back();
+
+//XXX #ifdef DEBUG_GU
+//	  cerr << "BEST IS: " << *topCand << "\n";
+//#endif
 
     		//IF CORRECT
 #ifdef DEBUG_GU
     		cerr << "\nCORRECT || !TRAINING:" << endl;
 #endif
 
-    		//DELETE ALL QUEUE
-    		//TODO this is kind of brute force (think on how to reuse)
-    		//TODO keep all non conflicting elements? how??
-    		//free mem of discarted cands
-//    		for (int i = 1; i < cands.size(); ++i){//starts from 1 because best has been moved to cands.begin()
-//#ifdef DEBUG_GU
-//    			cerr << "FREE : (id:"<<i<<")  " <<cands[i]<<endl;
-//#endif
-//    			delete cands[i];
-//    		}
-
-//#ifdef DEBUG_GU
-//    		cerr << " EMPTY cands" << " | cands.size(): "<< cands.size()<<" ->";
-//#endif
-//    		cands.erase(cands.begin(),cands.end());
-//#ifdef DEBUG_GU
-//    		cerr << " | cands.size(): "<< cands.size()<<endl;
-////    		cerr << "SELECTED: "<< *topCand<<endl;
-//#endif
-
 #ifdef DEBUG_GU
-    		cerr << "\nREMOVE ALTERNATIVE CANDIDATES\n" << "\n\tInit cands.size(): "<< cands.size()<<endl;
+    		cerr << "\nREMOVE ALTERNATIVE CANDIDATES\n" << "\tInit cands.size(): "<< cands.size()<<endl;
 #endif
     		if(topCand->HasSource()){//this is not first loop leaf, delete alternatives cands
     			for (int i = 0; i < cands.size();){
@@ -290,61 +273,45 @@ public:
     					i++;
     				}
     			}
-    		}
-    		else{//this is first loop, delete all queue
-#ifdef DEBUG_GU
-    				cerr << " \tFirst loop: empty candidates queue" <<endl;
-#endif
-    				for (int i = 0; i < cands.size(); ++i){
-#ifdef DEBUG_GU
-    					cerr << "\tDelete : (id:"<<i<<")  " <<cands[i]<<endl;
-#endif
-    					delete cands[i];
-    				}
 
-    				cands.erase(cands.begin(),cands.end());
-    		}
 #ifdef DEBUG_GU
     		cerr << "\tTopCand (still exists): "<< *topCand<<endl;
     		cerr << "\tFinal cands.size(): "<< cands.size()<<endl;
 #endif
 
-//    		//PUT IN LIST OF BORDER CANDS
-//    		if(topCand->HasMissingLink()){
-//    			boundary.push_back(topCand);
-//#ifdef DEBUG_GU
-//    		cerr << " ADD TO BOUNDARY: "<< topCand<<"\n";
-//#endif
-//    		}
-
     		//UPDATE SOURCE UCAND LINK
-    		if(topCand->HasSource()){
 #ifdef DEBUG_GU
-    		cerr << "\nUPDATE SOURCE UCAND LINK\n\tSource: "<< *topCand->GetSourceUCand()<<endl;
+    			cerr << "\nUPDATE SOURCE UCAND LINK\n\tSource: "<< *topCand->GetSourceUCand()<<endl;
 #endif
-			assert(topCand->GetSourceUCand()->CreateLink(topCand));
+    			assert(topCand->GetSourceUCand()->CreateLink(topCand));
 #ifdef DEBUG_GU
-    		cerr << "\tSource updated: "<< *topCand->GetSourceUCand()<<endl;
+    			cerr << "\tSource updated: "<< *topCand->GetSourceUCand()<<endl;
 #endif
 
-    		//TODO GU update state
+    			//TODO GU update state
+#ifdef DEBUG_GU
+    			cerr << "\nSTATE UPDATE PROPAGATION\n\tTODO!!!"<< endl;
+#endif
 
-//    			if(!topCand->GetSourceUCand()->HasMissingLink()){
-//#ifdef DEBUG_GU
-//    				cerr << "SOURCE: REMOVED FROM BOUNDARY"<<endl;
-//#endif
-//    				//remove source ucand from list if no more missing links
-//    				UCandidateList::iterator it = find(boundary.begin(),boundary.end(),topCand->GetSourceUCand());
-//    				boundary.erase(it);//TODO GU!!! this in not efficient, use different data structure?
-//    			}else{
-//    				//source ucand update
-//
-//    				//TODO GU update state
-//
-//#ifdef DEBUG_GU
-//    		cerr << "SOURCE UPDATED 2: "<< *topCand->GetSourceUCand()<<endl;
-//#endif
-//    			}
+    		}
+    		else{//this is first loop, delete all queue
+
+#ifdef DEBUG_GU
+    				cerr << " \tFirst loop: empty candidates queue" <<endl;
+#endif
+    				for (int i = 0; i < cands.size(); ++i){
+#ifdef DEBUG_GU
+    					cerr << "\tDelete : (id:"<<i<<")  " <<*cands[i]<<endl;
+#endif
+    					delete cands[i];
+    				}
+
+    				cands.erase(cands.begin(),cands.end());
+
+#ifdef DEBUG_GU
+    		cerr << "\tTopCand (still exists): "<< *topCand<<endl;
+    		cerr << "\tFinal cands.size(): "<< cands.size()<<endl;
+#endif
     		}
 
     		//ADD IN QUEUE UCANDS FROM TOP UCAND
@@ -427,7 +394,7 @@ public:
     		cerr<< "\nFIND FIRST CORRECT" << endl;
 #endif
     		UCandidate* correctCand=NULL;
-    		sort(cands.begin(), cands.end(), EstProbSorter()); //TODO try iteration of pop heap (faster?) {make_heap(),pop_heap() [O(n+logn)]}
+    		sort(cands.begin(), cands.end(), EstProbSorter()); //TODO skip last element (is wrong best)//TODO try iteration of pop heap (faster?) {make_heap(),pop_heap() [O(n+logn)]}
     		for(int i = 1;i<cands.size() ; i++){//start from 1 to skip last that is topCand (wrong)
 #ifdef DEBUG_GU
     			cerr << "\tIs correct?: " << *cands[i] << endl;

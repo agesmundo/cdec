@@ -12,20 +12,23 @@ TODO code style
 
 110825
 OK!	smarter queue update (avoid full deletion)
-	mem leaks (valgrind) on quick
+OK!	mem leaks (valgrind) on quick & lat
 	-test if faster on whole corpus:	
 	time,	score
 GU	63s	13.44
 CP	159s	32.14
-	to compare with brute try with no LM and compare with 110713 
+	to compare with brute try with no LM 
+	ON LAPTOP (compare with 110713)
+NEW PROPAG. GU	37s 	12.78
+CP		66s	10.25 (match 110713)
+	ON DESKTOP
 NEW PROPAG. GU	54s	12.01
 BRUTE PROP. GU	67s	12.01
 CP		87s	6.23
 FULL		102s	6.22
 	-comments:
-	on office desk not lap
-	??? diff score & diff proportion in no LM?
-	anyway GU is always faster (60% in last with LM)
+	GU is always faster (60% in last with LM, new propagation is faster)
+	scores are meaningless
 
 110713 
 OK!	adapt language model

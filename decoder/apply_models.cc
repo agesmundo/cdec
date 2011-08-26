@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <tr1/unordered_map>
 #include <tr1/unordered_set>
+#include <stack>
 
 #include <boost/functional/hash.hpp>
 
@@ -284,13 +285,26 @@ public:
     			cerr << "\tSource updated: "<< *topCand->GetSourceUCand()<<endl;
 #endif
 
-    			//TODO GU update state
+    			//STATE UPDATE BACKWARD PROPAGATION IN TREE
 #ifdef DEBUG_GU
     			cerr << "\nSTATE UPDATE PROPAGATION\n\tTODO!!!"<< endl;
 #endif
+    			stack<UCandidate*> candsToUpdate;
+    			candsToUpdate.push(topCand->GetSourceUCand());
+    			while(!candsToUpdate.empty()){
+    				UCandidate* curr = candsToUpdate.top();
+    				candsToUpdate.pop();
+    				//TODO? speedup: avoid propagation for tails and root (no missing links, no further porpagations)
+
+#ifdef DEBUG_GU
+    			cerr << "\tCurrent cand: "<< *curr<< endl;
+#endif
+					//TODO should return info about which direction need further propagations (and then add in stack those)
+					curr->UpdateStates(candsToUpdate);
+    			}
 
     		}
-    		else{//this is first loop, delete all queue
+    		else{//this is first loop, delete all queue, no propagation
 
 #ifdef DEBUG_GU
     				cerr << " \tFirst loop: empty candidates queue" <<endl;

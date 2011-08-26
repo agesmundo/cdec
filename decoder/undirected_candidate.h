@@ -2,6 +2,7 @@
 #define _UNDIRECTED_CANDIDATE_H_
 
 #include <iostream>
+#include <stack>
 #include "ff.h"
 
 struct ModelSet;
@@ -10,8 +11,8 @@ struct SentenceMetadata;
 
 // Define the following macro if you want to see lots of debugging output
 // when running Guided Undirected Greedy decoding
-//#define DEBUG_GU
-#undef DEBUG_GU
+#define DEBUG_GU
+//#undef DEBUG_GU
 
 /////////////////////////////////////
 //added here because model uses UCand as generalization of Edge
@@ -25,14 +26,18 @@ struct UCandidate;
 typedef vector<UCandidate*> UCandidateHeap;//TODO GU create struct with methods
 typedef vector<UCandidate*> UCandidateList;
 typedef SmallVector<UCandidate*,3> LinksVector;
-typedef pair<int,FFState*>  Node2State;
+//typedef pair<int,FFState*>  Node2State;
 
 struct UCandidate {
   //int ucand_index_;                     // -1 until popped from queue
 
   const Hypergraph::Edge* in_edge_;    // in -LM forest
-  Node2State** outgoing_states_;         //in_node_id 2 state seen from that node //array max 2 elements (simple map)
-  int outgoing_states_size_; //TODO make constant!
+
+  FFState** outgoing_states_;
+
+  //  Node2State** outgoing_states_;         //in_node_id 2 state seen from that node //array max 2 elements (simple map)
+//  int outgoing_states_size_; //no need, need a state for each link (also source to check if update)
+
 //  FFState state_;
 
   //TODO? add pointer to in_edge feature for local features and avoid copy in costructor?
@@ -56,6 +61,10 @@ struct UCandidate {
 
   prob_t action_prob_;
 
+  //needed to call update to features //TODO should be static
+  const SentenceMetadata& smeta_;
+  const ModelSet& models_;
+
   UCandidate(const Hypergraph::Edge& e,
 		    const LinksVector& lv,
             //const vector<UCandidateList>& D,
@@ -67,11 +76,19 @@ struct UCandidate {
 
   void InitStates(size_t state_size);
 
+  void AllocStates();
+
   ~UCandidate();
+
+  void DeleteStates(FFState** states);
 
 //  bool IsSelected() const;
 
 //  bool HasSingleMissingLink() const;
+
+  inline int NLinks();
+
+  void UpdateStates(stack<UCandidate*> stck);
 
   bool HasMissingLink() const;
 
@@ -87,7 +104,9 @@ struct UCandidate {
 
   FFState* GetTailIncomingState(int tail_id);
 
-  FFState* GetOutgoingState(int node_id);
+  FFState* GetHeadOutgoingState();
+
+  FFState* GetTailOutgoingState(int node_id);
 
   bool HasSource();
 

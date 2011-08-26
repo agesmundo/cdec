@@ -18,60 +18,85 @@ using namespace std;
             /*bool is_goal*/) :
       //ucand_index_(-1),
       in_edge_(&e),
-      context_links_(context), //TODO why copy this? use pointer instead
-      source_link_(sl){
+      context_links_(context), //TODO why copy this?//TODO!!! use pointer to array like outgoing states//NLinks to variable!!!
+      source_link_(sl),
+	  smeta_(smeta),//TODO check is not making a copy!
+	  models_(models){//TODO check is not making a copy!
 	    feature_values_ = in_edge_->feature_values_;
-	    outgoing_states_size_=context_links_.size();
-	    if(HasSource())outgoing_states_size_--;//no need to keep state for source link
-	    bool is_goal = (IsGoal());
-	    if(is_goal) {
-	    	outgoing_states_size_--;//no need to keep state for Goal node
-	    }
-#ifdef DEBUG_GU
-	    assert(outgoing_states_size_>=0);
-	    assert(outgoing_states_size_<=2);
-#endif
-    	if(outgoing_states_size_>0){
-    		outgoing_states_ = new Node2State*[outgoing_states_size_];
-    		int it=0;
-    		if(!is_goal && source_link_!=0) {
-    			outgoing_states_[it++] = new Node2State(in_edge_->head_node_ ,NULL);
-    		}
-    		int tail_it=0;
-    		int context_it=1;
-    		while(it<outgoing_states_size_){
-    			if(source_link_!=context_it){
-    				outgoing_states_[it++]=new Node2State(in_edge_->tail_nodes_[tail_it],NULL);
-    			}
-    			context_it++;
-    			tail_it++;
-    		}
-    	}
-	    models.AddFeaturesToUCandidate(smeta, /*node_states,*/ this/*, &out_edge_, &state_, &edge_estimate*/);
+	    AllocStates();
+	    models_.AddFeaturesToUCandidate(smeta_, /*node_states,*/ this/*, &out_edge_, &state_, &edge_estimate*/);
+  }
+
+  UCandidate::~UCandidate(){
+	  DeleteStates(outgoing_states_);
+  }
+
+  void UCandidate::DeleteStates(FFState** states){
+	  for(int i=0;i<NLinks();i++){
+		  delete states[i]; //pair
+	  }
+	  delete[] states; //array
+  }
+
+
+  void UCandidate::AllocStates(){
+	  assert(NLinks()>0);//TODO on debug macro
+	  outgoing_states_ = new FFState*[NLinks()];
+	  for(int it=0;it<NLinks();it++){
+		  outgoing_states_[it]=new FFState;
+	  }
   }
 
   void UCandidate::InitStates(size_t state_size){
-	  for(int i=0;i<outgoing_states_size_;i++){
-		  FFState* state = new FFState;//(state_size) /TODO GU initialize with size
+
+	  for(int i=0;i<NLinks();i++){
+		  FFState* state = outgoing_states_[i];
+#ifdef DEBUG_GU
+		  assert(state!=NULL);
+#endif
 		  state->resize(state_size);
 		  if (state_size > 0) {
 		    memset(&(*state)[0], 0, state_size);
 		  }
-		  outgoing_states_[i]->second = state;
 #ifdef DEBUG_GU
 //		  cerr << " init outgoing_states_["<<i<<"] " << outgoing_states_[i]->first << " - " << outgoing_states_[i]->second << endl;
 #endif
 	  }
   }
 
-  UCandidate::~UCandidate(){
-	  for(int i=0;i<outgoing_states_size_;i++){
-		  delete outgoing_states_[i]->second; //FFState*
-		  delete outgoing_states_[i]; //pair
-	  }
-	  if (outgoing_states_size_>0) delete[] outgoing_states_; //array
+
+  inline int UCandidate::NLinks(){
+//	  return in_edge_.Arity()+1; //children + head
+	  return context_links_.size();
   }
 
+  void UCandidate::UpdateStates(stack<UCandidate*> stck){
+	  //store link to old states for comparison
+	  FFState** old_outgoing_states=outgoing_states_;
+
+	  //allocate new states
+	  AllocStates();
+
+	  //update states //TODO this also update scores that is kind of useless
+	  models_.AddFeaturesToUCandidate(smeta_, this);
+
+	  //compare old states to new
+	  for(int i=0;i<NLinks();i++){
+		  //TODO assert current source is not added //otherwise loop! anayway to ensure complexity must be one way propagation
+		  FFState& x = *outgoing_states_[i];
+		  FFState& y = *old_outgoing_states[i];
+		  if( !(*outgoing_states_[i] == *old_outgoing_states[i])){
+#ifdef DEBUG_GU
+			  assert(context_links_[i]);
+#endif
+			  stck.push(context_links_[i]);
+		  }
+	  }
+
+	  //delete old states
+	  DeleteStates(old_outgoing_states);
+
+  }
 
 //  bool UCandidate::HasSingleMissingLink() const{//TODO keep counter instead of computing?
 //	  int count =0;
@@ -107,9 +132,13 @@ using namespace std;
 	  return -1;
   }
 
-  FFState* UCandidate::GetOutgoingState(int node_id){
-	  for(int i=0;i<outgoing_states_size_;i++){
-		  if (outgoing_states_[i]->first==node_id ) return outgoing_states_[i]->second;
+  FFState* UCandidate::GetHeadOutgoingState(){
+	  return outgoing_states_[0];
+  }
+
+  FFState* UCandidate::GetTailOutgoingState(int node_id){
+	  for(int i=0;i<in_edge_->tail_nodes_.size();i++){
+		  if (in_edge_->tail_nodes_[i]==node_id ) return outgoing_states_[i+1];
 	  }
 	  return NULL;
   }
@@ -145,7 +174,7 @@ using namespace std;
 #endif
 	  if(IsGoal())return NULL;
 	  if (context_links_[0]==NULL) return NULL;
-	  return context_links_[0]->GetOutgoingState(in_edge_->head_node_);
+	  return context_links_[0]->GetTailOutgoingState(in_edge_->head_node_);
   }
 
   //returns NULL if tail is not incoming state
@@ -160,18 +189,19 @@ using namespace std;
 	  }
 #endif
 	  if (context_links_[tail_id+1]==NULL) return NULL;
-	  return context_links_[tail_id+1]->GetOutgoingState(in_edge_->tail_nodes_[tail_id]);
+	  return context_links_[tail_id+1]->GetHeadOutgoingState();
   }
 
   bool UCandidate::CreateLink(UCandidate* ucand){
 	  int node_id=ucand->GetSourceNodeId();
 #ifdef DEBUG_GU
 	  assert(node_id>=0);
+	  assert(context_links_.size()>0);
 #endif
 //	  if (ucand->source_link_==0)node_id =ucand->in_edge_->head_node_;
 //	  else node_id = ucand->in_edge_->tail_nodes_[ucand->source_link_-1];
 
-	  if(context_links_.size()>0 && context_links_[0]==NULL && in_edge_->head_node_==node_id){
+	  if(context_links_[0]==NULL && in_edge_->head_node_==node_id){
 		  context_links_[0]=ucand;
 		  return true;
 	  }

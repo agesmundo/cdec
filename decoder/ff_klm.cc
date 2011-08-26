@@ -255,7 +255,6 @@ class KLanguageModelImpl {
 
   	const Hypergraph::Edge& in_edge = *ucand.in_edge_;
   	const TRule& rule=*in_edge.rule_.get();
-  	const int head_node_id = in_edge.head_node_;
   	//const int source_node_id = ucand.GetSourceNodeId();
   	const vector<WordID>& e = rule.e();
   	lm::ngram::State state;
@@ -269,7 +268,7 @@ class KLanguageModelImpl {
   	//head outgoing state
   	current_outgoing_state=NULL;
   	void* head_outgoing_state=NULL;
-  	FFState* ffs_head_out=ucand.GetOutgoingState(head_node_id);
+  	FFState* ffs_head_out=ucand.GetHeadOutgoingState();
   	if(ffs_head_out!=NULL){
   		head_outgoing_state= FFS2LMS(ffs_head_out,spos);
   	}
@@ -366,7 +365,7 @@ class KLanguageModelImpl {
   				}
 
   				//set KLMState of tail out state
-  				FFState* ffs_tail_out = ucand.GetOutgoingState(in_edge.tail_nodes_[tail_id]);
+  				FFState* ffs_tail_out = ucand.GetTailOutgoingState(in_edge.tail_nodes_[tail_id]);
 #ifdef DEBUG_ULM
   				assert(ffs_tail_out!=NULL);
 #endif

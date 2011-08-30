@@ -86,7 +86,7 @@ struct UCandidate {
 
 //  bool HasSingleMissingLink() const;
 
-  inline int NLinks();
+  inline int NLinks() const;
 
   void UpdateStates(stack<UCandidate*> stck);
 

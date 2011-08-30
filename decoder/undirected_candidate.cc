@@ -65,7 +65,7 @@ using namespace std;
   }
 
 
-  inline int UCandidate::NLinks(){
+  inline int UCandidate::NLinks()const {
 //	  return in_edge_.Arity()+1; //children + head
 	  return context_links_.size();
   }
@@ -275,6 +275,10 @@ ostream& operator<<(ostream& os, const UCandidate& cand) {
   os << " context_links_=<";
   for (int i = 0; i < cand.context_links_.size(); ++i)
     os << (i==0 ? "" : " ") << cand.context_links_[i];
+  os << ">";
+  os << " outgoing_states_=<";
+  for (int i = 0; i < cand.NLinks(); ++i)
+    os << (i==0 ? "" : " ") << cand.outgoing_states_[i];
   os << ">";
   os<< " source_link_="<< cand.source_link_;
 //  os << vit=" << log(cand.vit_prob_);

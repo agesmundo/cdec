@@ -290,7 +290,7 @@ public:
     			cerr << "\nSTATE UPDATE PROPAGATION\n\tTODO!!!"<< endl;
 #endif
     			stack<UCandidate*> candsToUpdate;
-    			candsToUpdate.push(topCand->GetSourceUCand());
+    			candsToUpdate.push(topCand->GetSourceUCand());//TODO skip all this if state for source cand is all 0
     			while(!candsToUpdate.empty()){
     				UCandidate* curr = candsToUpdate.top();
     				candsToUpdate.pop();

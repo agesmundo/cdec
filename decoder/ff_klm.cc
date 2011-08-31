@@ -330,8 +330,15 @@ public:
     	if(ffs_head_in!=NULL){ //head is incoming state
     		head_incoming_state = FFS2LMS(ffs_head_in,spos);
     		state = RemnantLMState(head_incoming_state);
-    		num_scored = state.ValidLength();//TODO!! this is not numscored! is last valid length
     		context_complete =HasFullContext(head_incoming_state);
+    		if(context_complete){
+    			num_scored=order_-1; //or more it's the same //TODO try remove -1 should be the same
+    		}else{
+    			num_scored = state.ValidLength();//NB this is not numscored! is last valid length, this works for trigram or less, to generalize add a slot in state to store this value
+#ifdef DEBUG_ULM
+    			assert(num_scored==0 || num_scored==1);
+#endif
+    		}
 #ifdef DEBUG_ULM
     		cerr << "\tHEAD IMCOMING STATE("<< ffs_head_in << ")= ";
     		PrintLMS(head_incoming_state);
@@ -357,7 +364,7 @@ public:
     				void * next_outgoing_state = FFS2LMS(ffs_tail_out,spos);
     				state.ZeroRemaining();
     				SetRemnantLMState(state,next_outgoing_state);
-    				SetHasFullContext(context_complete || (num_scored >= order_), current_outgoing_state);
+    				SetHasFullContext(context_complete || (num_scored >= order_-1), next_outgoing_state);//NB -1
     			//}
 
     			FFState* ffs_tail_in = ucand.GetTailIncomingState(tail_id);
@@ -391,8 +398,8 @@ public:
     						saw_eos = (cur_word == kEOS_);
     					}
     					has_some_history = true;
-    					++num_scored;
     					if (!context_complete) {
+      					++num_scored;
     						if (num_scored >= order_) context_complete = true;
     					}
     					if (context_complete) {
@@ -411,15 +418,15 @@ public:
     					AddUscoredWord(prev_unscored_size,cur_word,prev_outgoing_state,saw_eos);
 
     				}
-    				saw_eos = GetFlag(tail_incoming_state, HAS_EOS_ON_RIGHT);
     				if (HasFullContext(tail_incoming_state)) { // this is equivalent to the "star" in Chiang 2007
+    					saw_eos = GetFlag(tail_incoming_state, HAS_EOS_ON_RIGHT);
     					state = RemnantLMState(tail_incoming_state);
     					context_complete = true;
     				}
 
       			//shift states
       			{
-      				//store current to prev in the case missing some uscored words
+      				//store current to prev in the case missing some unscored words
       				if(/*head_outgoing_state!=current_outgoing_state &&*/ current_outgoing_state!=NULL){
   #ifdef DEBUG_ULM
       					assert(prev_outgoing_state==NULL); //if this fail need generalize prev for all open prev using a vector
@@ -446,8 +453,10 @@ public:
     					SetFlag(saw_eos, HAS_EOS_ON_RIGHT, prev_outgoing_state);
     					SetUnscoredSize(prev_unscored_size, prev_outgoing_state);
 #ifdef DEBUG_ULM
-    					cerr << "\tPREV OUTGOING STATE = ";
-    					PrintLMS(prev_outgoing_state);
+    					if(prev_outgoing_state!=head_outgoing_state){
+    						cerr << "\tPREV OUTGOING STATE = ";
+    						PrintLMS(prev_outgoing_state);
+    					}
 #endif
     					prev_outgoing_state=NULL;
     				}
@@ -486,8 +495,8 @@ public:
     				saw_eos = (cur_word == kEOS_);
     			}
     			has_some_history = true;
-    			++num_scored;
     			if (!context_complete) {
+      			++num_scored;
     				if (num_scored >= order_) context_complete = true;
     			}
     			if (context_complete) {
@@ -508,8 +517,8 @@ public:
     	//write head outgoing KLM state
     	state.ZeroRemaining();
   		SetRemnantLMState(state, head_outgoing_state);
-  		SetHasFullContext(context_complete || (num_scored >= order_), head_outgoing_state); //?+1 since flag if next will have full context |order-1|
-  		SetFlag(saw_eos, HAS_EOS_ON_RIGHT, head_outgoing_state); //TODO? set this flag for head_outgoing_state? //TODO set it every time close a state??
+  		SetHasFullContext(context_complete || (num_scored >= order_-1), head_outgoing_state); //NB -1 since flag if next will have full context |order-1|
+  		SetFlag(saw_eos, HAS_EOS_ON_RIGHT, head_outgoing_state); //TODO? set this flag for head_outgoing_state? //TODO check set it every time close a state
   		if(head_outgoing_state==current_outgoing_state){
   			SetUnscoredSize(current_unscored_size, current_outgoing_state);
   			current_outgoing_state=NULL;
@@ -548,8 +557,8 @@ public:
     				saw_eos = (cur_word == kEOS_);
     			}
     			has_some_history = true;
-    			++num_scored;
     			if (!context_complete) {
+    				++num_scored;
     				if (num_scored >= order_) context_complete = true;
     			}
     			if (context_complete) {  				++current_unscored_size;

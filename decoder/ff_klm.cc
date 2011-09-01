@@ -311,8 +311,13 @@ public:
     	const vector<WordID> & e = rule.e();
     	lm::ngram::State state;
     	//bool hole =false;
-    	void *current_outgoing_state; int current_unscored_size = 0; //TODO GU try write directly in state space ?
-    	void *prev_outgoing_state=NULL; int prev_unscored_size = 0;
+    	void* uscored_ws_outgoing_states[ucand.NLinks()];//outgoing states collecting unscored words, ids : 0 head, 1 first child, 2 right child
+    	int unscored_ws_size[ucand.NLinks()];//number of unscored words for each outgoing state //TODO GU try write directly in state space ?
+    	for(int i=0;i<ucand.NLinks();i++){//initialize
+    		uscored_ws_outgoing_states[i]=NULL;
+    		unscored_ws_size[i]=0;
+    	}
+
     	cerr << "-----------------------\nUNDIRECTED LOOKUP WORDS" << endl;
     	cerr << "\tIn Edge :" << in_edge << endl;
 
@@ -322,7 +327,7 @@ public:
     	assert(ffs_head_out!=NULL);
 #endif
     	void* head_outgoing_state= FFS2LMS(ffs_head_out,spos);
-    	current_outgoing_state = head_outgoing_state;
+    	uscored_ws_outgoing_states[0] = head_outgoing_state;
 
     	//TODO GU these alternatives are related to head_outgoing_state selection (above)
     	FFState *ffs_head_in = ucand.GetHeadIncomingState();
@@ -410,13 +415,7 @@ public:
     						//					  est_sum += p;
     						//					  if (est_oovs && is_oov) (*est_oovs)++;
     					}
-    					AddUscoredWord(current_unscored_size,cur_word,current_outgoing_state,saw_eos);
-#ifdef DEBUG_ULM
-//    			PrintLMS(current_outgoing_state);
-    			cerr<< "~" <<endl; //this is just to distinguish the addUnscoredW outputs
-#endif
-    					AddUscoredWord(prev_unscored_size,cur_word,prev_outgoing_state,saw_eos);
-
+    					AddUscoredWord(unscored_ws_size,cur_word,uscored_ws_outgoing_states,saw_eos,ucand.NLinks());
     				}
     				if (HasFullContext(tail_incoming_state)) { // this is equivalent to the "star" in Chiang 2007
     					saw_eos = GetFlag(tail_incoming_state, HAS_EOS_ON_RIGHT);
@@ -424,51 +423,28 @@ public:
     					context_complete = true;
     				}
 
-      			//shift states
-      			{
-      				//store current to prev in the case missing some unscored words
-      				if(/*head_outgoing_state!=current_outgoing_state &&*/ current_outgoing_state!=NULL){
-  #ifdef DEBUG_ULM
-      					assert(prev_outgoing_state==NULL); //if this fail need generalize prev for all open prev using a vector
-  #endif
-      					prev_outgoing_state=current_outgoing_state;
-      					prev_unscored_size=current_unscored_size;
-      				}
-
-      			}
-
     			} else { //there is an hole
 
     				//close exiting state details
-    				if(current_outgoing_state){
-    					SetFlag(saw_eos, HAS_EOS_ON_RIGHT, current_outgoing_state);
-    					SetUnscoredSize(current_unscored_size, current_outgoing_state);
+    				for(int i=0;i<ucand.NLinks();i++){
+    					if(uscored_ws_outgoing_states[i]){
+    						SetFlag(saw_eos, HAS_EOS_ON_RIGHT, uscored_ws_outgoing_states[i]);
+    						SetUnscoredSize(unscored_ws_size[i], uscored_ws_outgoing_states[i]);
 #ifdef DEBUG_ULM
-    					cerr << "\tCURRENT OUTGOING STATE = ";
-    					PrintLMS(current_outgoing_state);
+    						cerr << "\tOUTGOING STATE["<< i <<"] = ";
+    						PrintLMS(uscored_ws_outgoing_states[i]);
 #endif
-    					current_outgoing_state=NULL;
-    				}
-    				if(prev_outgoing_state){
-    					SetFlag(saw_eos, HAS_EOS_ON_RIGHT, prev_outgoing_state);
-    					SetUnscoredSize(prev_unscored_size, prev_outgoing_state);
-#ifdef DEBUG_ULM
-    					if(prev_outgoing_state!=head_outgoing_state){
-    						cerr << "\tPREV OUTGOING STATE = ";
-    						PrintLMS(prev_outgoing_state);
+    						uscored_ws_outgoing_states[i]=NULL;
     					}
-#endif
-    					prev_outgoing_state=NULL;
     				}
 
     				state= ngram_->NullContextState();
-    				//  				SetUnscoredSize(num_estimated, current_outgoing_state);//TODO2 ???
+    				//  				SetUnscoredSize(num_estimated, current_outgoing_state);//TODO2 ???//XXX
     				context_complete = false;
     				num_scored=0;
     			}
 
-    			current_outgoing_state = next_outgoing_state;
-  				current_unscored_size=0;
+    			uscored_ws_outgoing_states[tail_id+1] = next_outgoing_state;
 
     		} else {   // *1 handle terminal
     			const WordID cdec_word_or_class = ClassifyWordIfNecessary(e[j]);  // in future,
@@ -506,11 +482,7 @@ public:
     				//          est_sum += p;
     				//          if (est_oovs && is_oov) (*est_oovs)++;
     			}
-    			AddUscoredWord(current_unscored_size,cur_word,current_outgoing_state,saw_eos);
-#ifdef DEBUG_ULM
-    			cerr<< "~" <<endl; //this is just to distinguish the addUnscoredW outputs
-#endif
-    			AddUscoredWord(prev_unscored_size,cur_word,prev_outgoing_state,saw_eos);
+    			AddUscoredWord(unscored_ws_size,cur_word,uscored_ws_outgoing_states,saw_eos,ucand.NLinks());
     		}
     	}
 
@@ -519,13 +491,11 @@ public:
   		SetRemnantLMState(state, head_outgoing_state);
   		SetHasFullContext(context_complete || (num_scored >= order_-1), head_outgoing_state); //NB -1 since flag if next will have full context |order-1|
   		SetFlag(saw_eos, HAS_EOS_ON_RIGHT, head_outgoing_state); //TODO? set this flag for head_outgoing_state? //TODO check set it every time close a state
-  		if(head_outgoing_state==current_outgoing_state){
-  			SetUnscoredSize(current_unscored_size, current_outgoing_state);
-  			current_outgoing_state=NULL;
-  		}else if(head_outgoing_state==prev_outgoing_state){
-  			SetUnscoredSize(prev_unscored_size, prev_outgoing_state);
-  			prev_outgoing_state=NULL;
+  		if(uscored_ws_outgoing_states[0]!=NULL){
+  			SetUnscoredSize(unscored_ws_size[0], uscored_ws_outgoing_states[0]);
+  			uscored_ws_outgoing_states[0]==NULL;
   		}
+
 #ifdef DEBUG_ULM
   		cerr << "\tFINAL HEAD OUTGOING STATE = ";
   		PrintLMS(head_outgoing_state);
@@ -561,7 +531,7 @@ public:
     				++num_scored;
     				if (num_scored >= order_) context_complete = true;
     			}
-    			if (context_complete) {  				++current_unscored_size;
+    			if (context_complete) {
 
     			sum += p;
     			if (oovs && is_oov) (*oovs)++;
@@ -569,31 +539,23 @@ public:
     				//          est_sum += p;
     				//          if (est_oovs && is_oov) (*est_oovs)++;
     			}
-    			AddUscoredWord(current_unscored_size,cur_word,current_outgoing_state,saw_eos);
-#ifdef DEBUG_ULM
-    			cerr<< "~" <<endl; //this is just to distinguish the addUnscoredW outputs
-#endif
-    			AddUscoredWord(prev_unscored_size,cur_word,prev_outgoing_state,saw_eos);
+    			AddUscoredWord(unscored_ws_size,cur_word,uscored_ws_outgoing_states,saw_eos,ucand.NLinks());
+
     		}
     	}
     	//    if (pest_sum) *pest_sum = est_sum;
 
 			//close exiting state details
-			if(current_outgoing_state){
-				SetFlag(saw_eos, HAS_EOS_ON_RIGHT, current_outgoing_state);
-				SetUnscoredSize(current_unscored_size, current_outgoing_state);
+			for(int i=0;i<ucand.NLinks();i++){
+				if(uscored_ws_outgoing_states[i]){
+					SetFlag(saw_eos, HAS_EOS_ON_RIGHT, uscored_ws_outgoing_states[i]);
+					SetUnscoredSize(unscored_ws_size[i], uscored_ws_outgoing_states[i]);
 #ifdef DEBUG_ULM
-				cerr << "\tCURRENT OUTGOING STATE = ";
-				PrintLMS(current_outgoing_state);
+					cerr << "\tOUTGOING STATE["<< i <<"] = ";
+					PrintLMS(uscored_ws_outgoing_states[i]);
 #endif
-			}
-			if(prev_outgoing_state){
-				SetFlag(saw_eos, HAS_EOS_ON_RIGHT, prev_outgoing_state);
-				SetUnscoredSize(prev_unscored_size, prev_outgoing_state);
-#ifdef DEBUG_ULM
-				cerr << "\tPREV OUTGOING STATE = ";
-				PrintLMS(prev_outgoing_state);
-#endif
+//					uscored_ws_outgoing_states[i]=NULL; //not needed if finishing methond
+				}
 			}
 
     	cerr << "-----------------------" << endl;
@@ -606,30 +568,29 @@ public:
     	//FFState to LMState
     	return &(*ffs_state)[spos];
     }
-    void AddUscoredWord(int & current_unscored_size, const lm::WordIndex cur_word, void * current_outgoing_state, bool& saw_eos)
+    void AddUscoredWord(int unscored_ws_size[], const lm::WordIndex cur_word, void * uscored_ws_outgoing_states[], bool& saw_eos, int array_size)
     {
-    	if(current_outgoing_state==NULL)return;
-    	//add unscored word in context
-    	assert(current_unscored_size<order_-1);
+    	for(int i=0;i<array_size;i++){
+    		if(uscored_ws_outgoing_states[i]==NULL)continue;
+    		//add unscored word in context
 #ifdef DEBUG_ULM
-    	cerr << "\t[?]_outgoing_state unscored word [" << current_unscored_size << "] to " << cur_word << endl;
-    	assert(current_outgoing_state);
+    		assert(unscored_ws_size[i]<order_-1);
+    		cerr << "\t[?]_outgoing_state unscored word [" << unscored_ws_size[i] << "] to " << cur_word << endl;
 #endif
-    	SetIthUnscoredWord(current_unscored_size, cur_word, current_outgoing_state);
-    	++current_unscored_size;
+    		SetIthUnscoredWord(unscored_ws_size[i], cur_word, uscored_ws_outgoing_states[i]);
+    		++unscored_ws_size[i];
 
-    	//if filled uscored word close this state
-    	if(current_unscored_size==order_-1){
-    		SetFlag(saw_eos, HAS_EOS_ON_RIGHT, current_outgoing_state);
-    		SetUnscoredSize(current_unscored_size, current_outgoing_state);
+    		//if filled uscored word close this state
+    		if(unscored_ws_size[i]==order_-1){
+    			SetFlag(saw_eos, HAS_EOS_ON_RIGHT, uscored_ws_outgoing_states[i]);
+    			SetUnscoredSize(unscored_ws_size[i], uscored_ws_outgoing_states[i]);
 #ifdef DEBUG_ULM
-    		cerr << "\tCURRENT OUTGOING STATE = ";
-    		PrintLMS(current_outgoing_state);
-
+    			cerr << "\tOUTGOING STATE["<<i<<"] = ";
+    			PrintLMS(uscored_ws_outgoing_states[i]);
 #endif
-    		current_outgoing_state=NULL;
+    			uscored_ws_outgoing_states[i]=NULL;
+    		}
     	}
-
     }
     void PrintLMS(void *lms) //Print LMS (both sides)
     {

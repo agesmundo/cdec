@@ -431,8 +431,10 @@ public:
     						SetFlag(saw_eos, HAS_EOS_ON_RIGHT, uscored_ws_outgoing_states[i]);
     						SetUnscoredSize(unscored_ws_size[i], uscored_ws_outgoing_states[i]);
 #ifdef DEBUG_ULM
-    						cerr << "\tOUTGOING STATE["<< i <<"] = ";
-    						PrintLMS(uscored_ws_outgoing_states[i]);
+    						if(i!=0){
+    							cerr << "\tOUTGOING STATE["<< i <<"] = ";
+    							PrintLMS(uscored_ws_outgoing_states[i]);
+    						}
 #endif
     						uscored_ws_outgoing_states[i]=NULL;
     					}
@@ -553,7 +555,7 @@ public:
 					SetFlag(saw_eos, HAS_EOS_ON_RIGHT, uscored_ws_outgoing_states[i]);
 					SetUnscoredSize(unscored_ws_size[i], uscored_ws_outgoing_states[i]);
 #ifdef DEBUG_ULM
-					cerr << "\tOUTGOING STATE["<< i <<"] = ";
+					cerr << "\tFINAL OUTGOING STATE["<< i <<"] = ";
 					PrintLMS(uscored_ws_outgoing_states[i]);
 #endif
 //					uscored_ws_outgoing_states[i]=NULL; //not needed if finishing methond

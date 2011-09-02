@@ -82,13 +82,12 @@ using namespace std;
 
 	  //compare old states to new
 	  for(int i=0;i<NLinks();i++){
-		  //TODO assert current source is not added //otherwise loop! anayway to ensure complexity must be one way propagation
-		  if( !(*outgoing_states_[i] == *old_outgoing_states[i])){
-#ifdef DEBUG_GU
-			  assert(context_links_[i]);
-#endif
-			  stck.push(context_links_[i]);
-		  }
+	  	if(context_links_[i]){
+	  		//TODO assert current source is not added //otherwise loop! anyway to ensure complexity must be one way propagation
+	  		if( !(*outgoing_states_[i] == *old_outgoing_states[i])){
+	  			stck.push(context_links_[i]);
+	  		}
+	  	}
 	  }
 
 	  //delete old states

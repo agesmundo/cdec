@@ -287,7 +287,7 @@ public:
 
     			//STATE UPDATE BACKWARD PROPAGATION IN TREE
 #ifdef DEBUG_GU
-    			cerr << "\nSTATE UPDATE PROPAGATION\n\tTODO!!!"<< endl;
+    			cerr << "\nSTATE UPDATE PROPAGATION"<< endl;
 #endif
     			stack<UCandidate*> candsToUpdate;
     			candsToUpdate.push(topCand->GetSourceUCand());//TODO skip all this if state for source cand is all 0

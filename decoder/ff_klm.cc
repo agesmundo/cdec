@@ -425,7 +425,7 @@ public:
 
     			} else { //there is an hole
 
-    				//close exiting state details
+    				//close outgoing states
     				for(int i=0;i<ucand.NLinks();i++){
     					if(uscored_ws_outgoing_states[i]){
     						SetFlag(saw_eos, HAS_EOS_ON_RIGHT, uscored_ws_outgoing_states[i]);
@@ -490,12 +490,11 @@ public:
     	state.ZeroRemaining();
   		SetRemnantLMState(state, head_outgoing_state);
   		SetHasFullContext(context_complete || (num_scored >= order_-1), head_outgoing_state); //NB -1 since flag if next will have full context |order-1|
-  		SetFlag(saw_eos, HAS_EOS_ON_RIGHT, head_outgoing_state); //TODO? set this flag for head_outgoing_state? //TODO check set it every time close a state
-  		if(uscored_ws_outgoing_states[0]!=NULL){
+  		SetFlag(saw_eos, HAS_EOS_ON_RIGHT, head_outgoing_state); //TODO check set it every time close a state
+  		if(uscored_ws_outgoing_states[0]){
   			SetUnscoredSize(unscored_ws_size[0], uscored_ws_outgoing_states[0]);
-  			uscored_ws_outgoing_states[0]==NULL;
+  			uscored_ws_outgoing_states[0]=NULL;
   		}
-
 #ifdef DEBUG_ULM
   		cerr << "\tFINAL HEAD OUTGOING STATE = ";
   		PrintLMS(head_outgoing_state);
@@ -545,8 +544,11 @@ public:
     	}
     	//    if (pest_sum) *pest_sum = est_sum;
 
-			//close exiting state details
-			for(int i=0;i<ucand.NLinks();i++){
+			//close outgoing tail states
+#ifdef DEBUG_ULM
+    	assert(uscored_ws_outgoing_states[0]==NULL);
+#endif
+			for(int i=1;i<ucand.NLinks();i++){
 				if(uscored_ws_outgoing_states[i]){
 					SetFlag(saw_eos, HAS_EOS_ON_RIGHT, uscored_ws_outgoing_states[i]);
 					SetUnscoredSize(unscored_ws_size[i], uscored_ws_outgoing_states[i]);

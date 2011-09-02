@@ -417,10 +417,16 @@ public:
     					}
     					AddUscoredWord(unscored_ws_size,cur_word,uscored_ws_outgoing_states,saw_eos,ucand.NLinks());
     				}
-    				if (HasFullContext(tail_incoming_state)) { // this is equivalent to the "star" in Chiang 2007
-    					saw_eos = GetFlag(tail_incoming_state, HAS_EOS_ON_RIGHT);
-    					state = RemnantLMState(tail_incoming_state);
-    					context_complete = true;
+    				saw_eos = GetFlag(tail_incoming_state, HAS_EOS_ON_RIGHT);
+    				state = RemnantLMState(tail_incoming_state);
+    				context_complete = HasFullContext(tail_incoming_state);
+    				if(context_complete){
+    					num_scored=order_-1; //or more it's the same //TODO try remove -1 should be the same
+    				}else{
+    					num_scored = state.ValidLength();//NB this is not numscored! is last valid length, this works for trigram or less, to generalize add a slot in state to store this value
+#ifdef DEBUG_ULM
+    					assert(num_scored==0 || num_scored==1);
+#endif
     				}
 
     			} else { //there is an hole
@@ -432,7 +438,7 @@ public:
     						SetUnscoredSize(unscored_ws_size[i], uscored_ws_outgoing_states[i]);
 #ifdef DEBUG_ULM
     						if(i!=0){
-    							cerr << "\tOUTGOING STATE["<< i <<"] = ";
+    							cerr << "\tFINAL OUTGOING STATE["<< i <<"] = ";
     							PrintLMS(uscored_ws_outgoing_states[i]);
     						}
 #endif

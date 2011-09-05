@@ -10,3 +10,9 @@ args:
 -c conf.ini -w weights -i in.txt -I Greedy_Undirected
 dir:
 ${workspace_loc:LG/cdemo/quick}
+
+LG quick train
+args:
+-c conf.ini -w weights -i in.txt -I Greedy_Undirected_Training
+dir
+${workspace_loc:LG/cdemo/quick}

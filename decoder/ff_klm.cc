@@ -310,7 +310,6 @@ public:
     	//const int source_node_id = ucand.GetSourceNodeId();
     	const vector<WordID> & e = rule.e();
     	lm::ngram::State state;
-    	//bool hole =false;
     	void* uscored_ws_outgoing_states[ucand.NLinks()];//outgoing states collecting unscored words, ids : 0 head, 1 first child, 2 right child
     	int unscored_ws_size[ucand.NLinks()];//number of unscored words for each outgoing state //TODO GU try write directly in state space ?
     	for(int i=0;i<ucand.NLinks();i++){//initialize
@@ -329,12 +328,12 @@ public:
     	void* head_outgoing_state= FFS2LMS(ffs_head_out,spos);
     	uscored_ws_outgoing_states[0] = head_outgoing_state;
 
-    	//TODO GU these alternatives are related to head_outgoing_state selection (above)
     	FFState *ffs_head_in = ucand.GetHeadIncomingState();
     	void* head_incoming_state=NULL;
     	if(ffs_head_in!=NULL){ //head is incoming state
     		head_incoming_state = FFS2LMS(ffs_head_in,spos);
     		state = RemnantLMState(head_incoming_state);
+    		saw_eos = GetFlag(head_incoming_state, HAS_EOS_ON_RIGHT);
     		context_complete =HasFullContext(head_incoming_state);
     		if(context_complete){
     			num_scored=order_-1; //or more it's the same //TODO try remove -1 should be the same
@@ -351,25 +350,27 @@ public:
     	}
     	else{
     		state= ngram_->NullContextState();
-    		context_complete = false;
+//XXX    		context_complete = false;
 #ifdef DEBUG_ULM
     		cerr << "\tNO HEAD IMCOMING STATE"<<endl;
 #endif
     	}
+
     	for (int j = 0; j < e.size(); ++j) {
     		if (e[j] < 1) {   // handle non-terminal substitution
     			int tail_id=-e[j];
 
     			//store KLM state in coming out state
     			//{
-    				FFState* ffs_tail_out = ucand.GetTailOutgoingState(in_edge.tail_nodes_[tail_id]);
+    			FFState* ffs_tail_out = ucand.outgoing_states_[tail_id+1];
 #ifdef DEBUG_ULM
-    				assert(ffs_tail_out!=NULL);
+    			assert(ffs_tail_out!=NULL);
 #endif
-    				void * next_outgoing_state = FFS2LMS(ffs_tail_out,spos);
-    				state.ZeroRemaining();
-    				SetRemnantLMState(state,next_outgoing_state);
-    				SetHasFullContext(context_complete || (num_scored >= order_-1), next_outgoing_state);//NB -1
+    			void * next_outgoing_state = FFS2LMS(ffs_tail_out,spos);
+    			state.ZeroRemaining();
+    			SetRemnantLMState(state,next_outgoing_state);
+    			SetFlag(saw_eos, HAS_EOS_ON_RIGHT, next_outgoing_state);
+    			SetHasFullContext(context_complete || (num_scored >= order_-1), next_outgoing_state);//NB -1
     			//}
 
     			FFState* ffs_tail_in = ucand.GetTailIncomingState(tail_id);
@@ -417,8 +418,8 @@ public:
     					}
     					AddUscoredWord(unscored_ws_size,cur_word,uscored_ws_outgoing_states,saw_eos,ucand.NLinks());
     				}
-    				saw_eos = GetFlag(tail_incoming_state, HAS_EOS_ON_RIGHT);
     				state = RemnantLMState(tail_incoming_state);
+    				saw_eos = saw_eos || GetFlag(tail_incoming_state, HAS_EOS_ON_RIGHT);
     				context_complete = HasFullContext(tail_incoming_state);
     				if(context_complete){
     					num_scored=order_-1; //or more it's the same //TODO try remove -1 should be the same
@@ -434,7 +435,6 @@ public:
     				//close outgoing states
     				for(int i=0;i<ucand.NLinks();i++){
     					if(uscored_ws_outgoing_states[i]){
-    						SetFlag(saw_eos, HAS_EOS_ON_RIGHT, uscored_ws_outgoing_states[i]);
     						SetUnscoredSize(unscored_ws_size[i], uscored_ws_outgoing_states[i]);
 #ifdef DEBUG_ULM
     						if(i!=0){
@@ -497,8 +497,8 @@ public:
     	//write head outgoing KLM state
     	state.ZeroRemaining();
   		SetRemnantLMState(state, head_outgoing_state);
+  		SetFlag(saw_eos, HAS_EOS_ON_RIGHT, head_outgoing_state);
   		SetHasFullContext(context_complete || (num_scored >= order_-1), head_outgoing_state); //NB -1 since flag if next will have full context |order-1|
-  		SetFlag(saw_eos, HAS_EOS_ON_RIGHT, head_outgoing_state); //TODO check set it every time close a state
   		if(uscored_ws_outgoing_states[0]){
   			SetUnscoredSize(unscored_ws_size[0], uscored_ws_outgoing_states[0]);
   			uscored_ws_outgoing_states[0]=NULL;
@@ -558,7 +558,6 @@ public:
 #endif
 			for(int i=1;i<ucand.NLinks();i++){
 				if(uscored_ws_outgoing_states[i]){
-					SetFlag(saw_eos, HAS_EOS_ON_RIGHT, uscored_ws_outgoing_states[i]);
 					SetUnscoredSize(unscored_ws_size[i], uscored_ws_outgoing_states[i]);
 #ifdef DEBUG_ULM
 					cerr << "\tFINAL OUTGOING STATE["<< i <<"] = ";

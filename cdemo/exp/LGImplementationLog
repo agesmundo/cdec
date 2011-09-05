@@ -15,6 +15,7 @@ OK!	smarter queue update (avoid full deletion)
 OK!	mem leaks (valgrind) on quick & lat
 	-test if faster on whole corpus:	
 	time,	score
+GU+	65s	13.44 //110905 LM all out states
 GU	63s	13.44
 CP	159s	32.14
 	to compare with brute try with no LM 

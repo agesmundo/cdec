@@ -15,8 +15,8 @@ using namespace std;
 
 // Define the following macro if you want to see lots of debugging output
 // when running Undirected KLM
-#define DEBUG_ULM
-//#undef DEBUG_ULM
+//#define DEBUG_ULM
+#undef DEBUG_ULM
 
 static const unsigned char HAS_FULL_CONTEXT = 1;
 static const unsigned char HAS_EOS_ON_RIGHT = 2;
@@ -317,8 +317,10 @@ public:
     		unscored_ws_size[i]=0;
     	}
 
+#ifdef DEBUG_ULM
     	cerr << "-----------------------\nUNDIRECTED LOOKUP WORDS" << endl;
     	cerr << "\tIn Edge :" << in_edge << endl;
+#endif
 
     	//head outgoing state
     	FFState *ffs_head_out = ucand.GetHeadOutgoingState();
@@ -567,7 +569,9 @@ public:
 				}
 			}
 
+#ifdef DEBUG_ULM
     	cerr << "-----------------------" << endl;
+#endif
     	return sum;
     }
 

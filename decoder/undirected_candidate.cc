@@ -65,7 +65,7 @@ using namespace std;
   }
 
 
-  inline int UCandidate::NLinks()const {
+  int UCandidate::NLinks() const {
 //	  return in_edge_.Arity()+1; //children + head
 	  return context_links_.size();
   }

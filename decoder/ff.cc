@@ -291,6 +291,7 @@ ostream& ModelSet::PrintWeights(ostream& os) {
 
 void ModelSet::UpdateWeight(SparseVector<Featval> vector, double loss){
 	double norm = vector.l2norm_sq();
+	assert(norm!=0);
 	double alpha =  loss / norm;
 
 //	cerr << "\tALPHA= "<<alpha<<endl;

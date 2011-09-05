@@ -409,7 +409,8 @@ public:
 #ifdef DEBUG_GU
     			cerr << "\tIs correct?: " << *cands[i] << endl;
 #endif
-    			if(IsCorrect(*cands[i])){
+    			if(IsCorrect(*cands[i])
+    					/*&& (cands[i]->action_prob_ != topCand->action_prob_)*/){ //TODO need to avoid items with same features! brute if have not same action score then surely not same feats
     				correctCand = cands[i];
     				break;
     			}

@@ -379,7 +379,7 @@ public:
     			if(ffs_tail_in!=NULL){
     				void* tail_incoming_state = FFS2LMS(ffs_tail_in,spos);
 #ifdef DEBUG_ULM
-    				cerr << "\tTAIL INCOMING STATE (" << ffs_tail_in << " )= ";
+    				cerr << "\tTAIL INCOMING STATE["<<tail_id<<"] (" << ffs_tail_in << " )= ";
     				PrintLMS(tail_incoming_state);
 #endif
     				int unscored_ant_len = UnscoredSize(tail_incoming_state);
@@ -434,6 +434,9 @@ public:
 
     			} else { //there is an hole
 
+#ifdef DEBUG_ULM
+    		cerr << "\tNO IMCOMING STATE["<<tail_id<<"]"<<endl;
+#endif
     				//close outgoing states
     				for(int i=0;i<ucand.NLinks();i++){
     					if(uscored_ws_outgoing_states[i]){
@@ -598,8 +601,10 @@ public:
     			SetFlag(saw_eos, HAS_EOS_ON_RIGHT, uscored_ws_outgoing_states[i]);
     			SetUnscoredSize(unscored_ws_size[i], uscored_ws_outgoing_states[i]);
 #ifdef DEBUG_ULM
-    			cerr << "\tOUTGOING STATE["<<i<<"] = ";
-    			PrintLMS(uscored_ws_outgoing_states[i]);
+    			if(i!=0){
+    				cerr << "\tOUTGOING STATE["<<i<<"] = ";
+    				PrintLMS(uscored_ws_outgoing_states[i]);
+    			}
 #endif
     			uscored_ws_outgoing_states[i]=NULL;
     		}

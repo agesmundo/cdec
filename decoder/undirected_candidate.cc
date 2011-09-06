@@ -70,7 +70,7 @@ using namespace std;
 	  return context_links_.size();
   }
 
-  void UCandidate::UpdateStates(stack<UCandidate*> stck){
+  void UCandidate::UpdateStates(stack<UCandidate*> &stck){
 	  //store link to old states for comparison
 	  FFState** old_outgoing_states=outgoing_states_;
 
@@ -85,7 +85,7 @@ using namespace std;
 	  	if(context_links_[i]){
 	  		//TODO assert current source is not added //otherwise loop! anyway to ensure complexity must be one way propagation
 	  		if( !(*outgoing_states_[i] == *old_outgoing_states[i])){
-	  			stck.push(context_links_[i]);
+	  			stck.push(context_links_[i]); //TODO? avoid inserting twice items that already went to stack? avoid loops
 	  		}
 	  	}
 	  }

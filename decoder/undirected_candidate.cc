@@ -70,24 +70,30 @@ using namespace std;
 	  return context_links_.size();
   }
 
-  void UCandidate::UpdateStates(stack<UCandidate*> &stck){
+  void UCandidate::UpdateStates(stack<UCandidate*> &stck, vector < pair < UCandidate*, int > > &links_to_expand){
 	  //store link to old states for comparison
 	  FFState** old_outgoing_states=outgoing_states_;
 
 	  //allocate new states
 	  AllocStates();
 
-	  //update states //TODO this also update scores that is kind of useless
+	  //update states //TODO GU this also update scores that is kind of useless
 	  models_.AddFeaturesToUCandidate(smeta_, this);
 
 	  //compare old states to new
 	  for(int i=0;i<NLinks();i++){
 	  	if(i==0 && context_links_[i]==UCandidate::goal_head_link_)continue;
 	  	if(context_links_[i]){
-	  		//TODO assert current source is not added //otherwise loop! anyway to ensure complexity must be one way propagation
+	  		//TODO assert current source is not added //otherwise loop! anyway to ensure complexity must be one way propagation (that should never happen)
 	  		if( !(*outgoing_states_[i] == *old_outgoing_states[i])){
-	  			stck.push(context_links_[i]); //TODO? avoid inserting twice items that already went to stack? avoid loops
+	  			stck.push(context_links_[i]); //TODO GU? avoid inserting twice items that already went to stack? avoid loops (that should never happen)
 	  		}
+	  	}
+	  	else{//in this case we need to signal an update in cands
+	  		links_to_expand.push_back(pair < UCandidate*, int >(this, i));
+#ifdef DEBUG_GU
+	  		cerr <<"\tUCands queue update signaled: ("<< this<< " , "<< i << ")" <<endl;
+#endif
 	  	}
 	  }
 
@@ -128,6 +134,13 @@ using namespace std;
 	  if(source_link_==2)return in_edge_->tail_nodes_[1];
 //	  abort();
 	  return -1;
+  }
+
+  int UCandidate::GetNodeIdFromLinkId(int link_id){
+  		  if(link_id==0)return in_edge_->head_node_;
+  		  if(link_id==1)return in_edge_->tail_nodes_[0];
+  		  if(link_id==2)return in_edge_->tail_nodes_[1];
+  		  return -1;
   }
 
   FFState* UCandidate::GetHeadOutgoingState(){

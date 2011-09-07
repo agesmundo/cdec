@@ -239,11 +239,13 @@ public:
 #endif
 
 			if(!is_training_ || IsCorrect(*topCand)){
+				//stor info about links expansions and re-expansions (cause updated source)
+				vector < pair < UCandidate*, int > > links_to_expand;
 
 				//POP BEST FROM QUEUE
 				cands.pop_back();
 
-				//IF CORRECT
+				//IF CORRECT || !TRAINING:
 #ifdef DEBUG_GU
 				cerr << "\nCORRECT || !TRAINING:" << endl;
 #endif
@@ -283,8 +285,25 @@ public:
 #ifdef DEBUG_GU
 						cerr << "\tCurrent cand: "<< *curr<< endl;
 #endif
-						curr->UpdateStates(candsToUpdate);
+						curr->UpdateStates(candsToUpdate,links_to_expand);
 					}
+
+					//REMOVE CANDIDATES TO BE UPDATED WITH RE-EXPANSION
+#ifdef DEBUG_GU
+					cerr << "\nREMOVE CANDIDATES TO BE UPDATED"<< endl;
+					cerr << "\tInit cands.size(): "<< cands.size()<<endl;
+#endif
+					for (int i=0;i<links_to_expand.size();i++){
+						int node_id = links_to_expand[i].first->GetNodeIdFromLinkId(links_to_expand[i].second);
+#ifdef DEBUG_GU
+						assert(node_id!=0);
+						cerr << "\tRemoving cands from link: (" << links_to_expand[i].first << " , "<< links_to_expand[i].second <<")" <<endl;
+#endif
+						DelCandsFromNodeId(cands,node_id);
+					}
+#ifdef DEBUG_GU
+					cerr << "\tFinal cands.size(): "<< cands.size()<<endl;
+#endif
 
 				}
 				else{//this is first loop, delete all queue, no propagation
@@ -309,70 +328,19 @@ public:
 
 				//ADD IN QUEUE UCANDS FROM TOP UCAND
 #ifdef DEBUG_GU
-				cerr << "\nEXPAND TOP CAND"<<endl;
+				cerr << "\nEXPAND UCANDS LINKS"<<endl;
 #endif
 
-				assert(topCand->context_links_.size()<=3);//constraint to binary rules only
+				//insert topCand link expansions in the list
 				for (int k=0;k<topCand->context_links_.size();k++){
 					if(topCand->context_links_[k]==NULL){//missing link, available for expansion
-						//head
-						if(k==0){
-							const Hypergraph::Node& head_node = in.nodes_[topCand->in_edge_->head_node_];
-#ifdef DEBUG_GU
-							cerr<< "\t-\n\tHead Propagation:"<<endl;
-							cerr << "\thead_node.out_edges_.size(): " <<head_node.out_edges_.size()<<endl;
-#endif
-							for (int j=0; j<head_node.out_edges_.size();j++){
-								const Hypergraph::Edge& currEdge = in.edges_[head_node.out_edges_[j]];
-#ifdef DEBUG_GU
-								cerr << "\tcurrEdge("<<j<<"): "<< currEdge<<endl;
-#endif
-								LinksVector context(currEdge.Arity()+1, NULL);
-								assert(currEdge.Arity()<=2);//constraint to binary rules only  //TODO? add in debug
-								assert(currEdge.Arity()>=1);//must have one child since reached via head propagation
-								int source_link;
-								if(currEdge.tail_nodes_[0]==head_node.id_){//link with source cand
-									context[1]=topCand;
-									source_link=1;
-								}else{
-									assert(currEdge.tail_nodes_[1]==head_node.id_);
-									context[2]=topCand;
-									source_link=2;
-								}
-								if(IsGoal(currEdge))context[0]=(UCandidate*)-1;//TODO speedup, if goal there is nothing to choose just link it score it, do not put in the queue
-								cands.push_back(new UCandidate(currEdge, context,/* D, ucands_states_,*/ smeta, models, source_link/*, false*/));
-#ifdef DEBUG_GU
-								cerr << "\tPush UCand (" << cands.size() << ") :" << *cands.back() << endl;
-#endif
-							}
-						}
-						//tails
-						else /*if(k==1 ||k==2)*/{
-							const Hypergraph::Node& tail_node = in.nodes_[topCand->in_edge_->tail_nodes_[k-1]];
-#ifdef DEBUG_GU
-							assert (k==1 || k==2);
-							if(k==1) cerr<< "\t-\n\tLEFT CHILD PROPAGATION"<<endl;
-							if(k==2) cerr<< "\t-\n\tRIGHT CHILD PROPAGATION"<<endl;
-							cerr << "\ttail_node.in_edges_.size(): " <<tail_node.in_edges_.size()<<endl;
-#endif
-							for (int j=0; j<tail_node.in_edges_.size();j++){
-								const Hypergraph::Edge& currEdge = in.edges_[tail_node.in_edges_[j]];
-#ifdef DEBUG_GU
-								cerr << "currEdge("<<j<<"): "<< currEdge<<endl;
-#endif
-								LinksVector context(currEdge.Arity()+1, NULL);
-								assert(currEdge.Arity()<=2);//constraint to binary rules only
-								assert(currEdge.head_node_==tail_node.id_);//TODO? add in debug
-								context[0]=topCand;
-								int	source_link=0;
-
-								cands.push_back(new UCandidate(currEdge, context,/* D, ucands_states_,*/ smeta, models, source_link/*, false*/));
-#ifdef DEBUG_GU
-								cerr << "PUSH UCAND (" << cands.size() << ") :" << *cands.back() << endl;
-#endif
-							}
-						}
+						links_to_expand.push_back(pair< UCandidate*, int >(topCand,k));
 					}
+				}
+
+				//execute link expansions in the list
+				for(int k=0; k<links_to_expand.size();k++ ){
+					GenerateCandsFromLinkExpansion(links_to_expand[k].first,links_to_expand[k].second,cands);
 				}
 
 			}else{
@@ -458,6 +426,74 @@ public:
 
 private:
 
+	/**
+	 * given link_id and associated ucand, generate ucands from link expansion and insert in cands queue
+	 */
+	void GenerateCandsFromLinkExpansion(UCandidate * topCand, int link_id, UCandidateHeap & cands)
+	{
+
+#ifdef DEBUG_GU
+			cerr<< "\tExpanding UCandidate ("<< topCand<<") via link [" << link_id<<"]:"<<endl;
+#endif
+
+		//head
+		if(link_id==0){
+			const Hypergraph::Node& head_node = in.nodes_[topCand->in_edge_->head_node_];
+#ifdef DEBUG_GU
+			cerr<< "\tHead Propagation:"<<endl;
+			cerr << "\thead_node.out_edges_.size(): " <<head_node.out_edges_.size()<<endl;
+#endif
+			for (int j=0; j<head_node.out_edges_.size();j++){
+				const Hypergraph::Edge& currEdge = in.edges_[head_node.out_edges_[j]];
+#ifdef DEBUG_GU
+				cerr << "\tcurrEdge("<<j<<"): "<< currEdge<<endl;
+#endif
+				LinksVector context(currEdge.Arity()+1, NULL);
+				assert(currEdge.Arity()<=2);//constraint to binary rules only  //TODO? add in debug
+				assert(currEdge.Arity()>=1);//must have one child since reached via head propagation
+				int source_link;
+				if(currEdge.tail_nodes_[0]==head_node.id_){//link with source cand
+					context[1]=topCand;
+					source_link=1;
+				}else{
+					assert(currEdge.tail_nodes_[1]==head_node.id_);
+					context[2]=topCand;
+					source_link=2;
+				}
+				if(IsGoal(currEdge))context[0]=(UCandidate*)-1;//TODO speedup, if goal there is nothing to choose just link it score it, do not put in the queue
+				cands.push_back(new UCandidate(currEdge, context,/* D, ucands_states_,*/ smeta, models, source_link/*, false*/));
+#ifdef DEBUG_GU
+				cerr << "\tPush UCand (" << cands.size() << ") :" << *cands.back() << endl;
+#endif
+			}
+		}
+		//tails
+		else /*if(k==1 ||k==2)*/{
+			const Hypergraph::Node& tail_node = in.nodes_[topCand->in_edge_->tail_nodes_[link_id-1]];
+#ifdef DEBUG_GU
+			assert (link_id==1 || link_id==2);
+			if(link_id==1) cerr<< "\tLEFT CHILD PROPAGATION"<<endl;
+			if(link_id==2) cerr<< "\tRIGHT CHILD PROPAGATION"<<endl;
+			cerr << "\ttail_node.in_edges_.size(): " <<tail_node.in_edges_.size()<<endl;
+#endif
+			for (int j=0; j<tail_node.in_edges_.size();j++){
+				const Hypergraph::Edge& currEdge = in.edges_[tail_node.in_edges_[j]];
+#ifdef DEBUG_GU
+				cerr << "currEdge("<<j<<"): "<< currEdge<<endl;
+#endif
+				LinksVector context(currEdge.Arity()+1, NULL);
+				//XXX								assert(currEdge.Arity()<=2);//constraint to binary rules only
+				assert(currEdge.head_node_==tail_node.id_);//TODO? add in debug
+				context[0]=topCand;
+				int	source_link=0;
+
+				cands.push_back(new UCandidate(currEdge, context,/* D, ucands_states_,*/ smeta, models, source_link/*, false*/));
+#ifdef DEBUG_GU
+				cerr << "Push UCand (" << cands.size() << ") :" << *cands.back() << endl;
+#endif
+			}
+		}
+	}
 	/**
 	 * given cands list and node_id delete all cands that source from that node
 	 */
@@ -909,7 +945,7 @@ public:
 		if (!SILENT) {
 			cerr << endl;
 			cerr << "  Best path: " << log(D[goal_id].front()->vit_prob_)
-          		 << "\t" << log(D[goal_id].front()->est_prob_) << endl;
+          						 << "\t" << log(D[goal_id].front()->est_prob_) << endl;
 		}
 		out.PruneUnreachable(D[goal_id].front()->node_index_);
 		FreeAll();
@@ -938,21 +974,21 @@ private:
 			node_id = new_node->id_;
 		}
 #if 0
-Hypergraph::Node* node = &out.nodes_[node_id];
-out.ConnectEdgeToHeadNode(new_edge, node);
+		Hypergraph::Node* node = &out.nodes_[node_id];
+		out.ConnectEdgeToHeadNode(new_edge, node);
 #else
-out.ConnectEdgeToHeadNode(new_edge, node_id);
+		out.ConnectEdgeToHeadNode(new_edge, node_id);
 #endif
-// update candidate if we have a better derivation
-// note: the difference between the vit score and the estimated
-// score is the same for all items with a common residual DP
-// state
-if (item->vit_prob_ > o_item->vit_prob_) {
-	assert(o_item->state_ == item->state_);    // sanity check!
-	o_item->est_prob_ = item->est_prob_;
-	o_item->vit_prob_ = item->vit_prob_;
-}
-if (item != o_item) freelist->push_back(item);
+		// update candidate if we have a better derivation
+		// note: the difference between the vit score and the estimated
+		// score is the same for all items with a common residual DP
+		// state
+		if (item->vit_prob_ > o_item->vit_prob_) {
+			assert(o_item->state_ == item->state_);    // sanity check!
+			o_item->est_prob_ = item->est_prob_;
+			o_item->vit_prob_ = item->vit_prob_;
+		}
+		if (item != o_item) freelist->push_back(item);
 	}
 
 	void KBest(const int vert_index, const bool is_goal) {

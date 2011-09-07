@@ -90,13 +90,15 @@ struct UCandidate {
 
   int NLinks() const;
 
-  void UpdateStates(stack<UCandidate*> &stck);
+  void UpdateStates(stack<UCandidate*> &stck, vector < pair < UCandidate*, int > > &links_to_expand);
 
   bool HasMissingLink() const;
 
   UCandidate* GetSourceUCand();
 
   int GetSourceNodeId();
+
+  int GetNodeIdFromLinkId(int link_id);
 
 //  bool IsHeadIncomingState();
 //

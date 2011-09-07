@@ -50,7 +50,7 @@ struct UCandidate {
   //0 HEAD,
   //1 FIRST CHILD (left)
   //2 SECOND CHILD
-  LinksVector context_links_; //NULL if no link, *UCand if link, -1 for head link if Goal
+  LinksVector context_links_; //NULL if no link, *UCand if link, -1 (goal_head_link_) for head link if Goal
 
   int source_link_; //context_links_(id) for the source UCand (-1 for starting leaf)
 
@@ -64,6 +64,8 @@ struct UCandidate {
   //needed to call update to features //TODO should be static
   const SentenceMetadata& smeta_;
   const ModelSet& models_;
+
+  static UCandidate* goal_head_link_;
 
   UCandidate(const Hypergraph::Edge& e,
 		    const LinksVector& lv,

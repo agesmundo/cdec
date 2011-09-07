@@ -82,6 +82,7 @@ using namespace std;
 
 	  //compare old states to new
 	  for(int i=0;i<NLinks();i++){
+	  	if(i==0 && context_links_[i]==UCandidate::goal_head_link_)continue;
 	  	if(context_links_[i]){
 	  		//TODO assert current source is not added //otherwise loop! anyway to ensure complexity must be one way propagation
 	  		if( !(*outgoing_states_[i] == *old_outgoing_states[i])){
@@ -146,7 +147,7 @@ using namespace std;
 
   //TODO GU store variable is_goal_ ?
   bool UCandidate::IsGoal(){
-	  return context_links_[0]==(UCandidate*)-1;
+	  return context_links_[0]==goal_head_link_;
   }
 
 //  bool UCandidate::IsHeadIncomingState(){
@@ -290,6 +291,8 @@ ostream& operator<<(ostream& os, const UCandidate& cand) {
   os << "\tEST_F : " << cand.est_vals_;
   return os << ']';
 }
+
+UCandidate* UCandidate::goal_head_link_ =(UCandidate*)-1;
 
 ////////////////////////////////////////////
 

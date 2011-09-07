@@ -503,7 +503,9 @@ private:
 		for(int i = 0;i < cands.size();){
 			if(cands[i]->GetSourceNodeId() == node_id){
 				//TODO? try out algorithm with forward iterator(see ref remove)
+#ifdef DEBUG_GU
 				cerr << "\tDelete : (id:" << i << ")  " << cands[i] << endl;
+#endif
 				delete cands[i];
 				swap(cands[i], cands.back());
 				cands.pop_back();
@@ -756,7 +758,9 @@ private:
 	//initialize candidate heap with leafs
 	void InitCands(UCandidateHeap & cands)
 	{
+#ifdef DEBUG_GU
 		cerr << "InintCands(): " << "\n";
+#endif
 		for (int i = 0; i < in.edges_.size(); ++i) {//loop edges
 			const Hypergraph::Edge& edge= in.edges_.at(i);
 			if(edge.tail_nodes_.size()==0){//leafs
@@ -772,7 +776,9 @@ private:
 			}
 		}
 		//          make_heap(cands.begin(), cands.end(), HeapCandCompare()); //useless not using heap
+#ifdef DEBUG_GU
 		cerr << "=========================\n cands.size(): " << cands.size() << "\n=========================\n";
+#endif
 	}
 
 	bool IsGoal(const Hypergraph::Edge& edge){

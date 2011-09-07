@@ -615,9 +615,9 @@ public:
     	cerr << "LMSS (" << lms << ") = [ ";
     	cerr << RemnantLMState(lms) << endl;
     	int unscored_size = UnscoredSize(lms);
+    	cerr << "\t\t has full context : " << HasFullContext(lms) << endl;
     	cerr << "\t\t unscored size    : " << unscored_size << endl;
     	cerr << "\t\t has eos on right : " << GetFlag(lms, HAS_EOS_ON_RIGHT) << endl;
-    	cerr << "\t\t has full context : " << HasFullContext(lms) << endl;
     	cerr << "\t\t boundary words   : <";
     	for(int i = 0;i < unscored_size/*order_-1*/;i++){
     		cerr << " W[" << i << "] : " << IthUnscoredWord(i, lms);

@@ -191,44 +191,39 @@ typedef unordered_map<FFState, UCandidate*, boost::hash<FFState> > UState2Node;
 class GreedyUndirectedRescorer {
 
 public:
-	GreedyUndirectedRescorer(/*const*/ ModelSet& m,
-                      const SentenceMetadata& sm,
-                      const Hypergraph& i,
-                      bool is_training,
-                      Hypergraph* o) :
-      models(m),
-      smeta(sm),
-      in(i),
-      out(*o),
-      //D(in.nodes_.size()),
-      is_training_(is_training)
-	{
-    if (!SILENT) cerr << "  Applying feature functions (training = " << is_training_ << ')' << endl;
-    //ucands_states_.reserve(kRESERVE_NUM_NODES);
-  }
+	GreedyUndirectedRescorer /*const*/
+    (ModelSet & m, const SentenceMetadata & sm, const Hypergraph & i, bool is_training, Hypergraph *o)
+    :models(m), smeta(sm), in(i), out(*o), //D(in.nodes_.size()),
+    is_training_(is_training)
+    {
+        if(!SILENT)
+            cerr << "  Applying feature functions (training = " << is_training_ << ')' << endl;
 
-  void Apply() {
-    int num_nodes = in.nodes_.size();
-    assert(num_nodes >= 2);
-    int goal_id = num_nodes - 1;
-    int pregoal = goal_id - 1;
-    int every = 1;
-    if (num_nodes > 100) every = 10;
-    assert(in.nodes_[pregoal].out_edges_.size() == 1);
-    UCandidateHeap cands; //unique queue/heap of candidates
-    //NOT NEEDED WITH NEW PROPAGATION UCandidateList boundary; //keeps list of ucands available for expansion//TODO? GU implement with hash table, use boost:hash
+        //ucands_states_.reserve(kRESERVE_NUM_NODES);
+    }
 
-    //find nodes that intersect with reference lattice
-    if (is_training_) {
+		void Apply()
+    {
+        int num_nodes = in.nodes_.size();
+        assert(num_nodes >= 2);
+        int goal_id = num_nodes - 1;
+        int pregoal = goal_id - 1;
+        int every = 1;
+        if(num_nodes > 100)
+            every = 10;
+
+        assert(in.nodes_[pregoal].out_edges_.size() == 1);
+        UCandidateHeap cands; //unique queue/heap of candidates
+        //NOT NEEDED WITH NEW PROPAGATION UCandidateList boundary; //keeps list of ucands available for expansion//TODO? GU implement with hash table, use boost:hash
+        //find nodes that intersect with reference lattice
+        if (is_training_) {
   	  assert(smeta.HasReference()==true);
   	  correct_edges_mask_ = new vector<bool> (in.edges_.size(), false);
       HG::HighlightIntersection(smeta.GetReference(), in, correct_edges_mask_);
     }
-
-    InitCands(cands);     //put leafs candidates in the queue
-
-    UCandidate* topCand;
-    for (;!cands.empty();) {//TODO? borders should not be empty, first pass ok to be empty
+        InitCands(cands); //put leafs candidates in the queue
+        UCandidate *topCand;
+        for (;!cands.empty();) {//TODO? borders should not be empty, first pass ok to be empty
 
 #ifdef DEBUG_GU
     	cerr<< "/////////////////////////////////////////////////////////////////////\n";
@@ -256,20 +251,9 @@ public:
 #ifdef DEBUG_GU
     		cerr << "\nREMOVE ALTERNATIVE CANDIDATES\n" << "\tInit cands.size(): "<< cands.size()<<endl;
 #endif
-    		if(topCand->HasSource()){//this is not first loop leaf, delete alternatives cands
-    			for (int i = 0; i < cands.size();){
-    				if(cands[i]->GetSourceNodeId()==topCand->GetSourceNodeId()){//TODO? try out algorithm with forward iterator(see ref remove)
-#ifdef DEBUG_GU
-    					cerr << "\tDelete : (id:"<<i<<")  " <<cands[i]<<endl;
-#endif
-    					delete cands[i];
-    					swap(cands[i], cands.back());
-    					cands.pop_back();
-    				}
-    				else{
-    					i++;
-    				}
-    			}
+    		if(topCand->HasSource()){//this is not first loop leaf,
+    			//delete alternatives cands with same source node
+    			DelCandsFromNodeId(cands,topCand->GetSourceNodeId());
 
 #ifdef DEBUG_GU
     		cerr << "\tTopCand (still exists): "<< *topCand<<endl;
@@ -299,7 +283,6 @@ public:
 #ifdef DEBUG_GU
     			cerr << "\tCurrent cand: "<< *curr<< endl;
 #endif
-					//TODO should return info about which direction need further propagations (and then add in stack those)
 					curr->UpdateStates(candsToUpdate);
     			}
 
@@ -466,29 +449,45 @@ public:
     		}
     	}
     }
-
-    if (is_training_) {
-    	delete correct_edges_mask_;
+        if(is_training_){
+            delete correct_edges_mask_;
+        }
+        //LG transform the UCands structure in the out_hg
+        BuildOutHG(topCand);
     }
 
-	//LG transform the UCands structure in the out_hg
-    BuildOutHG(topCand);
-
-  }
-
 private:
-  //given any enrty point of the UCands structure builds the out_hg
-  //and free memory
-  void BuildOutHG(UCandidate* first){
-#ifdef DEBUG_GU
-	  cerr << "BUILD OUT HG" << endl;
-#endif
-	  map<int,int> inNid2outNid;//in Node id to out Node id
-	  UCandidateList ucands_stack;
-	  ucands_stack.push_back(first);
-	  int goal_node_id=-1;
 
-	  while(!ucands_stack.empty()){
+		/**
+		 * given cands list and node_id delete all cands that source from that node
+		 */
+    void DelCandsFromNodeId(UCandidateHeap & cands, int node_id)
+    {
+
+        for(int i = 0;i < cands.size();){
+            if(cands[i]->GetSourceNodeId() == node_id){
+                //TODO? try out algorithm with forward iterator(see ref remove)
+                cerr << "\tDelete : (id:" << i << ")  " << cands[i] << endl;
+                delete cands[i];
+                swap(cands[i], cands.back());
+                cands.pop_back();
+            }else{
+                i++;
+            }
+        }
+
+    }
+
+    //given any enrty point of the UCands structure builds the out_hg
+    //and free memory
+    void BuildOutHG(UCandidate *first)
+    {
+        cerr << "BUILD OUT HG" << endl;
+        map<int,int> inNid2outNid; //in Node id to out Node id
+        UCandidateList ucands_stack;
+        ucands_stack.push_back(first);
+        int goal_node_id = -1;
+        while(!ucands_stack.empty()){
 		  UCandidate* ucand =ucands_stack.back();
 		  ucands_stack.pop_back();
 
@@ -584,151 +583,145 @@ private:
 #endif
 		  delete ucand;
 	  }
+        assert(goal_node_id>=0);
+        out.PruneUnreachable(goal_node_id);
+    }
 
-	  assert(goal_node_id>=0);
-	  out.PruneUnreachable(goal_node_id);
-  }
+    //  //given any enrty point of the UCands structure builds the out_hg
+    //  void BuildOutHG(UCandidate* first){
+    //#ifdef DEBUG_GU
+    //	  cerr << "BUILD OUT HG" << endl;
+    //#endif
+    //	  map<UCandidate*,int> ucand2edge;//TODO GU hash map is faster?
+    //	  UCandidateList ucands_stack;
+    //	  ucands_stack.push_back(first);
+    //	  int goal_node_id=-1;
+    //
+    //	  while(!ucands_stack.empty()){
+    //		  UCandidate* ucand =ucands_stack.back();
+    //		  ucands_stack.pop_back();
+    //
+    //		  //copy in_edge in out_hg
+    //		  out.edges_.push_back(*ucand->in_edge_);
+    //		  Hypergraph::Edge* new_edge = &out.edges_.back();
+    //		  new_edge->id_ = out.edges_.size()-1;
+    //		  //clear links to nodes TODO this should be useless
+    //		  new_edge->head_node_=-1;
+    //		  for(int i=0;i<new_edge->tail_nodes_.size();i++){
+    //			  new_edge->tail_nodes_[i]=-1;
+    //		  }
+    //
+    //#ifdef DEBUG_GU
+    //	  cerr << "/////////////////////////////////////////////////////////////////////\n";
+    //	  cerr << "NEXT UCAND: " << *ucand << endl;
+    //	  cerr << "IN  EDGE : " << *ucand->in_edge_ << endl;
+    //	  cerr << "OUT EDGE : " << *new_edge << endl;
+    //#endif
+    //
+    //		  ucand2edge[ucand]=new_edge->id_;
+    //		  new_edge->edge_prob_ = ucand->in_edge_->edge_prob_;
+    //
+    //		  //link with head
+    //		  {
+    //#ifdef DEBUG_GU
+    //			  assert(ucand->context_links_[0]!=NULL);
+    //#endif
+    //			  map<UCandidate*,int>::iterator it = ucand2edge.end();
+    //			  UCandidate* head_ucand=ucand->context_links_[0];
+    //			  bool is_goal=(head_ucand==(UCandidate*)-1);
+    //#ifdef DEBUG_GU
+    //			  if (is_goal) cerr<< "HEAD UCAND : " << "Goal"<<endl;
+    //			  else cerr<< "HEAD UCAND : " << *head_ucand<<endl;
+    //#endif
+    //			  if(!is_goal){
+    //				  it = ucand2edge.find(head_ucand);
+    //			  }
+    //			  int head_node_id;
+    //			  if(it!=ucand2edge.end()){
+    //				  const Hypergraph::Edge& head_edge = out.edges_[it->second];
+    //				  if(head_ucand->context_links_[1]==ucand){
+    //					  head_node_id=head_edge.tail_nodes_[0];
+    //				  }else {
+    //					  assert(head_ucand->context_links_[2]==ucand);
+    //					  head_node_id=head_edge.tail_nodes_[1];
+    //				  }
+    //			  }else{
+    //				  head_node_id = out.AddNode(in.nodes_[ucand->in_edge_->head_node_].cat_)->id_;
+    //				  if(is_goal){
+    //					  goal_node_id=head_node_id;
+    //				  }else{
+    //					  ucands_stack.push_back(head_ucand);
+    //				  }
+    //			  }
+    //			  out.ConnectEdgeToHeadNode(new_edge, head_node_id);
+    //		  }
+    //
+    //		  //link with left child
+    //		  if(ucand->context_links_.size()>=2){
+    //#ifdef DEBUG_GU
+    //			  assert(ucand->context_links_[1]!=NULL);
+    //#endif
+    //			  UCandidate* left_ucand=ucand->context_links_[1];
+    //#ifdef DEBUG_GU
+    //			  cerr<< "LEFT UCAND : " << *left_ucand<<endl;
+    //#endif
+    //			  map<UCandidate*,int>::iterator it = ucand2edge.find(left_ucand);
+    //			  int left_node_id;
+    //			  if(it!=ucand2edge.end()){
+    //				  left_node_id = out.edges_[it->second].head_node_;
+    //			  }else{
+    //				  left_node_id = out.AddNode(in.nodes_[ucand->in_edge_->tail_nodes_[0]].cat_)->id_;
+    //				  ucands_stack.push_back(left_ucand);
+    //			  }
+    //			  new_edge->tail_nodes_[0] = left_node_id;
+    //			  out.nodes_[left_node_id].out_edges_.push_back(new_edge->id_);
+    //		  }
+    //
+    //		  //link with right child
+    //		  if(ucand->context_links_.size()>=3){
+    //#ifdef DEBUG_GU
+    //			  assert(ucand->context_links_[2]!=NULL);
+    //#endif
+    //			  UCandidate* right_ucand=ucand->context_links_[2];
+    //#ifdef DEBUG_GU
+    //			  cerr<< "RIGHT UCAND : " << *right_ucand<<endl;
+    //#endif
+    //			  map<UCandidate*,int>::iterator it = ucand2edge.find(right_ucand);
+    //			  int right_node_id;
+    //			  if(it!=ucand2edge.end()){
+    //				  right_node_id = out.edges_[it->second].head_node_;
+    //			  }else{
+    //				  right_node_id = out.AddNode(in.nodes_[ucand->in_edge_->tail_nodes_[1]].cat_)->id_;
+    //				  ucands_stack.push_back(right_ucand);
+    //			  }
+    //			  new_edge->tail_nodes_[1] = right_node_id;
+    //			  out.nodes_[right_node_id].out_edges_.push_back(new_edge->id_);
+    //		  }
+    //#ifdef DEBUG_GU
+    //		  cerr << "OUT EDGE : " << *new_edge << endl;
+    //#endif
+    //	  }
+    //
+    //	  assert(goal_node_id>=0);
+    //	  out.PruneUnreachable(goal_node_id);
+    //  }
+    //check if cand is correct (for training)
+    bool IsCorrect(const UCandidate & ucand)
+    {
+        cerr << "\tIs correct? : (" << &ucand << ")";
+        if((*correct_edges_mask_)[ucand.in_edge_->id_]){
+            cerr << " true" << endl;
+        }else{
+            cerr << " false" << endl;
+        }
+        return (*correct_edges_mask_)[ucand.in_edge_->id_];
+    }
 
-//  //given any enrty point of the UCands structure builds the out_hg
-//  void BuildOutHG(UCandidate* first){
-//#ifdef DEBUG_GU
-//	  cerr << "BUILD OUT HG" << endl;
-//#endif
-//	  map<UCandidate*,int> ucand2edge;//TODO GU hash map is faster?
-//	  UCandidateList ucands_stack;
-//	  ucands_stack.push_back(first);
-//	  int goal_node_id=-1;
-//
-//	  while(!ucands_stack.empty()){
-//		  UCandidate* ucand =ucands_stack.back();
-//		  ucands_stack.pop_back();
-//
-//		  //copy in_edge in out_hg
-//		  out.edges_.push_back(*ucand->in_edge_);
-//		  Hypergraph::Edge* new_edge = &out.edges_.back();
-//		  new_edge->id_ = out.edges_.size()-1;
-//		  //clear links to nodes TODO this should be useless
-//		  new_edge->head_node_=-1;
-//		  for(int i=0;i<new_edge->tail_nodes_.size();i++){
-//			  new_edge->tail_nodes_[i]=-1;
-//		  }
-//
-//#ifdef DEBUG_GU
-//	  cerr << "/////////////////////////////////////////////////////////////////////\n";
-//	  cerr << "NEXT UCAND: " << *ucand << endl;
-//	  cerr << "IN  EDGE : " << *ucand->in_edge_ << endl;
-//	  cerr << "OUT EDGE : " << *new_edge << endl;
-//#endif
-//
-//		  ucand2edge[ucand]=new_edge->id_;
-//		  new_edge->edge_prob_ = ucand->in_edge_->edge_prob_;
-//
-//		  //link with head
-//		  {
-//#ifdef DEBUG_GU
-//			  assert(ucand->context_links_[0]!=NULL);
-//#endif
-//			  map<UCandidate*,int>::iterator it = ucand2edge.end();
-//			  UCandidate* head_ucand=ucand->context_links_[0];
-//			  bool is_goal=(head_ucand==(UCandidate*)-1);
-//#ifdef DEBUG_GU
-//			  if (is_goal) cerr<< "HEAD UCAND : " << "Goal"<<endl;
-//			  else cerr<< "HEAD UCAND : " << *head_ucand<<endl;
-//#endif
-//			  if(!is_goal){
-//				  it = ucand2edge.find(head_ucand);
-//			  }
-//			  int head_node_id;
-//			  if(it!=ucand2edge.end()){
-//				  const Hypergraph::Edge& head_edge = out.edges_[it->second];
-//				  if(head_ucand->context_links_[1]==ucand){
-//					  head_node_id=head_edge.tail_nodes_[0];
-//				  }else {
-//					  assert(head_ucand->context_links_[2]==ucand);
-//					  head_node_id=head_edge.tail_nodes_[1];
-//				  }
-//			  }else{
-//				  head_node_id = out.AddNode(in.nodes_[ucand->in_edge_->head_node_].cat_)->id_;
-//				  if(is_goal){
-//					  goal_node_id=head_node_id;
-//				  }else{
-//					  ucands_stack.push_back(head_ucand);
-//				  }
-//			  }
-//			  out.ConnectEdgeToHeadNode(new_edge, head_node_id);
-//		  }
-//
-//		  //link with left child
-//		  if(ucand->context_links_.size()>=2){
-//#ifdef DEBUG_GU
-//			  assert(ucand->context_links_[1]!=NULL);
-//#endif
-//			  UCandidate* left_ucand=ucand->context_links_[1];
-//#ifdef DEBUG_GU
-//			  cerr<< "LEFT UCAND : " << *left_ucand<<endl;
-//#endif
-//			  map<UCandidate*,int>::iterator it = ucand2edge.find(left_ucand);
-//			  int left_node_id;
-//			  if(it!=ucand2edge.end()){
-//				  left_node_id = out.edges_[it->second].head_node_;
-//			  }else{
-//				  left_node_id = out.AddNode(in.nodes_[ucand->in_edge_->tail_nodes_[0]].cat_)->id_;
-//				  ucands_stack.push_back(left_ucand);
-//			  }
-//			  new_edge->tail_nodes_[0] = left_node_id;
-//			  out.nodes_[left_node_id].out_edges_.push_back(new_edge->id_);
-//		  }
-//
-//		  //link with right child
-//		  if(ucand->context_links_.size()>=3){
-//#ifdef DEBUG_GU
-//			  assert(ucand->context_links_[2]!=NULL);
-//#endif
-//			  UCandidate* right_ucand=ucand->context_links_[2];
-//#ifdef DEBUG_GU
-//			  cerr<< "RIGHT UCAND : " << *right_ucand<<endl;
-//#endif
-//			  map<UCandidate*,int>::iterator it = ucand2edge.find(right_ucand);
-//			  int right_node_id;
-//			  if(it!=ucand2edge.end()){
-//				  right_node_id = out.edges_[it->second].head_node_;
-//			  }else{
-//				  right_node_id = out.AddNode(in.nodes_[ucand->in_edge_->tail_nodes_[1]].cat_)->id_;
-//				  ucands_stack.push_back(right_ucand);
-//			  }
-//			  new_edge->tail_nodes_[1] = right_node_id;
-//			  out.nodes_[right_node_id].out_edges_.push_back(new_edge->id_);
-//		  }
-//#ifdef DEBUG_GU
-//		  cerr << "OUT EDGE : " << *new_edge << endl;
-//#endif
-//	  }
-//
-//	  assert(goal_node_id>=0);
-//	  out.PruneUnreachable(goal_node_id);
-//  }
-
-  //check if cand is correct (for training)
-  bool IsCorrect(const UCandidate& ucand){
-#ifdef DEBUG_GU
-	  cerr << "\tIs correct? : (" << &ucand <<")";
-	  if((*correct_edges_mask_)[ucand.in_edge_->id_]){
-		  cerr << " true" <<endl;
-	  }
-	  else{
-		  cerr << " false" <<endl;
-	  }
-#endif
-	  return (*correct_edges_mask_)[ucand.in_edge_->id_];
-  }
-
-  //initialize candidate heap with leafs
-  void InitCands(UCandidateHeap& cands/*, UniqueGCandidateSet& unique_cands*/)
-  {
-#ifdef DEBUG_GU
-          cerr << "InintCands(): " << "\n";
-#endif
-          for (int i = 0; i < in.edges_.size(); ++i) {//loop edges
+    //initialize candidate heap with leafs
+    void InitCands(UCandidateHeap & cands)
+    {
+        cerr << "InintCands(): " << "\n";
+        for (int i = 0; i < in.edges_.size(); ++i) {//loop edges
           	const Hypergraph::Edge& edge= in.edges_.at(i);
           	if(edge.tail_nodes_.size()==0){//leafs
 //          		const Hypergraph::Edge& edge = in.edges_[i];
@@ -742,11 +735,9 @@ private:
 #endif
           	}
           }
-//          make_heap(cands.begin(), cands.end(), HeapCandCompare()); //useless not using heap
-#ifdef DEBUG_GU
-          cerr << "=========================\n cands.size(): "<< cands.size()<<"\n=========================\n";
-#endif
-  }
+        //          make_heap(cands.begin(), cands.end(), HeapCandCompare()); //useless not using heap
+        cerr << "=========================\n cands.size(): " << cands.size() << "\n=========================\n";
+    }
 
   bool IsGoal(const Hypergraph::Edge& edge){
 	  return edge.head_node_==in.nodes_.size()-1;

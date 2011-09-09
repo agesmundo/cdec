@@ -226,7 +226,7 @@ public:
 		for (;!cands.empty();) {//TODO? borders should not be empty, first pass ok to be empty
 
 #ifdef DEBUG_GU
-			cerr<< "/////////////////////////////////////////////////////////////////////\n";
+			cerr<< "\n\n/////////////////////////////////////////////////////////////////////\n";
 			cerr << " L | cands.size(): "<< cands.size()<<"\n";
 #endif
 
@@ -258,7 +258,7 @@ public:
 					DelCandsFromNodeId(cands,topCand->GetSourceNodeId());
 
 #ifdef DEBUG_GU
-					cerr << "\tTopCand (still exists): "<< *topCand<<endl;
+//					cerr << "\tTopCand (still exists): "<< *topCand<<endl;
 					cerr << "\tFinal cands.size(): "<< cands.size()<<endl;
 #endif
 
@@ -288,9 +288,9 @@ public:
 						curr->UpdateStates(candsToUpdate,links_to_expand);
 					}
 
-					//REMOVE CANDIDATES TO BE UPDATED WITH RE-EXPANSION
+					//REMOVE FROM QUEUE CANDIDATE ACTIONS TO BE UPDATED WITH RE-EXPANSION
 #ifdef DEBUG_GU
-					cerr << "\nREMOVE CANDIDATES TO BE UPDATED"<< endl;
+					cerr << "\nREMOVE FROM QUEUE CANDIDATE ACTIONS TO BE UPDATED"<< endl;
 					cerr << "\tInit cands.size(): "<< cands.size()<<endl;
 #endif
 					for (int i=0;i<links_to_expand.size();i++){
@@ -433,14 +433,14 @@ private:
 	{
 
 #ifdef DEBUG_GU
-			cerr<< "\tExpanding UCandidate ("<< topCand<<") via link [" << link_id<<"]:"<<endl;
+			cerr<< "\t-\n\tExpanding UCandidate ("<< topCand<<") via link [" << link_id<<"]:"<<endl;
 #endif
 
 		//head
 		if(link_id==0){
 			const Hypergraph::Node& head_node = in.nodes_[topCand->in_edge_->head_node_];
 #ifdef DEBUG_GU
-			cerr<< "\tHead Propagation:"<<endl;
+			cerr<< "\tHEAD PROPAGATION:"<<endl;
 			cerr << "\thead_node.out_edges_.size(): " <<head_node.out_edges_.size()<<endl;
 #endif
 			for (int j=0; j<head_node.out_edges_.size();j++){

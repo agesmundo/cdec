@@ -1,0 +1,818 @@
+cdec v1.0 (c) 2009-2011 by Chris Dyer
+Configuration file: conf.ini
+Reading weights from weights
+Loaded 8 feature weights
+feature: KLanguageModel (with config parameters 'dummy.3gram.lm')
+Loading the LM will be faster if you build a binary file.
+Reading dummy.3gram.lm
+----5---10---15---20---25---30---35---40---45---50---55---60---65---70---75---80---85---90---95--100
+The ARPA file is missing <unk>.  Substituting log10 probability -100.
+****************************************************************************************************
+Loaded 3-gram KLM from dummy.3gram.lm (MapSize=492)
+FID: 5
+State is 54 bytes for feature KLanguageModel dummy.3gram.lm
+feature: WordPenalty (no config parameters)
+State is 0 bytes for feature WordPenalty
+Pass1 : Weight  Feature
+1.11653  LanguageModel
+-4.26119  WordPenalty
+Configured 1 rescoring pass
+  [num_fn=2 int_alg=OTHER]
+Reading SCFG grammar from grammar
+
+Adding glue grammar for default nonterminal X and goal nonterminal S
+Reading input from in.txt
+
+INPUT: ist kleine ||| is small
+  id = 0
+Adding pass through grammar
+First pass parse... 
+  Goal category: [S]
+    ..
+  Init. forest (nodes/edges): 5/8
+  Init. forest       (paths): 6
+  Init. forest  Viterbi logp: 10.6034
+  Init. forest       Viterbi: are small
+  Init. forest          tree: (S (S (X are)) (X small))
+
+
+  RESCORING PASS #1 [num_fn=2 int_alg=OTHER]
+  Applying feature functions (training = 1)
+  Goal category: [Goal_4]
+    ..
+InintCands(): 
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+UNDIRECTED LOOKUP WORDS
+	In Edge : Edge[id_= 0; head_node_= 0; tail_nodes_= ( ) rule_= [X] ||| ist ||| is ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]
+	NO HEAD IMCOMING STATE
+	scopy before Score() : KLMState(0xbfbc1d70)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+	state after  Score() : KLMState(0xbfbc1d9c)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+	[?]_outgoing_state unscored word [0] to 218
+	FINAL HEAD OUTGOING STATE = LMSS (0x8da1678) = [ KLMState(0x8da1678)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 1
+		 boundary words   : < W[0] : 218 >
+]
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+Push Init UCand (1) :UCAND(0x8da1fe8)[ context_links_=<0> source_link_=-1 act=2.81456 in_edge_=  Edge[id_= 0; head_node_= 0; tail_nodes_= ( ) rule_= [X] ||| ist ||| is ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]; 
+	FEATS : PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0 LanguageModel(4)=0 WordPenalty(1)=-0.434294
+	EST_F : ]
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+UNDIRECTED LOOKUP WORDS
+	In Edge : Edge[id_= 1; head_node_= 0; tail_nodes_= ( ) rule_= [X] ||| ist ||| are ||| PhraseModel_0(6)=10 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 9.63947; ]
+	NO HEAD IMCOMING STATE
+	scopy before Score() : KLMState(0xbfbc1d70)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+	state after  Score() : KLMState(0xbfbc1d9c)[ valid_length_  = 1 history_  = <(45) >  backoff_  = <(-0.0578991) > ]
+	[?]_outgoing_state unscored word [0] to 45
+	FINAL HEAD OUTGOING STATE = LMSS (0x8da2220) = [ KLMState(0x8da2220)[ valid_length_  = 1 history_  = <(45) >  backoff_  = <(-0.0578991) > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 1
+		 boundary words   : < W[0] : 45 >
+]
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+Push Init UCand (2) :UCAND(0x8da1c98)[ context_links_=<0> source_link_=-1 act=11.4901 in_edge_=  Edge[id_= 1; head_node_= 0; tail_nodes_= ( ) rule_= [X] ||| ist ||| are ||| PhraseModel_0(6)=10 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 9.63947; ]; 
+	FEATS : PhraseModel_0(6)=10 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0 LanguageModel(4)=0 WordPenalty(1)=-0.434294
+	EST_F : ]
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+UNDIRECTED LOOKUP WORDS
+	In Edge : Edge[id_= 2; head_node_= 0; tail_nodes_= ( ) rule_= [X] ||| ist ||| ist ||| PassThrough(3)=1 ||| 0-0; edge_prob_= -1; ]
+	NO HEAD IMCOMING STATE
+	scopy before Score() : KLMState(0xbfbc1d70)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+	state after  Score() : KLMState(0xbfbc1d9c)[ valid_length_  = 1 history_  = <(0) >  backoff_  = <(0) > ]
+	[?]_outgoing_state unscored word [0] to 0
+	FINAL HEAD OUTGOING STATE = LMSS (0x8da22d0) = [ KLMState(0x8da22d0)[ valid_length_  = 1 history_  = <(0) >  backoff_  = <(0) > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 1
+		 boundary words   : < W[0] : 0 >
+]
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+Push Init UCand (3) :UCAND(0x8da3bd8)[ context_links_=<0> source_link_=-1 act=0.850609 in_edge_=  Edge[id_= 2; head_node_= 0; tail_nodes_= ( ) rule_= [X] ||| ist ||| ist ||| PassThrough(3)=1 ||| 0-0; edge_prob_= -1; ]; 
+	FEATS : PassThrough(3)=1 LanguageModel(4)=0 WordPenalty(1)=-0.434294
+	EST_F : ]
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+UNDIRECTED LOOKUP WORDS
+	In Edge : Edge[id_= 4; head_node_= 2; tail_nodes_= ( ) rule_= [X] ||| kleine ||| small ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]
+	NO HEAD IMCOMING STATE
+	scopy before Score() : KLMState(0xbfbc1d70)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+	state after  Score() : KLMState(0xbfbc1d9c)[ valid_length_  = 1 history_  = <(388) >  backoff_  = <(-0.065868) > ]
+	[?]_outgoing_state unscored word [0] to 388
+	FINAL HEAD OUTGOING STATE = LMSS (0x8da1f58) = [ KLMState(0x8da1f58)[ valid_length_  = 1 history_  = <(388) >  backoff_  = <(-0.065868) > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 1
+		 boundary words   : < W[0] : 388 >
+]
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+Push Init UCand (4) :UCAND(0x8da1120)[ context_links_=<0> source_link_=-1 act=2.81456 in_edge_=  Edge[id_= 4; head_node_= 2; tail_nodes_= ( ) rule_= [X] ||| kleine ||| small ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]; 
+	FEATS : PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0 LanguageModel(4)=0 WordPenalty(1)=-0.434294
+	EST_F : ]
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+UNDIRECTED LOOKUP WORDS
+	In Edge : Edge[id_= 5; head_node_= 2; tail_nodes_= ( ) rule_= [X] ||| kleine ||| kleine ||| PassThrough(3)=1 ||| 0-0; edge_prob_= -1; ]
+	NO HEAD IMCOMING STATE
+	scopy before Score() : KLMState(0xbfbc1d70)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+	state after  Score() : KLMState(0xbfbc1d9c)[ valid_length_  = 1 history_  = <(0) >  backoff_  = <(0) > ]
+	[?]_outgoing_state unscored word [0] to 0
+	FINAL HEAD OUTGOING STATE = LMSS (0x8da18e0) = [ KLMState(0x8da18e0)[ valid_length_  = 1 history_  = <(0) >  backoff_  = <(0) > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 1
+		 boundary words   : < W[0] : 0 >
+]
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+Push Init UCand (5) :UCAND(0x8da1740)[ context_links_=<0> source_link_=-1 act=0.850609 in_edge_=  Edge[id_= 5; head_node_= 2; tail_nodes_= ( ) rule_= [X] ||| kleine ||| kleine ||| PassThrough(3)=1 ||| 0-0; edge_prob_= -1; ]; 
+	FEATS : PassThrough(3)=1 LanguageModel(4)=0 WordPenalty(1)=-0.434294
+	EST_F : ]
+=========================
+ cands.size(): 5
+=========================
+
+
+/////////////////////////////////////////////////////////////////////
+ L | cands.size(): 5
+BEST IS: UCAND(0x8da1c98)[ context_links_=<0> source_link_=-1 act=11.4901 in_edge_=  Edge[id_= 1; head_node_= 0; tail_nodes_= ( ) rule_= [X] ||| ist ||| are ||| PhraseModel_0(6)=10 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 9.63947; ]; 
+	FEATS : PhraseModel_0(6)=10 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0 LanguageModel(4)=0 WordPenalty(1)=-0.434294
+	EST_F : ]
+	Is correct? : (0x8da1c98) false
+
+LEARN FROM WRONG PREDICTION:
+
+FIND FIRST CORRECT
+	Is correct?: UCAND(0x8da1fe8)[ context_links_=<0> source_link_=-1 act=2.81456 in_edge_=  Edge[id_= 0; head_node_= 0; tail_nodes_= ( ) rule_= [X] ||| ist ||| is ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]; 
+	FEATS : PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0 LanguageModel(4)=0 WordPenalty(1)=-0.434294
+	EST_F : ]
+	Is correct? : (0x8da1fe8) true
+
+UPDATE WEIGHT VECTOR
+	Loss: 9.67552
+	Diff vector: PhraseModel_0(6)=-9 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0 LanguageModel(4)=0 WordPenalty(1)=0
+	Weight vector: WEIGHTS: <bad0>(0)=0 WordPenalty(1)=-4.26119 Number(2)=0.1 PassThrough(3)=-1 LanguageModel(4)=1.11653 LanguageModel_OOV(5)=-1 PhraseModel_0(6)=0.963947 PhraseModel_1(7)=0.65354 PhraseModel_2(8)=0.772507 
+	Updated weight vector: WEIGHTS: <bad0>(0)=0 WordPenalty(1)=-4.26119 Number(2)=0.1 PassThrough(3)=-1 LanguageModel(4)=1.11653 LanguageModel_OOV(5)=-1 PhraseModel_0(6)=-0.111111 PhraseModel_1(7)=0.65354 PhraseModel_2(8)=0.772507 X(9)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0 
+
+RESCORE QUEUE
+	-
+	Rescored UCAND(0x8da1c98)[ context_links_=<0> source_link_=-1 act=0.739498 in_edge_=  Edge[id_= 1; head_node_= 0; tail_nodes_= ( ) rule_= [X] ||| ist ||| are ||| PhraseModel_0(6)=10 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 9.63947; ]; 
+	FEATS : PhraseModel_0(6)=10 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0 LanguageModel(4)=0 WordPenalty(1)=-0.434294
+	EST_F : ]
+	Is correct? : (0x8da1c98) false
+	-
+	Rescored UCAND(0x8da1fe8)[ context_links_=<0> source_link_=-1 act=1.7395 in_edge_=  Edge[id_= 0; head_node_= 0; tail_nodes_= ( ) rule_= [X] ||| ist ||| is ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]; 
+	FEATS : PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0 LanguageModel(4)=0 WordPenalty(1)=-0.434294
+	EST_F : ]
+	Is correct? : (0x8da1fe8) true
+	-
+	Rescored UCAND(0x8da1120)[ context_links_=<0> source_link_=-1 act=1.7395 in_edge_=  Edge[id_= 4; head_node_= 2; tail_nodes_= ( ) rule_= [X] ||| kleine ||| small ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]; 
+	FEATS : PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0 LanguageModel(4)=0 WordPenalty(1)=-0.434294
+	EST_F : ]
+	Is correct? : (0x8da1120) true
+	-
+	Rescored UCAND(0x8da1740)[ context_links_=<0> source_link_=-1 act=0.850609 in_edge_=  Edge[id_= 5; head_node_= 2; tail_nodes_= ( ) rule_= [X] ||| kleine ||| kleine ||| PassThrough(3)=1 ||| 0-0; edge_prob_= -1; ]; 
+	FEATS : PassThrough(3)=1 LanguageModel(4)=0 WordPenalty(1)=-0.434294
+	EST_F : ]
+	Is correct? : (0x8da1740) false
+	-
+	Rescored UCAND(0x8da3bd8)[ context_links_=<0> source_link_=-1 act=0.850609 in_edge_=  Edge[id_= 2; head_node_= 0; tail_nodes_= ( ) rule_= [X] ||| ist ||| ist ||| PassThrough(3)=1 ||| 0-0; edge_prob_= -1; ]; 
+	FEATS : PassThrough(3)=1 LanguageModel(4)=0 WordPenalty(1)=-0.434294
+	EST_F : ]
+	Is correct? : (0x8da3bd8) false
+
+
+/////////////////////////////////////////////////////////////////////
+ L | cands.size(): 5
+BEST IS: UCAND(0x8da1fe8)[ context_links_=<0> source_link_=-1 act=1.7395 in_edge_=  Edge[id_= 0; head_node_= 0; tail_nodes_= ( ) rule_= [X] ||| ist ||| is ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]; 
+	FEATS : PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0 LanguageModel(4)=0 WordPenalty(1)=-0.434294
+	EST_F : ]
+	Is correct? : (0x8da1fe8) true
+
+CORRECT || !TRAINING:
+
+REMOVE ALTERNATIVE CANDIDATES
+	Init cands.size(): 4
+ 	First loop: empty candidates queue
+	Delete : (id:0)  0x8da1c98
+	Delete : (id:1)  0x8da3bd8
+	Delete : (id:2)  0x8da1120
+	Delete : (id:3)  0x8da1740
+	TopCand (still exists): UCAND(0x8da1fe8)[ context_links_=<0> source_link_=-1 act=1.7395 in_edge_=  Edge[id_= 0; head_node_= 0; tail_nodes_= ( ) rule_= [X] ||| ist ||| is ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]; 
+	FEATS : PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0 LanguageModel(4)=0 WordPenalty(1)=-0.434294
+	EST_F : ]
+	Final cands.size(): 0
+
+EXPAND UCANDS LINKS
+	-
+	Expanding UCandidate (0x8da1fe8) via link [0]:
+	HEAD PROPAGATION:
+	head_node.out_edges_.size(): 1
+	currEdge(0):  Edge[id_= 3; head_node_= 1; tail_nodes_= ( 0) rule_= [S] ||| [X,1] ||| [1]; edge_prob_= 0; ]
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+UNDIRECTED LOOKUP WORDS
+	In Edge : Edge[id_= 3; head_node_= 1; tail_nodes_= ( 0) rule_= [S] ||| [X,1] ||| [1]; edge_prob_= 0; ]
+	NO HEAD IMCOMING STATE
+	TAIL INCOMING STATE[0] (0x8da4408 )= LMSS (0x8da1678) = [ KLMState(0x8da1678)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 1
+		 boundary words   : < W[0] : 218 >
+]
+	scopy before Score() : KLMState(0xbfbc1d40)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+	state after  Score() : KLMState(0xbfbc1d6c)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+	[?]_outgoing_state unscored word [0] to 218
+	FINAL HEAD OUTGOING STATE = LMSS (0x8da2220) = [ KLMState(0x8da2220)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 1
+		 boundary words   : < W[0] : 218 >
+]
+	FINAL OUTGOING STATE[1] = LMSS (0x8da8438) = [ KLMState(0x8da8438)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 0
+		 boundary words   : < >
+]
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+	Push UCand (1) :UCAND(0x8da1c98)[ context_links_=<0 0x8da1fe8> source_link_=1 act=0 in_edge_=  Edge[id_= 3; head_node_= 1; tail_nodes_= ( 0) rule_= [S] ||| [X,1] ||| [1]; edge_prob_= 0; ]; 
+	FEATS : LanguageModel(4)=0 WordPenalty(1)=-0
+	EST_F : ]
+
+
+/////////////////////////////////////////////////////////////////////
+ L | cands.size(): 1
+BEST IS: UCAND(0x8da1c98)[ context_links_=<0 0x8da1fe8> source_link_=1 act=0 in_edge_=  Edge[id_= 3; head_node_= 1; tail_nodes_= ( 0) rule_= [S] ||| [X,1] ||| [1]; edge_prob_= 0; ]; 
+	FEATS : LanguageModel(4)=0 WordPenalty(1)=-0
+	EST_F : ]
+	Is correct? : (0x8da1c98) true
+
+CORRECT || !TRAINING:
+
+REMOVE ALTERNATIVE CANDIDATES
+	Init cands.size(): 0
+	Final cands.size(): 0
+
+UPDATE SOURCE UCAND LINK
+	Source: UCAND(0x8da1fe8)[ context_links_=<0> source_link_=-1 act=1.7395 in_edge_=  Edge[id_= 0; head_node_= 0; tail_nodes_= ( ) rule_= [X] ||| ist ||| is ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]; 
+	FEATS : PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0 LanguageModel(4)=0 WordPenalty(1)=-0.434294
+	EST_F : ]
+	Source updated: UCAND(0x8da1fe8)[ context_links_=<0x8da1c98> source_link_=-1 act=1.7395 in_edge_=  Edge[id_= 0; head_node_= 0; tail_nodes_= ( ) rule_= [X] ||| ist ||| is ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]; 
+	FEATS : PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0 LanguageModel(4)=0 WordPenalty(1)=-0.434294
+	EST_F : ]
+
+STATE UPDATE PROPAGATION
+	Current cand: UCAND(0x8da1fe8)[ context_links_=<0x8da1c98> source_link_=-1 act=1.7395 in_edge_=  Edge[id_= 0; head_node_= 0; tail_nodes_= ( ) rule_= [X] ||| ist ||| is ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]; 
+	FEATS : PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0 LanguageModel(4)=0 WordPenalty(1)=-0.434294
+	EST_F : ]
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+UNDIRECTED LOOKUP WORDS
+	In Edge : Edge[id_= 0; head_node_= 0; tail_nodes_= ( ) rule_= [X] ||| ist ||| is ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]
+	HEAD IMCOMING STATE(0x8da32b0)= LMSS (0x8da8438) = [ KLMState(0x8da8438)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 0
+		 boundary words   : < >
+]
+	scopy before Score() : KLMState(0xbfbc1da0)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+	state after  Score() : KLMState(0xbfbc1dcc)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+	[?]_outgoing_state unscored word [0] to 218
+	FINAL HEAD OUTGOING STATE = LMSS (0x8da1f58) = [ KLMState(0x8da1f58)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 1
+		 boundary words   : < W[0] : 218 >
+]
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+REMOVE FROM QUEUE CANDIDATE ACTIONS TO BE UPDATED
+	Init cands.size(): 0
+	Final cands.size(): 0
+
+EXPAND UCANDS LINKS
+	-
+	Expanding UCandidate (0x8da1c98) via link [0]:
+	HEAD PROPAGATION:
+	head_node.out_edges_.size(): 1
+	currEdge(0):  Edge[id_= 6; head_node_= 3; tail_nodes_= ( 1 2) rule_= [S] ||| [S,1] [X,2] ||| [1] [2] ||| Glue(107)=1; edge_prob_= 0; ]
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+UNDIRECTED LOOKUP WORDS
+	In Edge : Edge[id_= 6; head_node_= 3; tail_nodes_= ( 1 2) rule_= [S] ||| [S,1] [X,2] ||| [1] [2] ||| Glue(107)=1; edge_prob_= 0; ]
+	NO HEAD IMCOMING STATE
+	TAIL INCOMING STATE[0] (0x8da62d0 )= LMSS (0x8da2220) = [ KLMState(0x8da2220)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 1
+		 boundary words   : < W[0] : 218 >
+]
+	scopy before Score() : KLMState(0xbfbc1d40)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+	state after  Score() : KLMState(0xbfbc1d6c)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+	[?]_outgoing_state unscored word [0] to 218
+	NO TAIL IMCOMING STATE[1]
+	FINAL OUTGOING STATE[1] = LMSS (0x8da18e0) = [ KLMState(0x8da18e0)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 0
+		 boundary words   : < >
+]
+	FINAL HEAD OUTGOING STATE = LMSS (0x8da22d0) = [ KLMState(0x8da22d0)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 1
+		 boundary words   : < W[0] : 218 >
+]
+	FINAL OUTGOING STATE[2] = LMSS (0x8da1920) = [ KLMState(0x8da1920)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 0
+		 boundary words   : < >
+]
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+	Push UCand (1) :UCAND(0x8da4340)[ context_links_=<0 0x8da1c98 0> source_link_=1 act=0 in_edge_=  Edge[id_= 6; head_node_= 3; tail_nodes_= ( 1 2) rule_= [S] ||| [S,1] [X,2] ||| [1] [2] ||| Glue(107)=1; edge_prob_= 0; ]; 
+	FEATS : Glue(107)=1 LanguageModel(4)=0 WordPenalty(1)=-0
+	EST_F : ]
+
+
+/////////////////////////////////////////////////////////////////////
+ L | cands.size(): 1
+BEST IS: UCAND(0x8da4340)[ context_links_=<0 0x8da1c98 0> source_link_=1 act=0 in_edge_=  Edge[id_= 6; head_node_= 3; tail_nodes_= ( 1 2) rule_= [S] ||| [S,1] [X,2] ||| [1] [2] ||| Glue(107)=1; edge_prob_= 0; ]; 
+	FEATS : Glue(107)=1 LanguageModel(4)=0 WordPenalty(1)=-0
+	EST_F : ]
+	Is correct? : (0x8da4340) true
+
+CORRECT || !TRAINING:
+
+REMOVE ALTERNATIVE CANDIDATES
+	Init cands.size(): 0
+	Final cands.size(): 0
+
+UPDATE SOURCE UCAND LINK
+	Source: UCAND(0x8da1c98)[ context_links_=<0 0x8da1fe8> source_link_=1 act=0 in_edge_=  Edge[id_= 3; head_node_= 1; tail_nodes_= ( 0) rule_= [S] ||| [X,1] ||| [1]; edge_prob_= 0; ]; 
+	FEATS : LanguageModel(4)=0 WordPenalty(1)=-0
+	EST_F : ]
+	Source updated: UCAND(0x8da1c98)[ context_links_=<0x8da4340 0x8da1fe8> source_link_=1 act=0 in_edge_=  Edge[id_= 3; head_node_= 1; tail_nodes_= ( 0) rule_= [S] ||| [X,1] ||| [1]; edge_prob_= 0; ]; 
+	FEATS : LanguageModel(4)=0 WordPenalty(1)=-0
+	EST_F : ]
+
+STATE UPDATE PROPAGATION
+	Current cand: UCAND(0x8da1c98)[ context_links_=<0x8da4340 0x8da1fe8> source_link_=1 act=0 in_edge_=  Edge[id_= 3; head_node_= 1; tail_nodes_= ( 0) rule_= [S] ||| [X,1] ||| [1]; edge_prob_= 0; ]; 
+	FEATS : LanguageModel(4)=0 WordPenalty(1)=-0
+	EST_F : ]
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+UNDIRECTED LOOKUP WORDS
+	In Edge : Edge[id_= 3; head_node_= 1; tail_nodes_= ( 0) rule_= [S] ||| [X,1] ||| [1]; edge_prob_= 0; ]
+	HEAD IMCOMING STATE(0x8da14e0)= LMSS (0x8da18e0) = [ KLMState(0x8da18e0)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 0
+		 boundary words   : < >
+]
+	TAIL INCOMING STATE[0] (0x8da1a48 )= LMSS (0x8da1f58) = [ KLMState(0x8da1f58)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 1
+		 boundary words   : < W[0] : 218 >
+]
+	scopy before Score() : KLMState(0xbfbc1da0)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+	state after  Score() : KLMState(0xbfbc1dcc)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+	[?]_outgoing_state unscored word [0] to 218
+	FINAL HEAD OUTGOING STATE = LMSS (0x8da1ea8) = [ KLMState(0x8da1ea8)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 1
+		 boundary words   : < W[0] : 218 >
+]
+	FINAL OUTGOING STATE[1] = LMSS (0x8da1ee8) = [ KLMState(0x8da1ee8)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 0
+		 boundary words   : < >
+]
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+REMOVE FROM QUEUE CANDIDATE ACTIONS TO BE UPDATED
+	Init cands.size(): 0
+	Final cands.size(): 0
+
+EXPAND UCANDS LINKS
+	-
+	Expanding UCandidate (0x8da4340) via link [0]:
+	HEAD PROPAGATION:
+	head_node.out_edges_.size(): 1
+	currEdge(0):  Edge[id_= 7; head_node_= 4; tail_nodes_= ( 3) rule_= [Goal] ||| [S,1] ||| [1]; edge_prob_= 0; ]
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+UNDIRECTED LOOKUP WORDS
+	In Edge : Edge[id_= 7; head_node_= 4; tail_nodes_= ( 3) rule_= [Goal] ||| [S,1] ||| [1]; edge_prob_= 0; ]
+	NO HEAD IMCOMING STATE
+	TAIL INCOMING STATE[0] (0x8da8478 )= LMSS (0x8da22d0) = [ KLMState(0x8da22d0)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 1
+		 boundary words   : < W[0] : 218 >
+]
+	scopy before Score() : KLMState(0xbfbc1d40)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+	state after  Score() : KLMState(0xbfbc1d6c)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+	[?]_outgoing_state unscored word [0] to 218
+	FINAL HEAD OUTGOING STATE = LMSS (0x8da8438) = [ KLMState(0x8da8438)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 1
+		 boundary words   : < W[0] : 218 >
+]
+	FINAL OUTGOING STATE[1] = LMSS (0x8da2220) = [ KLMState(0x8da2220)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 0
+		 boundary words   : < >
+]
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+	Push UCand (1) :UCAND(0x8da3bd8)[ context_links_=<0xffffffff 0x8da4340> source_link_=1 act=0 in_edge_=  Edge[id_= 7; head_node_= 4; tail_nodes_= ( 3) rule_= [Goal] ||| [S,1] ||| [1]; edge_prob_= 0; ]; 
+	FEATS : LanguageModel(4)=0 WordPenalty(1)=-0
+	EST_F : ]
+	-
+	Expanding UCandidate (0x8da4340) via link [2]:
+	RIGHT CHILD PROPAGATION
+	tail_node.in_edges_.size(): 2
+currEdge(0):  Edge[id_= 4; head_node_= 2; tail_nodes_= ( ) rule_= [X] ||| kleine ||| small ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+UNDIRECTED LOOKUP WORDS
+	In Edge : Edge[id_= 4; head_node_= 2; tail_nodes_= ( ) rule_= [X] ||| kleine ||| small ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]
+	HEAD IMCOMING STATE(0x8da6250)= LMSS (0x8da1920) = [ KLMState(0x8da1920)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 0
+		 boundary words   : < >
+]
+	scopy before Score() : KLMState(0xbfbc1d40)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+	state after  Score() : KLMState(0xbfbc1d6c)[ valid_length_  = 2 history_  = <(388) (218) >  backoff_  = <(-0.065868) (0.01999) > ]
+	[?]_outgoing_state unscored word [0] to 388
+	FINAL HEAD OUTGOING STATE = LMSS (0x8da3b00) = [ KLMState(0x8da3b00)[ valid_length_  = 2 history_  = <(388) (218) >  backoff_  = <(-0.065868) (0.01999) > ]
+		 has full context : 1
+		 has eos on right : 0
+		 unscored size    : 1
+		 boundary words   : < W[0] : 388 >
+]
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+Push UCand (2) :UCAND(0x8da1120)[ context_links_=<0x8da4340> source_link_=0 act=1.7395 in_edge_=  Edge[id_= 4; head_node_= 2; tail_nodes_= ( ) rule_= [X] ||| kleine ||| small ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]; 
+	FEATS : PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0 LanguageModel(4)=0 WordPenalty(1)=-0.434294
+	EST_F : ]
+currEdge(1):  Edge[id_= 5; head_node_= 2; tail_nodes_= ( ) rule_= [X] ||| kleine ||| kleine ||| PassThrough(3)=1 ||| 0-0; edge_prob_= -1; ]
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+UNDIRECTED LOOKUP WORDS
+	In Edge : Edge[id_= 5; head_node_= 2; tail_nodes_= ( ) rule_= [X] ||| kleine ||| kleine ||| PassThrough(3)=1 ||| 0-0; edge_prob_= -1; ]
+	HEAD IMCOMING STATE(0x8da6250)= LMSS (0x8da1920) = [ KLMState(0x8da1920)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 0
+		 boundary words   : < >
+]
+	scopy before Score() : KLMState(0xbfbc1d40)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+	state after  Score() : KLMState(0xbfbc1d6c)[ valid_length_  = 1 history_  = <(0) >  backoff_  = <(0) > ]
+	[?]_outgoing_state unscored word [0] to 0
+	FINAL HEAD OUTGOING STATE = LMSS (0x8da3b40) = [ KLMState(0x8da3b40)[ valid_length_  = 1 history_  = <(0) >  backoff_  = <(0) > ]
+		 has full context : 1
+		 has eos on right : 0
+		 unscored size    : 1
+		 boundary words   : < W[0] : 0 >
+]
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+Push UCand (3) :UCAND(0x8da1740)[ context_links_=<0x8da4340> source_link_=0 act=0.850609 in_edge_=  Edge[id_= 5; head_node_= 2; tail_nodes_= ( ) rule_= [X] ||| kleine ||| kleine ||| PassThrough(3)=1 ||| 0-0; edge_prob_= -1; ]; 
+	FEATS : PassThrough(3)=1 LanguageModel(4)=0 WordPenalty(1)=-0.434294
+	EST_F : ]
+
+
+/////////////////////////////////////////////////////////////////////
+ L | cands.size(): 3
+BEST IS: UCAND(0x8da1120)[ context_links_=<0x8da4340> source_link_=0 act=1.7395 in_edge_=  Edge[id_= 4; head_node_= 2; tail_nodes_= ( ) rule_= [X] ||| kleine ||| small ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]; 
+	FEATS : PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0 LanguageModel(4)=0 WordPenalty(1)=-0.434294
+	EST_F : ]
+	Is correct? : (0x8da1120) true
+
+CORRECT || !TRAINING:
+
+REMOVE ALTERNATIVE CANDIDATES
+	Init cands.size(): 2
+	Delete : (id:1)  0x8da1740
+	Final cands.size(): 1
+
+UPDATE SOURCE UCAND LINK
+	Source: UCAND(0x8da4340)[ context_links_=<0 0x8da1c98 0> source_link_=1 act=0 in_edge_=  Edge[id_= 6; head_node_= 3; tail_nodes_= ( 1 2) rule_= [S] ||| [S,1] [X,2] ||| [1] [2] ||| Glue(107)=1; edge_prob_= 0; ]; 
+	FEATS : Glue(107)=1 LanguageModel(4)=0 WordPenalty(1)=-0
+	EST_F : ]
+	Source updated: UCAND(0x8da4340)[ context_links_=<0 0x8da1c98 0x8da1120> source_link_=1 act=0 in_edge_=  Edge[id_= 6; head_node_= 3; tail_nodes_= ( 1 2) rule_= [S] ||| [S,1] [X,2] ||| [1] [2] ||| Glue(107)=1; edge_prob_= 0; ]; 
+	FEATS : Glue(107)=1 LanguageModel(4)=0 WordPenalty(1)=-0
+	EST_F : ]
+
+STATE UPDATE PROPAGATION
+	Current cand: UCAND(0x8da4340)[ context_links_=<0 0x8da1c98 0x8da1120> source_link_=1 act=0 in_edge_=  Edge[id_= 6; head_node_= 3; tail_nodes_= ( 1 2) rule_= [S] ||| [S,1] [X,2] ||| [1] [2] ||| Glue(107)=1; edge_prob_= 0; ]; 
+	FEATS : Glue(107)=1 LanguageModel(4)=0 WordPenalty(1)=-0
+	EST_F : ]
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+UNDIRECTED LOOKUP WORDS
+	In Edge : Edge[id_= 6; head_node_= 3; tail_nodes_= ( 1 2) rule_= [S] ||| [S,1] [X,2] ||| [1] [2] ||| Glue(107)=1; edge_prob_= 0; ]
+	NO HEAD IMCOMING STATE
+	TAIL INCOMING STATE[0] (0x8da1d80 )= LMSS (0x8da1ea8) = [ KLMState(0x8da1ea8)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 1
+		 boundary words   : < W[0] : 218 >
+]
+	scopy before Score() : KLMState(0xbfbc1da0)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+	state after  Score() : KLMState(0xbfbc1dcc)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+	[?]_outgoing_state unscored word [0] to 218
+	TAIL INCOMING STATE[1] (0x8da4520 )= LMSS (0x8da3b00) = [ KLMState(0x8da3b00)[ valid_length_  = 2 history_  = <(388) (218) >  backoff_  = <(-0.065868) (0.01999) > ]
+		 has full context : 1
+		 has eos on right : 0
+		 unscored size    : 1
+		 boundary words   : < W[0] : 388 >
+]
+	scopy before Score() : KLMState(0xbfbc1da0)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+	state after  Score() : KLMState(0xbfbc1dcc)[ valid_length_  = 2 history_  = <(388) (218) >  backoff_  = <(-0.065868) (0.01999) > ]
+	[?]_outgoing_state unscored word [1] to 388
+	[?]_outgoing_state unscored word [0] to 388
+	FINAL HEAD OUTGOING STATE = LMSS (0x8da3b40) = [ KLMState(0x8da3b40)[ valid_length_  = 2 history_  = <(388) (218) >  backoff_  = <(-0.065868) (0.01999) > ]
+		 has full context : 1
+		 has eos on right : 0
+		 unscored size    : 2
+		 boundary words   : < W[0] : 218 W[1] : 388 >
+]
+	FINAL OUTGOING STATE[1] = LMSS (0x8da62f0) = [ KLMState(0x8da62f0)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 1
+		 boundary words   : < W[0] : 388 >
+]
+	FINAL OUTGOING STATE[2] = LMSS (0x8da6330) = [ KLMState(0x8da6330)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 0
+		 boundary words   : < >
+]
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+	UCands queue update signaled: (0x8da4340 , 0)
+	Current cand: UCAND(0x8da1c98)[ context_links_=<0x8da4340 0x8da1fe8> source_link_=1 act=0 in_edge_=  Edge[id_= 3; head_node_= 1; tail_nodes_= ( 0) rule_= [S] ||| [X,1] ||| [1]; edge_prob_= 0; ]; 
+	FEATS : LanguageModel(4)=0 WordPenalty(1)=-0
+	EST_F : ]
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+UNDIRECTED LOOKUP WORDS
+	In Edge : Edge[id_= 3; head_node_= 1; tail_nodes_= ( 0) rule_= [S] ||| [X,1] ||| [1]; edge_prob_= 0; ]
+	HEAD IMCOMING STATE(0x8da1f28)= LMSS (0x8da62f0) = [ KLMState(0x8da62f0)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 1
+		 boundary words   : < W[0] : 388 >
+]
+	TAIL INCOMING STATE[0] (0x8da1a48 )= LMSS (0x8da1f58) = [ KLMState(0x8da1f58)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 1
+		 boundary words   : < W[0] : 218 >
+]
+	scopy before Score() : KLMState(0xbfbc1da0)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+	state after  Score() : KLMState(0xbfbc1dcc)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+	[?]_outgoing_state unscored word [0] to 218
+	FINAL HEAD OUTGOING STATE = LMSS (0x8da6370) = [ KLMState(0x8da6370)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 1
+		 boundary words   : < W[0] : 218 >
+]
+	scopy before Score() : KLMState(0xbfbc1da0)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+	state after  Score() : KLMState(0xbfbc1dcc)[ valid_length_  = 2 history_  = <(388) (218) >  backoff_  = <(-0.065868) (0.01999) > ]
+	[?]_outgoing_state unscored word [0] to 388
+	FINAL OUTGOING STATE[1] = LMSS (0x8da22d0) = [ KLMState(0x8da22d0)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 1
+		 boundary words   : < W[0] : 388 >
+]
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+	Current cand: UCAND(0x8da1fe8)[ context_links_=<0x8da1c98> source_link_=-1 act=1.7395 in_edge_=  Edge[id_= 0; head_node_= 0; tail_nodes_= ( ) rule_= [X] ||| ist ||| is ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]; 
+	FEATS : PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0 LanguageModel(4)=0 WordPenalty(1)=-0.434294
+	EST_F : ]
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+UNDIRECTED LOOKUP WORDS
+	In Edge : Edge[id_= 0; head_node_= 0; tail_nodes_= ( ) rule_= [X] ||| ist ||| is ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]
+	HEAD IMCOMING STATE(0x8da14e0)= LMSS (0x8da22d0) = [ KLMState(0x8da22d0)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 1
+		 boundary words   : < W[0] : 388 >
+]
+	scopy before Score() : KLMState(0xbfbc1da0)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+	state after  Score() : KLMState(0xbfbc1dcc)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+	[?]_outgoing_state unscored word [0] to 218
+	FINAL HEAD OUTGOING STATE = LMSS (0x8da1ea8) = [ KLMState(0x8da1ea8)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 1
+		 boundary words   : < W[0] : 218 >
+]
+	scopy before Score() : KLMState(0xbfbc1da0)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+	state after  Score() : KLMState(0xbfbc1dcc)[ valid_length_  = 2 history_  = <(388) (218) >  backoff_  = <(-0.065868) (0.01999) > ]
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+REMOVE FROM QUEUE CANDIDATE ACTIONS TO BE UPDATED
+	Init cands.size(): 1
+	Removing cands from link: (0x8da4340 , 0)
+	Delete : (id:0)  0x8da3bd8
+	Final cands.size(): 0
+
+EXPAND UCANDS LINKS
+	-
+	Expanding UCandidate (0x8da4340) via link [0]:
+	HEAD PROPAGATION:
+	head_node.out_edges_.size(): 1
+	currEdge(0):  Edge[id_= 7; head_node_= 4; tail_nodes_= ( 3) rule_= [Goal] ||| [S,1] ||| [1]; edge_prob_= 0; ]
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+UNDIRECTED LOOKUP WORDS
+	In Edge : Edge[id_= 7; head_node_= 4; tail_nodes_= ( 3) rule_= [Goal] ||| [S,1] ||| [1]; edge_prob_= 0; ]
+	NO HEAD IMCOMING STATE
+	TAIL INCOMING STATE[0] (0x8da19a8 )= LMSS (0x8da3b40) = [ KLMState(0x8da3b40)[ valid_length_  = 2 history_  = <(388) (218) >  backoff_  = <(-0.065868) (0.01999) > ]
+		 has full context : 1
+		 has eos on right : 0
+		 unscored size    : 2
+		 boundary words   : < W[0] : 218 W[1] : 388 >
+]
+	scopy before Score() : KLMState(0xbfbc1d40)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+	state after  Score() : KLMState(0xbfbc1d6c)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+	[?]_outgoing_state unscored word [0] to 218
+	scopy before Score() : KLMState(0xbfbc1d40)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+	state after  Score() : KLMState(0xbfbc1d6c)[ valid_length_  = 2 history_  = <(388) (218) >  backoff_  = <(-0.065868) (0.01999) > ]
+	[?]_outgoing_state unscored word [1] to 388
+	FINAL HEAD OUTGOING STATE = LMSS (0x8da1ee8) = [ KLMState(0x8da1ee8)[ valid_length_  = 2 history_  = <(388) (218) >  backoff_  = <(-0.065868) (0.01999) > ]
+		 has full context : 1
+		 has eos on right : 0
+		 unscored size    : 2
+		 boundary words   : < W[0] : 218 W[1] : 388 >
+]
+	FINAL OUTGOING STATE[1] = LMSS (0x8da8438) = [ KLMState(0x8da8438)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 0
+		 boundary words   : < >
+]
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+	Push UCand (1) :UCAND(0x8da3bd8)[ context_links_=<0xffffffff 0x8da4340> source_link_=1 act=0 in_edge_=  Edge[id_= 7; head_node_= 4; tail_nodes_= ( 3) rule_= [Goal] ||| [S,1] ||| [1]; edge_prob_= 0; ]; 
+	FEATS : LanguageModel(4)=0 WordPenalty(1)=-0
+	EST_F : ]
+
+
+/////////////////////////////////////////////////////////////////////
+ L | cands.size(): 1
+BEST IS: UCAND(0x8da3bd8)[ context_links_=<0xffffffff 0x8da4340> source_link_=1 act=0 in_edge_=  Edge[id_= 7; head_node_= 4; tail_nodes_= ( 3) rule_= [Goal] ||| [S,1] ||| [1]; edge_prob_= 0; ]; 
+	FEATS : LanguageModel(4)=0 WordPenalty(1)=-0
+	EST_F : ]
+	Is correct? : (0x8da3bd8) true
+
+CORRECT || !TRAINING:
+
+REMOVE ALTERNATIVE CANDIDATES
+	Init cands.size(): 0
+	Final cands.size(): 0
+
+UPDATE SOURCE UCAND LINK
+	Source: UCAND(0x8da4340)[ context_links_=<0 0x8da1c98 0x8da1120> source_link_=1 act=0 in_edge_=  Edge[id_= 6; head_node_= 3; tail_nodes_= ( 1 2) rule_= [S] ||| [S,1] [X,2] ||| [1] [2] ||| Glue(107)=1; edge_prob_= 0; ]; 
+	FEATS : Glue(107)=1 LanguageModel(4)=0 WordPenalty(1)=-0
+	EST_F : ]
+	Source updated: UCAND(0x8da4340)[ context_links_=<0x8da3bd8 0x8da1c98 0x8da1120> source_link_=1 act=0 in_edge_=  Edge[id_= 6; head_node_= 3; tail_nodes_= ( 1 2) rule_= [S] ||| [S,1] [X,2] ||| [1] [2] ||| Glue(107)=1; edge_prob_= 0; ]; 
+	FEATS : Glue(107)=1 LanguageModel(4)=0 WordPenalty(1)=-0
+	EST_F : ]
+
+STATE UPDATE PROPAGATION
+	Current cand: UCAND(0x8da4340)[ context_links_=<0x8da3bd8 0x8da1c98 0x8da1120> source_link_=1 act=0 in_edge_=  Edge[id_= 6; head_node_= 3; tail_nodes_= ( 1 2) rule_= [S] ||| [S,1] [X,2] ||| [1] [2] ||| Glue(107)=1; edge_prob_= 0; ]; 
+	FEATS : Glue(107)=1 LanguageModel(4)=0 WordPenalty(1)=-0
+	EST_F : ]
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+UNDIRECTED LOOKUP WORDS
+	In Edge : Edge[id_= 6; head_node_= 3; tail_nodes_= ( 1 2) rule_= [S] ||| [S,1] [X,2] ||| [1] [2] ||| Glue(107)=1; edge_prob_= 0; ]
+	HEAD IMCOMING STATE(0x8da32b0)= LMSS (0x8da8438) = [ KLMState(0x8da8438)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 0
+		 boundary words   : < >
+]
+	TAIL INCOMING STATE[0] (0x8da4550 )= LMSS (0x8da6370) = [ KLMState(0x8da6370)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 1
+		 boundary words   : < W[0] : 218 >
+]
+	scopy before Score() : KLMState(0xbfbc1da0)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+	state after  Score() : KLMState(0xbfbc1dcc)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+	[?]_outgoing_state unscored word [0] to 218
+	TAIL INCOMING STATE[1] (0x8da4520 )= LMSS (0x8da3b00) = [ KLMState(0x8da3b00)[ valid_length_  = 2 history_  = <(388) (218) >  backoff_  = <(-0.065868) (0.01999) > ]
+		 has full context : 1
+		 has eos on right : 0
+		 unscored size    : 1
+		 boundary words   : < W[0] : 388 >
+]
+	scopy before Score() : KLMState(0xbfbc1da0)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+	state after  Score() : KLMState(0xbfbc1dcc)[ valid_length_  = 2 history_  = <(388) (218) >  backoff_  = <(-0.065868) (0.01999) > ]
+	[?]_outgoing_state unscored word [1] to 388
+	[?]_outgoing_state unscored word [0] to 388
+	FINAL HEAD OUTGOING STATE = LMSS (0x8da2220) = [ KLMState(0x8da2220)[ valid_length_  = 2 history_  = <(388) (218) >  backoff_  = <(-0.065868) (0.01999) > ]
+		 has full context : 1
+		 has eos on right : 0
+		 unscored size    : 2
+		 boundary words   : < W[0] : 218 W[1] : 388 >
+]
+	FINAL OUTGOING STATE[1] = LMSS (0x8da1f58) = [ KLMState(0x8da1f58)[ valid_length_  = 0 history_  = < >  backoff_  = < > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 1
+		 boundary words   : < W[0] : 388 >
+]
+	FINAL OUTGOING STATE[2] = LMSS (0x8da18e0) = [ KLMState(0x8da18e0)[ valid_length_  = 1 history_  = <(218) >  backoff_  = <(-0.00110909) > ]
+		 has full context : 0
+		 has eos on right : 0
+		 unscored size    : 0
+		 boundary words   : < >
+]
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+REMOVE FROM QUEUE CANDIDATE ACTIONS TO BE UPDATED
+	Init cands.size(): 0
+	Final cands.size(): 0
+
+EXPAND UCANDS LINKS
+BUILD OUT HG
+/////////////////////////////////////////////////////////////////////
+NEXT UCAND: UCAND(0x8da3bd8)[ context_links_=<0xffffffff 0x8da4340> source_link_=1 act=0 in_edge_=  Edge[id_= 7; head_node_= 4; tail_nodes_= ( 3) rule_= [Goal] ||| [S,1] ||| [1]; edge_prob_= 0; ]; 
+	FEATS : LanguageModel(4)=0 WordPenalty(1)=-0
+	EST_F : ]
+IN  EDGE :  Edge[id_= 7; head_node_= 4; tail_nodes_= ( 3) rule_= [Goal] ||| [S,1] ||| [1]; edge_prob_= 0; ]
+OUT EDGE :  Edge[id_= 0; head_node_= 4; tail_nodes_= ( 3) rule_= [Goal] ||| [S,1] ||| [1]; edge_prob_= 0; ]
+HEAD UCAND : Goal
+LEFT UCAND : 0x8da4340
+OUT EDGE :  Edge[id_= 0; head_node_= 0; tail_nodes_= ( 1) rule_= [Goal] ||| [S,1] ||| [1]; edge_prob_= 0; ]
+DELETE UCAND : UCAND(0x8da3bd8)[ context_links_=<0xffffffff 0x8da4340> source_link_=1 act=0 in_edge_=  Edge[id_= 7; head_node_= 4; tail_nodes_= ( 3) rule_= [Goal] ||| [S,1] ||| [1]; edge_prob_= 0; ]; 
+	FEATS : LanguageModel(4)=0 WordPenalty(1)=-0
+	EST_F : ]
+/////////////////////////////////////////////////////////////////////
+NEXT UCAND: UCAND(0x8da4340)[ context_links_=<0x8da3bd8 0x8da1c98 0x8da1120> source_link_=1 act=0 in_edge_=  Edge[id_= 6; head_node_= 3; tail_nodes_= ( 1 2) rule_= [S] ||| [S,1] [X,2] ||| [1] [2] ||| Glue(107)=1; edge_prob_= 0; ]; 
+	FEATS : Glue(107)=1 LanguageModel(4)=0 WordPenalty(1)=-0
+	EST_F : ]
+IN  EDGE :  Edge[id_= 6; head_node_= 3; tail_nodes_= ( 1 2) rule_= [S] ||| [S,1] [X,2] ||| [1] [2] ||| Glue(107)=1; edge_prob_= 0; ]
+OUT EDGE :  Edge[id_= 1; head_node_= 3; tail_nodes_= ( 1 2) rule_= [S] ||| [S,1] [X,2] ||| [1] [2] ||| Glue(107)=1; edge_prob_= 0; ]
+HEAD UCAND : 0x8da3bd8
+LEFT UCAND : 0x8da1c98
+RIGHT UCAND : 0x8da1120
+OUT EDGE :  Edge[id_= 1; head_node_= 1; tail_nodes_= ( 2 3) rule_= [S] ||| [S,1] [X,2] ||| [1] [2] ||| Glue(107)=1; edge_prob_= 0; ]
+DELETE UCAND : UCAND(0x8da4340)[ context_links_=<0x8da3bd8 0x8da1c98 0x8da1120> source_link_=1 act=0 in_edge_=  Edge[id_= 6; head_node_= 3; tail_nodes_= ( 1 2) rule_= [S] ||| [S,1] [X,2] ||| [1] [2] ||| Glue(107)=1; edge_prob_= 0; ]; 
+	FEATS : Glue(107)=1 LanguageModel(4)=0 WordPenalty(1)=-0
+	EST_F : ]
+/////////////////////////////////////////////////////////////////////
+NEXT UCAND: UCAND(0x8da1120)[ context_links_=<0x8da4340> source_link_=0 act=1.7395 in_edge_=  Edge[id_= 4; head_node_= 2; tail_nodes_= ( ) rule_= [X] ||| kleine ||| small ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]; 
+	FEATS : PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0 LanguageModel(4)=0 WordPenalty(1)=-0.434294
+	EST_F : ]
+IN  EDGE :  Edge[id_= 4; head_node_= 2; tail_nodes_= ( ) rule_= [X] ||| kleine ||| small ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]
+OUT EDGE :  Edge[id_= 2; head_node_= 2; tail_nodes_= ( ) rule_= [X] ||| kleine ||| small ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]
+HEAD UCAND : 0x8da4340
+OUT EDGE :  Edge[id_= 2; head_node_= 3; tail_nodes_= ( ) rule_= [X] ||| kleine ||| small ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]
+DELETE UCAND : UCAND(0x8da1120)[ context_links_=<0x8da4340> source_link_=0 act=1.7395 in_edge_=  Edge[id_= 4; head_node_= 2; tail_nodes_= ( ) rule_= [X] ||| kleine ||| small ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]; 
+	FEATS : PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0 LanguageModel(4)=0 WordPenalty(1)=-0.434294
+	EST_F : ]
+/////////////////////////////////////////////////////////////////////
+NEXT UCAND: UCAND(0x8da1c98)[ context_links_=<0x8da4340 0x8da1fe8> source_link_=1 act=0 in_edge_=  Edge[id_= 3; head_node_= 1; tail_nodes_= ( 0) rule_= [S] ||| [X,1] ||| [1]; edge_prob_= 0; ]; 
+	FEATS : LanguageModel(4)=0 WordPenalty(1)=-0
+	EST_F : ]
+IN  EDGE :  Edge[id_= 3; head_node_= 1; tail_nodes_= ( 0) rule_= [S] ||| [X,1] ||| [1]; edge_prob_= 0; ]
+OUT EDGE :  Edge[id_= 3; head_node_= 1; tail_nodes_= ( 0) rule_= [S] ||| [X,1] ||| [1]; edge_prob_= 0; ]
+HEAD UCAND : 0x8da4340
+LEFT UCAND : 0x8da1fe8
+OUT EDGE :  Edge[id_= 3; head_node_= 2; tail_nodes_= ( 4) rule_= [S] ||| [X,1] ||| [1]; edge_prob_= 0; ]
+DELETE UCAND : UCAND(0x8da1c98)[ context_links_=<0x8da4340 0x8da1fe8> source_link_=1 act=0 in_edge_=  Edge[id_= 3; head_node_= 1; tail_nodes_= ( 0) rule_= [S] ||| [X,1] ||| [1]; edge_prob_= 0; ]; 
+	FEATS : LanguageModel(4)=0 WordPenalty(1)=-0
+	EST_F : ]
+/////////////////////////////////////////////////////////////////////
+NEXT UCAND: UCAND(0x8da1fe8)[ context_links_=<0x8da1c98> source_link_=-1 act=1.7395 in_edge_=  Edge[id_= 0; head_node_= 0; tail_nodes_= ( ) rule_= [X] ||| ist ||| is ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]; 
+	FEATS : PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0 LanguageModel(4)=0 WordPenalty(1)=-0.434294
+	EST_F : ]
+IN  EDGE :  Edge[id_= 0; head_node_= 0; tail_nodes_= ( ) rule_= [X] ||| ist ||| is ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]
+OUT EDGE :  Edge[id_= 4; head_node_= 0; tail_nodes_= ( ) rule_= [X] ||| ist ||| is ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]
+HEAD UCAND : 0x8da1c98
+OUT EDGE :  Edge[id_= 4; head_node_= 4; tail_nodes_= ( ) rule_= [X] ||| ist ||| is ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]
+DELETE UCAND : UCAND(0x8da1fe8)[ context_links_=<0x8da1c98> source_link_=-1 act=1.7395 in_edge_=  Edge[id_= 0; head_node_= 0; tail_nodes_= ( ) rule_= [X] ||| ist ||| is ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0; edge_prob_= 0.963947; ]; 
+	FEATS : PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0 LanguageModel(4)=0 WordPenalty(1)=-0.434294
+	EST_F : ]
+  Pass1 forest (nodes/edges): 5/5
+  Pass1 forest       (paths): 1
+  Pass1 forest  Viterbi logp: 1.92789
+  Pass1 forest       Viterbi: is small
+  Pass1 forest          tree: (S (S (X is)) (X small))
+
+  Goal category: [Goal_4]
+    ..
+  Constr. forest (nodes/edges): 6/6
+  Constr. forest       (paths): 1
+  Constr. forest  Viterbi logp: 1.92789
+  Constr. forest       Viterbi: ist kleine
+  Constr. forest          tree: (Goal_4 (S_3 (S_1 (X_0 ist)) (X_2 kleine)))
+
+  Constr. VitTree: (Goal_4 (S_3 (S_1 (X_0 is)) (X_2 small)))
+is small
+[Goal_4] ||| [S_3,1] ||| [1]
+[S_3] ||| [S_1,1] [X_2,2] ||| [1] [2] ||| Glue(107)=1
+[X_2] ||| small ||| kleine ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0
+[S_1] ||| [X_0,1] ||| [1]
+[X_0] ||| is ||| ist ||| PhraseModel_0(6)=1 PhraseModel_1(7)=0 PhraseModel_2(8)=0 PhraseModel_3(10)=0 PhraseModel_4(11)=0
+

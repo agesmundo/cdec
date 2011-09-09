@@ -318,7 +318,7 @@ public:
     	}
 
 #ifdef DEBUG_ULM
-    	cerr << "-----------------------\nUNDIRECTED LOOKUP WORDS" << endl;
+    	cerr << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>\nUNDIRECTED LOOKUP WORDS" << endl;
     	cerr << "\tIn Edge :" << in_edge << endl;
 #endif
 
@@ -435,7 +435,7 @@ public:
     			} else { //there is an hole
 
 #ifdef DEBUG_ULM
-    		cerr << "\tNO IMCOMING STATE["<<tail_id<<"]"<<endl;
+    		cerr << "\tNO TAIL IMCOMING STATE["<<tail_id<<"]"<<endl;
 #endif
     				//close outgoing states
     				for(int i=0;i<ucand.NLinks();i++){
@@ -573,7 +573,7 @@ public:
 			}
 
 #ifdef DEBUG_ULM
-    	cerr << "-----------------------" << endl;
+    	cerr << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
 #endif
     	return sum;
     }
@@ -616,8 +616,8 @@ public:
     	cerr << RemnantLMState(lms) << endl;
     	int unscored_size = UnscoredSize(lms);
     	cerr << "\t\t has full context : " << HasFullContext(lms) << endl;
-    	cerr << "\t\t unscored size    : " << unscored_size << endl;
     	cerr << "\t\t has eos on right : " << GetFlag(lms, HAS_EOS_ON_RIGHT) << endl;
+    	cerr << "\t\t unscored size    : " << unscored_size << endl;
     	cerr << "\t\t boundary words   : <";
     	for(int i = 0;i < unscored_size/*order_-1*/;i++){
     		cerr << " W[" << i << "] : " << IthUnscoredWord(i, lms);

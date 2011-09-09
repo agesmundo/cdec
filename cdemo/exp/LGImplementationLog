@@ -10,6 +10,9 @@ TODO code style
 	avoid passing spos down
 
 
+110909
+OK!	propagation (see 110909log)
+
 110825
 OK!	smarter queue update (avoid full deletion)
 OK!	mem leaks (valgrind) on quick & lat

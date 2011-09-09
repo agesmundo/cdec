@@ -1,7 +1,7 @@
 
 \data\
 ngram 1=490
-ngram 2=1023
+ngram 2=1024
 ngram 3=1119
 
 \1-grams:
@@ -999,6 +999,7 @@ ngram 3=1119
 -1.15037	into the	-0.01198488
 -0.8493397	introduced by	-0.004049858
 -1.995468	is ,	-0.007080218
+-1.999	is small	0.01999
 -1.995468	is always	0.01894335
 -1.995468	is considered	0.05332709
 -1.995468	is derived	0.05332709

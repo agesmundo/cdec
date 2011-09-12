@@ -214,13 +214,14 @@ public:
 
 		assert(in.nodes_[pregoal].out_edges_.size() == 1);
 		UCandidateHeap cands; //unique queue/heap of candidates
-		//NOT NEEDED WITH NEW PROPAGATION UCandidateList boundary; //keeps list of ucands available for expansion//TODO? GU implement with hash table, use boost:hash
+
 		//find nodes that intersect with reference lattice
 		if (is_training_) {
 			assert(smeta.HasReference()==true);
 			correct_edges_mask_ = new vector<bool> (in.edges_.size(), false);
 			HG::HighlightIntersection(smeta.GetReference(), in, correct_edges_mask_);
 		}
+
 		InitCands(cands); //put leafs candidates in the queue
 		UCandidate *topCand;
 		for (;!cands.empty();) {//TODO? borders should not be empty, first pass ok to be empty
@@ -361,7 +362,7 @@ public:
 					cerr << "\tIs correct?: " << *cands[i] << endl;
 #endif
 					if(IsCorrect(*cands[i])
-					/*&& (cands[i]->action_prob_ != topCand->action_prob_)*/){ //TODO need to avoid items with same features! brute if have not same action score then surely not same feats
+					&& (cands[i]->action_prob_ != topCand->action_prob_)){ //TODO need to avoid items with same features! brute if have not same action score then surely not same feats
 						correctCand = cands[i];
 						break;
 					}

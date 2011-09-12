@@ -20,7 +20,8 @@ using namespace std;
 
 static const unsigned char HAS_FULL_CONTEXT = 1;
 static const unsigned char HAS_EOS_ON_RIGHT = 2;
-static const unsigned char MASK             = 7;
+static const unsigned char HAS_NOT_STAR     = 4; //GU used for bottom-up propagation states to know if prev num_scored should be added to current
+static const unsigned char MASK             = 15;
 
 // -x : rules include <s> and </s>
 // -n NAME : feature id is NAME
@@ -302,6 +303,7 @@ public:
     		*oovs = 0;
 
     	//    if (est_oovs) *est_oovs = 0;
+    	bool has_hole = false;
     	bool saw_eos = false;
     	bool has_some_history = false;
     	bool context_complete = false;
@@ -379,7 +381,7 @@ public:
     			if(ffs_tail_in!=NULL){
     				void* tail_incoming_state = FFS2LMS(ffs_tail_in,spos);
 #ifdef DEBUG_ULM
-    				cerr << "\tTAIL INCOMING STATE["<<tail_id<<"] (" << ffs_tail_in << " )= ";
+    				cerr << "\tTAIL INCOMING STATE["<<tail_id+1<<"] (" << ffs_tail_in << " )= ";
     				PrintLMS(tail_incoming_state);
 #endif
     				int unscored_ant_len = UnscoredSize(tail_incoming_state);
@@ -400,6 +402,7 @@ public:
     						p = ngram_->Score(scopy, cur_word, state);
 #ifdef DEBUG_ULM
     						cerr << "\tscopy before Score() : " << scopy << endl;
+    						cerr << "\tscore = "<< p << endl;
     						cerr << "\tstate after  Score() : " << state << endl;
 #endif
     						if (saw_eos) { p = -100; }
@@ -420,22 +423,31 @@ public:
     					}
     					AddUscoredWord(unscored_ws_size,cur_word,uscored_ws_outgoing_states,saw_eos,ucand.NLinks());
     				}
-    				state = RemnantLMState(tail_incoming_state);
-    				saw_eos = saw_eos || GetFlag(tail_incoming_state, HAS_EOS_ON_RIGHT);
+
+    				bool tail_incoming_has_not_star = GetFlag(tail_incoming_state, HAS_NOT_STAR);
+    				has_hole |= !tail_incoming_has_not_star;
+
+    				saw_eos |= GetFlag(tail_incoming_state, HAS_EOS_ON_RIGHT);
     				context_complete = HasFullContext(tail_incoming_state);
     				if(context_complete){
     					num_scored=order_-1; //or more it's the same //TODO try remove -1 should be the same
+    					state = RemnantLMState(tail_incoming_state);
     				}else{
-    					num_scored = state.ValidLength();//NB this is not numscored! is last valid length, this works for trigram or less, to generalize add a slot in state to store this value
+    					if(!tail_incoming_has_not_star){
+    						num_scored = state.ValidLength();//NB this is not numscored! is last valid length, this works for trigram or less, to generalize add a slot in state to store this value
+    						state = RemnantLMState(tail_incoming_state);
 #ifdef DEBUG_ULM
-    					assert(num_scored==0 || num_scored==1);
+    						assert(state.ValidLength()==0 || state.ValidLength()==1);
 #endif
+    					}
     				}
 
     			} else { //there is an hole
 
+    				has_hole = true;
+
 #ifdef DEBUG_ULM
-    		cerr << "\tNO TAIL IMCOMING STATE["<<tail_id<<"]"<<endl;
+    		cerr << "\tNO TAIL IMCOMING STATE["<<tail_id+1<<"]"<<endl;
 #endif
     				//close outgoing states
     				for(int i=0;i<ucand.NLinks();i++){
@@ -478,6 +490,7 @@ public:
     				p = ngram_->Score(scopy, cur_word, state);
 #ifdef DEBUG_ULM
     				cerr << "\tscopy before Score() : " << scopy << endl;
+    				cerr << "\tscore = "<< p << endl;
     				cerr << "\tstate after  Score() : " << state << endl;
 #endif
     				if (saw_eos) { p = -100; }
@@ -504,6 +517,7 @@ public:
   		SetRemnantLMState(state, head_outgoing_state);
   		SetFlag(saw_eos, HAS_EOS_ON_RIGHT, head_outgoing_state);
   		SetHasFullContext(context_complete || (num_scored >= order_-1), head_outgoing_state); //NB -1 since flag if next will have full context |order-1|
+  		SetFlag(!has_hole, HAS_NOT_STAR, head_outgoing_state);
   		if(uscored_ws_outgoing_states[0]){
   			SetUnscoredSize(unscored_ws_size[0], uscored_ws_outgoing_states[0]);
   			uscored_ws_outgoing_states[0]=NULL;
@@ -533,6 +547,7 @@ public:
     				p = ngram_->Score(scopy, cur_word, state);
 #ifdef DEBUG_ULM
     				cerr << "\tscopy before Score() : " << scopy << endl;
+    				cerr << "\tscore = "<< p << endl;
     				cerr << "\tstate after  Score() : " << state << endl;
 #endif
     				if (saw_eos) { p = -100; }
@@ -616,6 +631,7 @@ public:
     	cerr << RemnantLMState(lms) << endl;
     	int unscored_size = UnscoredSize(lms);
     	cerr << "\t\t has full context : " << HasFullContext(lms) << endl;
+    	cerr << "\t\t is continous     : " << GetFlag(lms, HAS_NOT_STAR) << endl;
     	cerr << "\t\t has eos on right : " << GetFlag(lms, HAS_EOS_ON_RIGHT) << endl;
     	cerr << "\t\t unscored size    : " << unscored_size << endl;
     	cerr << "\t\t boundary words   : <";

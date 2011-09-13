@@ -278,6 +278,9 @@ public:
 #endif
 					stack<UCandidate*> candsToUpdate;
 					candsToUpdate.push(topCand->GetSourceUCand());//TODO skip all this if state for source cand is all 0
+#ifdef DEBUG_GU
+					assert(links_to_expand.size()==0);
+#endif
 					while(!candsToUpdate.empty()){
 						UCandidate* curr = candsToUpdate.top();
 						candsToUpdate.pop();
@@ -288,6 +291,9 @@ public:
 #endif
 						curr->UpdateStates(candsToUpdate,links_to_expand);
 					}
+#ifdef DEBUG_GU
+	  			cerr <<"\tlinks_to_expand.size : "<< links_to_expand.size()<<endl;
+#endif
 
 					//REMOVE FROM QUEUE CANDIDATE ACTIONS TO BE UPDATED WITH RE-EXPANSION
 #ifdef DEBUG_GU
@@ -336,12 +342,27 @@ public:
 				for (int k=0;k<topCand->context_links_.size();k++){
 					if(topCand->context_links_[k]==NULL){//missing link, available for expansion
 						links_to_expand.push_back(pair< UCandidate*, int >(topCand,k));
+#ifdef DEBUG_GU
+	  			cerr <<"\tlinks_to_expand add: ("<< topCand<< " , "<< k << ")" <<endl;
+#endif
 					}
 				}
+#ifdef DEBUG_GU
+	  			cerr <<"\tlinks_to_expand.size : "<< links_to_expand.size()<<endl;
+#endif
 
 				//execute link expansions in the list
+#ifdef DEBUG_GU
+	  			cerr << "\tcands.size(): "<< cands.size()<<endl;
+#endif
 				for(int k=0; k<links_to_expand.size();k++ ){
+#ifdef DEBUG_GU
+	  			cerr <<"\tlinks expansion: ("<< links_to_expand[k].first<< " , "<< links_to_expand[k].second << ")" <<endl;
+#endif
 					GenerateCandsFromLinkExpansion(links_to_expand[k].first,links_to_expand[k].second,cands);
+#ifdef DEBUG_GU
+	  			cerr << "\tcands.size(): "<< cands.size()<<endl;
+#endif
 				}
 
 			}else{

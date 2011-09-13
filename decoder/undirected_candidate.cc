@@ -83,17 +83,17 @@ using namespace std;
 	  //compare old states to new
 	  for(int i=0;i<NLinks();i++){
 	  	if(i==0 && context_links_[i]==UCandidate::goal_head_link_)continue;
-	  	if(context_links_[i]){
-	  		//TODO assert current source is not added //otherwise loop! anyway to ensure complexity must be one way propagation (that should never happen)
-	  		if( !(*outgoing_states_[i] == *old_outgoing_states[i])){
+	  	if( !(*outgoing_states_[i] == *old_outgoing_states[i])){
+	  		if(context_links_[i]){
+	  			//TODO assert current source is not added //otherwise loop! anyway to ensure complexity must be one way propagation (that should never happen)
 	  			stck.push(context_links_[i]); //TODO GU? avoid inserting twice items that already went to stack? avoid loops (that should never happen)
 	  		}
-	  	}
-	  	else{//in this case we need to signal an update in cands
-	  		links_to_expand.push_back(pair < UCandidate*, int >(this, i));
+	  		else{//in this case we need to signal an update in cands
+	  			links_to_expand.push_back(pair < UCandidate*, int >(this, i));
 #ifdef DEBUG_GU
-	  		cerr <<"\tUCands queue update signaled: ("<< this<< " , "<< i << ")" <<endl;
+	  			cerr <<"\tUCands queue update signaled: ("<< this<< " , "<< i << ")" <<endl;
 #endif
+	  		}
 	  	}
 	  }
 

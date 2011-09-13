@@ -293,6 +293,9 @@ public:
 					}
 #ifdef DEBUG_GU
 	  			cerr <<"\tlinks_to_expand.size : "<< links_to_expand.size()<<endl;
+	  			for(int i=0;i<links_to_expand.size();i++){
+	  				assert(links_to_expand[i].first!=topCand);
+	  			}
 #endif
 
 					//REMOVE FROM QUEUE CANDIDATE ACTIONS TO BE UPDATED WITH RE-EXPANSION
@@ -381,6 +384,9 @@ public:
 				for(int i = 1;i<cands.size() ; i++){//start from 1 to skip last that is topCand (wrong)
 #ifdef DEBUG_GU
 					cerr << "\tIs correct?: " << *cands[i] << endl;
+					if(cands[i]->action_prob_ == topCand->action_prob_){
+						cerr << "!!!DISCARTED BECAUSE HAS SAME ACTION PROB!!!"	<<endl;
+					}
 #endif
 					if(IsCorrect(*cands[i])
 					&& (cands[i]->action_prob_ != topCand->action_prob_)){ //TODO need to avoid items with same features! brute if have not same action score then surely not same feats

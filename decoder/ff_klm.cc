@@ -18,9 +18,9 @@ using namespace std;
 #define DEBUG_ULM
 //#undef DEBUG_ULM
 
-static const unsigned char HAS_FULL_CONTEXT = 1;
+static const unsigned char HAS_FULL_CONTEXT = 1; //HAS STAR
 static const unsigned char HAS_EOS_ON_RIGHT = 2;
-static const unsigned char HAS_NOT_STAR     = 4; //GU used for bottom-up propagation states to know if prev num_scored should be added to current
+static const unsigned char HAS_NO_HOLE      = 4; //GU used for bottom-up propagation states to know if prev num_scored should be added to current
 static const unsigned char MASK             = 15;
 
 // -x : rules include <s> and </s>
@@ -294,47 +294,39 @@ public:
     double UndirectedLookupWords(UCandidate & ucand, /*const vector<const void*>& ant_states, double* pest_sum,*/
     double *oovs, int spos)
     {
-    	double sum = 0.0;
-    	//    double est_sum = 0.0;
-    	int num_scored = 0;
-//    	int num_estimated=0;
+        double sum = 0.0;
+        //    double est_sum = 0.0;
+        int num_scored = 0;
+        //    	int num_estimated=0;
+        if(oovs)
+            *oovs = 0;
 
-    	if(oovs)
-    		*oovs = 0;
-
-    	//    if (est_oovs) *est_oovs = 0;
-    	bool has_hole = false;
-    	bool saw_eos = false;
-    	bool has_some_history = false;
-    	bool context_complete = false;
-    	const Hypergraph::Edge & in_edge = *ucand.in_edge_;
-    	const TRule & rule = *in_edge.rule_.get();
-    	//const int source_node_id = ucand.GetSourceNodeId();
-    	const vector<WordID> & e = rule.e();
-    	lm::ngram::State state;
-    	void* uscored_ws_outgoing_states[ucand.NLinks()];//outgoing states collecting unscored words, ids : 0 head, 1 first child, 2 right child
-    	int unscored_ws_size[ucand.NLinks()];//number of unscored words for each outgoing state //TODO GU try write directly in state space ?
-    	for(int i=0;i<ucand.NLinks();i++){//initialize
+        //    if (est_oovs) *est_oovs = 0;
+        bool has_hole = false;
+        bool saw_eos = false;
+        bool has_some_history = false;
+        bool context_complete = false;
+        const Hypergraph::Edge & in_edge = *ucand.in_edge_;
+        const TRule & rule = *in_edge.rule_.get();
+        //const int source_node_id = ucand.GetSourceNodeId();
+        const vector<WordID> & e = rule.e();
+        lm::ngram::State state;
+        void *uscored_ws_outgoing_states[ucand.NLinks()]; //outgoing states collecting unscored words, ids : 0 head, 1 first child, 2 right child
+        int unscored_ws_size[ucand.NLinks()]; //number of unscored words for each outgoing state //TODO GU try write directly in state space ?
+        for(int i=0;i<ucand.NLinks();i++){//initialize
     		uscored_ws_outgoing_states[i]=NULL;
     		unscored_ws_size[i]=0;
     	}
-
-#ifdef DEBUG_ULM
-    	cerr << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>\nUNDIRECTED LOOKUP WORDS" << endl;
-    	cerr << "\tIn Edge :" << in_edge << endl;
-#endif
-
-    	//head outgoing state
-    	FFState *ffs_head_out = ucand.GetHeadOutgoingState();
-#ifdef DEBUG_ULM
-    	assert(ffs_head_out!=NULL);
-#endif
-    	void* head_outgoing_state= FFS2LMS(ffs_head_out,spos);
-    	uscored_ws_outgoing_states[0] = head_outgoing_state;
-
-    	FFState *ffs_head_in = ucand.GetHeadIncomingState();
-    	void* head_incoming_state=NULL;
-    	if(ffs_head_in!=NULL){ //head is incoming state
+        cerr << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>\nUNDIRECTED LOOKUP WORDS" << endl;
+        cerr << "\tIn Edge :" << in_edge << endl;
+        //head outgoing state
+        FFState *ffs_head_out = ucand.GetHeadOutgoingState();
+        assert(ffs_head_out!=NULL);
+        void *head_outgoing_state = FFS2LMS(ffs_head_out, spos);
+        uscored_ws_outgoing_states[0] = head_outgoing_state;
+        FFState *ffs_head_in = ucand.GetHeadIncomingState();
+        void* head_incoming_state=NULL;
+        if(ffs_head_in!=NULL){ //head is incoming state
     		head_incoming_state = FFS2LMS(ffs_head_in,spos);
     		state = RemnantLMState(head_incoming_state);
     		saw_eos = GetFlag(head_incoming_state, HAS_EOS_ON_RIGHT);
@@ -359,8 +351,7 @@ public:
     		cerr << "\tNO HEAD IMCOMING STATE"<<endl;
 #endif
     	}
-
-    	for (int j = 0; j < e.size(); ++j) {
+        for (int j = 0; j < e.size(); ++j) {
     		if (e[j] < 1) {   // handle non-terminal substitution
     			int tail_id=-e[j];
 
@@ -424,16 +415,22 @@ public:
     					AddUscoredWord(unscored_ws_size,cur_word,uscored_ws_outgoing_states,saw_eos,ucand.NLinks());
     				}
 
-    				bool tail_incoming_has_not_star = GetFlag(tail_incoming_state, HAS_NOT_STAR);
-    				has_hole |= !tail_incoming_has_not_star;
-
+    				bool tail_incoming_has_no_hole = GetFlag(tail_incoming_state, HAS_NO_HOLE);
+    				has_hole |= !tail_incoming_has_no_hole;
     				saw_eos |= GetFlag(tail_incoming_state, HAS_EOS_ON_RIGHT);
     				context_complete = HasFullContext(tail_incoming_state);
+
+    				//close outgoing states if not continuous
+    				if(!tail_incoming_has_no_hole || context_complete){
+    					CloseOutgoingStates(ucand,uscored_ws_outgoing_states,unscored_ws_size);
+    				}
+
+    				//choose state to restart with
     				if(context_complete){
     					num_scored=order_-1; //or more it's the same //TODO try remove -1 should be the same
     					state = RemnantLMState(tail_incoming_state);
     				}else{
-    					if(!tail_incoming_has_not_star){
+    					if(!tail_incoming_has_no_hole){
     						num_scored = state.ValidLength();//NB this is not numscored! is last valid length, this works for trigram or less, to generalize add a slot in state to store this value
     						state = RemnantLMState(tail_incoming_state);
 #ifdef DEBUG_ULM
@@ -447,21 +444,22 @@ public:
     				has_hole = true;
 
 #ifdef DEBUG_ULM
-    		cerr << "\tNO TAIL IMCOMING STATE["<<tail_id+1<<"]"<<endl;
+    				cerr << "\tNO TAIL IMCOMING STATE["<<tail_id+1<<"]"<<endl;
 #endif
     				//close outgoing states
-    				for(int i=0;i<ucand.NLinks();i++){
-    					if(uscored_ws_outgoing_states[i]){
-    						SetUnscoredSize(unscored_ws_size[i], uscored_ws_outgoing_states[i]);
-#ifdef DEBUG_ULM
-    						if(i!=0){
-    							cerr << "\tFINAL OUTGOING STATE["<< i <<"] = ";
-    							PrintLMS(uscored_ws_outgoing_states[i]);
-    						}
-#endif
-    						uscored_ws_outgoing_states[i]=NULL;
-    					}
-    				}
+    				CloseOutgoingStates(ucand,uscored_ws_outgoing_states,unscored_ws_size);
+//    				for(int i=0;i<ucand.NLinks();i++){
+//    					if(uscored_ws_outgoing_states[i]){
+//    						SetUnscoredSize(unscored_ws_size[i], uscored_ws_outgoing_states[i]);
+//#ifdef DEBUG_ULM
+//    						if(i!=0){
+//    							cerr << "\tFINAL OUTGOING STATE["<< i <<"] = ";
+//    							PrintLMS(uscored_ws_outgoing_states[i]);
+//    						}
+//#endif
+//    						uscored_ws_outgoing_states[i]=NULL;
+//    					}
+//    				}
 
     				state= ngram_->NullContextState();
     				//  				SetUnscoredSize(num_estimated, current_outgoing_state);//TODO2 ???//XXX
@@ -511,102 +509,116 @@ public:
     			AddUscoredWord(unscored_ws_size,cur_word,uscored_ws_outgoing_states,saw_eos,ucand.NLinks());
     		}
     	}
-
-    	//write head outgoing KLM state
-    	state.ZeroRemaining();
-  		SetRemnantLMState(state, head_outgoing_state);
-  		SetFlag(saw_eos, HAS_EOS_ON_RIGHT, head_outgoing_state);
-  		SetHasFullContext(context_complete || (num_scored >= order_-1), head_outgoing_state); //NB -1 since flag if next will have full context |order-1|
-  		SetFlag(!has_hole, HAS_NOT_STAR, head_outgoing_state);
-  		if(uscored_ws_outgoing_states[0]){
+        //write head outgoing KLM state
+        state.ZeroRemaining();
+        SetRemnantLMState(state, head_outgoing_state);
+        SetFlag(saw_eos, HAS_EOS_ON_RIGHT, head_outgoing_state);
+        SetHasFullContext(context_complete || (num_scored >= order_ - 1), head_outgoing_state); //NB -1 since flag if next will have full context |order-1|
+        SetFlag(!has_hole, HAS_NO_HOLE, head_outgoing_state);
+        if(uscored_ws_outgoing_states[0]){
   			SetUnscoredSize(unscored_ws_size[0], uscored_ws_outgoing_states[0]);
   			uscored_ws_outgoing_states[0]=NULL;
   		}
-#ifdef DEBUG_ULM
-  		cerr << "\tFINAL HEAD OUTGOING STATE = ";
-  		PrintLMS(head_outgoing_state);
-#endif
+        cerr << "\tFINAL HEAD OUTGOING STATE = ";
+        PrintLMS(head_outgoing_state);
+        //read head_incoming_context unscored words (same as *1 handle terminal)
+        if(head_incoming_state){
+            int unscored_size_his = UnscoredSize(head_incoming_state);
+            for(int i = 0;i < unscored_size_his;i++){
+                //TODO2 compare this with prev. loop on unscored_size
+                const lm::WordIndex cur_word = IthUnscoredWord(i, head_incoming_state);
+                double p = 0;
+                const bool is_oov = (cur_word == 0);
+                if(cur_word == kSOS_){
+                    state = ngram_->BeginSentenceState();
+                    if(has_some_history){
+                        // this is immediately fully scored, and bad
+                        p = -100;
+                        context_complete = true;
+                    }else{
+                        // this might be a real <s>
+                        num_scored = max(0, order_ - 2); //actual order-1 since ++ later
+                    }
+                }
+                else{
+                    const lm::ngram::State scopy(state);
+                    p = ngram_->Score(scopy, cur_word, state);
+                    cerr << "\tscopy before Score() : " << scopy << endl;
+                    cerr << "\tscore = " << p << endl;
+                    cerr << "\tstate after  Score() : " << state << endl;
+                    if(saw_eos){
+                        p = -100;
+                    }
+                    saw_eos = (cur_word == kEOS_);
+                }
 
-    	//read head_incoming_context unscored words (same as *1 handle terminal)
-    	if(head_incoming_state){
-    		int unscored_size_his =UnscoredSize(head_incoming_state);
-    		for(int i=0;i<unscored_size_his;i++){//TODO2 compare this with prev. loop on unscored_size
-    			const lm::WordIndex cur_word = IthUnscoredWord(i, head_incoming_state);
-    			double p = 0;
-    			const bool is_oov = (cur_word == 0);
-    			if (cur_word == kSOS_) {
-    				state = ngram_->BeginSentenceState();
-    				if (has_some_history) {  // this is immediately fully scored, and bad
-    					p = -100;
-    					context_complete = true;
-    				} else {  // this might be a real <s>
-    					num_scored = max(0, order_ - 2);//actual order-1 since ++ later
+                has_some_history = true;
+                if(!context_complete){
+                    ++num_scored;
+                    if(num_scored >= order_)
+                        context_complete = true;
+
+                }
+                if(context_complete){
+                    sum += p;
+                    if(oovs && is_oov)
+                        (*oovs)++;
+
+                }else{
+                    //          est_sum += p;
+                    //          if (est_oovs && is_oov) (*est_oovs)++;
+                }
+                AddUscoredWord(unscored_ws_size, cur_word, uscored_ws_outgoing_states, saw_eos, ucand.NLinks());
+            }
+
+        }
+
+        //    if (pest_sum) *pest_sum = est_sum;
+        //close outgoing tail states
+        assert(uscored_ws_outgoing_states[0]==NULL);
+        for(int i = 1;i < ucand.NLinks();i++){
+            if(uscored_ws_outgoing_states[i]){
+                SetUnscoredSize(unscored_ws_size[i], uscored_ws_outgoing_states[i]);
+                cerr << "\tFINAL OUTGOING STATE[" << i << "] = ";
+                PrintLMS(uscored_ws_outgoing_states[i]);
+                //					uscored_ws_outgoing_states[i]=NULL; //not needed if finishing methond
+            }
+        }
+
+        cerr << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
+        return sum;
+    }
+    //GU Utils
+    void CloseOutgoingStates(UCandidate & ucand, void ** uscored_ws_outgoing_states, int* unscored_ws_size)
+    {
+        for(int i=0;i<ucand.NLinks();i++){
+    					if(uscored_ws_outgoing_states[i]){
+    						SetUnscoredSize(unscored_ws_size[i], uscored_ws_outgoing_states[i]);
+#ifdef DEBUG_ULM
+    						if(i!=0){
+    							cerr << "\tFINAL OUTGOING STATE["<< i <<"] = ";
+    							PrintLMS(uscored_ws_outgoing_states[i]);
+    						}
+#endif
+    						uscored_ws_outgoing_states[i]=NULL;
+    					}
     				}
-    			} else {
-    				const lm::ngram::State scopy(state);
-    				p = ngram_->Score(scopy, cur_word, state);
-#ifdef DEBUG_ULM
-    				cerr << "\tscopy before Score() : " << scopy << endl;
-    				cerr << "\tscore = "<< p << endl;
-    				cerr << "\tstate after  Score() : " << state << endl;
-#endif
-    				if (saw_eos) { p = -100; }
-    				saw_eos = (cur_word == kEOS_);
-    			}
-    			has_some_history = true;
-    			if (!context_complete) {
-    				++num_scored;
-    				if (num_scored >= order_) context_complete = true;
-    			}
-    			if (context_complete) {
-
-    			sum += p;
-    			if (oovs && is_oov) (*oovs)++;
-    			} else {
-    				//          est_sum += p;
-    				//          if (est_oovs && is_oov) (*est_oovs)++;
-    			}
-    			AddUscoredWord(unscored_ws_size,cur_word,uscored_ws_outgoing_states,saw_eos,ucand.NLinks());
-
-    		}
-    	}
-    	//    if (pest_sum) *pest_sum = est_sum;
-
-			//close outgoing tail states
-#ifdef DEBUG_ULM
-    	assert(uscored_ws_outgoing_states[0]==NULL);
-#endif
-			for(int i=1;i<ucand.NLinks();i++){
-				if(uscored_ws_outgoing_states[i]){
-					SetUnscoredSize(unscored_ws_size[i], uscored_ws_outgoing_states[i]);
-#ifdef DEBUG_ULM
-					cerr << "\tFINAL OUTGOING STATE["<< i <<"] = ";
-					PrintLMS(uscored_ws_outgoing_states[i]);
-#endif
-//					uscored_ws_outgoing_states[i]=NULL; //not needed if finishing methond
-				}
-			}
-
-#ifdef DEBUG_ULM
-    	cerr << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
-#endif
-    	return sum;
     }
 
-    //GU Utils
     void *FFS2LMS(FFState *ffs_state, int spos)
     {
-    	//FFState to LMState
-    	return &(*ffs_state)[spos];
+        //FFState to LMState
+        return &(*ffs_state)[spos];
     }
-    void AddUscoredWord(int unscored_ws_size[], const lm::WordIndex cur_word, void * uscored_ws_outgoing_states[], bool& saw_eos, int array_size)
+
+    void AddUscoredWord(int unscored_ws_size[], const lm::WordIndex cur_word, void *uscored_ws_outgoing_states[], bool & saw_eos, int array_size)
     {
-    	for(int i=0;i<array_size;i++){
+        for(int i=0;i<array_size;i++){
     		if(uscored_ws_outgoing_states[i]==NULL)continue;
     		//add unscored word in context
 #ifdef DEBUG_ULM
     		assert(unscored_ws_size[i]<order_-1);
-    		cerr << "\t[?]_outgoing_state unscored word [" << unscored_ws_size[i] << "] to " << cur_word << endl;
+    		cerr << "\t["<< i <<"]_outgoing_state unscored word [" << unscored_ws_size[i] << "] to " << cur_word << endl;
 #endif
     		SetIthUnscoredWord(unscored_ws_size[i], cur_word, uscored_ws_outgoing_states[i]);
     		++unscored_ws_size[i];
@@ -625,17 +637,18 @@ public:
     		}
     	}
     }
+
     void PrintLMS(void *lms) //Print LMS (both sides)
     {
-    	cerr << "LMSS (" << lms << ") = [ ";
-    	cerr << RemnantLMState(lms) << endl;
-    	int unscored_size = UnscoredSize(lms);
-    	cerr << "\t\t has full context : " << HasFullContext(lms) << endl;
-    	cerr << "\t\t is continous     : " << GetFlag(lms, HAS_NOT_STAR) << endl;
-    	cerr << "\t\t has eos on right : " << GetFlag(lms, HAS_EOS_ON_RIGHT) << endl;
-    	cerr << "\t\t unscored size    : " << unscored_size << endl;
-    	cerr << "\t\t boundary words   : <";
-    	for(int i = 0;i < unscored_size/*order_-1*/;i++){
+        cerr << "LMSS (" << lms << ") = [ ";
+        cerr << RemnantLMState(lms) << endl;
+        int unscored_size = UnscoredSize(lms);
+        cerr << "\t\t has full context : " << HasFullContext(lms) << endl;
+        cerr << "\t\t is continous     : " << GetFlag(lms, HAS_NO_HOLE) << endl;
+        cerr << "\t\t has eos on right : " << GetFlag(lms, HAS_EOS_ON_RIGHT) << endl;
+        cerr << "\t\t unscored size    : " << unscored_size << endl;
+        cerr << "\t\t boundary words   : <";
+        for(int i = 0;i < unscored_size;i++){
     		cerr << " W[" << i << "] : " << IthUnscoredWord(i, lms);
     	}
     	cerr << " >" << endl;

@@ -317,11 +317,15 @@ public:
     		uscored_ws_outgoing_states[i]=NULL;
     		unscored_ws_size[i]=0;
     	}
+#ifdef DEBUG_ULM
         cerr << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>\nUNDIRECTED LOOKUP WORDS" << endl;
         cerr << "\tIn Edge :" << in_edge << endl;
+#endif
         //head outgoing state
         FFState *ffs_head_out = ucand.GetHeadOutgoingState();
+#ifdef DEBUG_ULM
         assert(ffs_head_out!=NULL);
+#endif
         void *head_outgoing_state = FFS2LMS(ffs_head_out, spos);
         uscored_ws_outgoing_states[0] = head_outgoing_state;
         FFState *ffs_head_in = ucand.GetHeadIncomingState();

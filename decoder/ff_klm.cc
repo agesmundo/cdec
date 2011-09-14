@@ -452,18 +452,6 @@ public:
 #endif
     				//close outgoing states
     				CloseOutgoingStates(ucand,uscored_ws_outgoing_states,unscored_ws_size);
-//    				for(int i=0;i<ucand.NLinks();i++){
-//    					if(uscored_ws_outgoing_states[i]){
-//    						SetUnscoredSize(unscored_ws_size[i], uscored_ws_outgoing_states[i]);
-//#ifdef DEBUG_ULM
-//    						if(i!=0){
-//    							cerr << "\tFINAL OUTGOING STATE["<< i <<"] = ";
-//    							PrintLMS(uscored_ws_outgoing_states[i]);
-//    						}
-//#endif
-//    						uscored_ws_outgoing_states[i]=NULL;
-//    					}
-//    				}
 
     				state= ngram_->NullContextState();
     				//  				SetUnscoredSize(num_estimated, current_outgoing_state);//TODO2 ???//XXX

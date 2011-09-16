@@ -192,9 +192,9 @@ class GreedyUndirectedRescorer {
 
 public:
 	GreedyUndirectedRescorer /*const*/
-	(ModelSet & m, const SentenceMetadata & sm, const Hypergraph & i, bool is_training, Hypergraph *o)
+	(ModelSet & m, const SentenceMetadata & sm, const Hypergraph & i, bool is_training, Hypergraph *o, string wf=NULL)
 	:models(m), smeta(sm), in(i), out(*o), //D(in.nodes_.size()),
-	 is_training_(is_training)
+	 is_training_(is_training), weight_file_name_(wf)
 	{
 		if(!SILENT)
 			cerr << "  Applying feature functions (training = " << is_training_ << ')' << endl;
@@ -447,7 +447,7 @@ public:
 		}
 		if(is_training_){
 			delete correct_edges_mask_;
-			models.WriteToFile("this_is_OUT");
+			models.WriteToFile(weight_file_name_);
 		}
 		//LG transform the UCands structure in the out_hg
 		BuildOutHG(topCand);
@@ -942,6 +942,7 @@ private:
 
 	const bool is_training_;
 	vector<bool>* correct_edges_mask_;//used only for training
+	string& weight_file_name_;
 
 	//UCandidateList free_; //store UCands pointer to free mem
 };
@@ -1216,7 +1217,7 @@ void ApplyModelSet(const Hypergraph& in,
 		ma.Apply();
 	} else if (config.algorithm == IntersectionConfiguration::GREEDY_UNDIRECTED_TRAINING) {
 		//TODO config.pop_limit;
-		GreedyUndirectedRescorer ma(models, smeta, in, true, out);
+		GreedyUndirectedRescorer ma(models, smeta, in, true, out, config.weight_file_name_);
 		ma.Apply();
 	} else {
 		cerr << "Don't understand intersection algorithm " << config.algorithm << endl;

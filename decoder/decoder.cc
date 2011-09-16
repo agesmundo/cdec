@@ -426,7 +426,9 @@ DecoderImpl::DecoderImpl(po::variables_map& conf, int argc, char** argv, istream
         ("feature_expectations","Write feature expectations for all features in chart (**OBJ** will be the partition)")
         ("vector_format",po::value<string>()->default_value("b64"), "Sparse vector serialization format for feature expectations or gradients, includes (text or b64)")
         ("combine_size,C",po::value<int>()->default_value(1), "When option -G is used, process this many sentence pairs before writing the gradient (1=emit after every sentence pair)")
-        ("forest_output,O",po::value<string>(),"Directory to write forests to");
+        ("forest_output,O",po::value<string>(),"Directory to write forests to")
+        ("gu_train_file", po::value<string>()->default_value("GUT_out"), "Set out train file name used if intersection_strategy=Guided_Undirected_Training")
+        ;
 
   // ob.AddOptions(&opts);
 #ifdef FSA_RESCORING
@@ -594,14 +596,16 @@ DecoderImpl::DecoderImpl(po::variables_map& conf, int argc, char** argv, istream
       if (conf.count(dp)) { rp.density_prune = conf[dp].as<double>(); }
       int palg = (has_stateful ? 1 : 0);  // if there are no stateful featueres, default to FULL
       string isn = "intersection_strategy" + StringSuffixForRescoringPass(pass);
+      string out_weight_file_name = "";
       if (LowercaseString(str(isn.c_str(),conf)) == "full") {
         palg = 0;
       }else if (LowercaseString(str(isn.c_str(),conf)) == "greedy_undirected") {
         palg = 2;
       }else if (LowercaseString(str(isn.c_str(),conf)) == "greedy_undirected_training") {
         palg = 3;
+        out_weight_file_name = str("gu_train_file",conf);
       }
-      rp.inter_conf.reset(new IntersectionConfiguration(palg, pop_limit));
+      rp.inter_conf.reset(new IntersectionConfiguration(palg, pop_limit,out_weight_file_name));
     } else {
       break;  // TODO alert user if there are any future configurations
     }

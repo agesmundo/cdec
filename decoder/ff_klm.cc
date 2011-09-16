@@ -15,8 +15,8 @@ using namespace std;
 
 // Define the following macro if you want to see lots of debugging output
 // when running Undirected KLM
-#define DEBUG_ULM
-//#undef DEBUG_ULM
+//#define DEBUG_ULM
+#undef DEBUG_ULM
 
 static const unsigned char HAS_FULL_CONTEXT = 1; //HAS STAR
 static const unsigned char HAS_EOS_ON_RIGHT = 2;
@@ -511,8 +511,10 @@ public:
   			SetUnscoredSize(unscored_ws_size[0], uscored_ws_outgoing_states[0]);
   			uscored_ws_outgoing_states[0]=NULL;
   		}
+#ifdef DEBUG_ULM
         cerr << "\tFINAL HEAD OUTGOING STATE = ";
         PrintLMS(head_outgoing_state);
+#endif
         //read head_incoming_context unscored words (same as *1 handle terminal)
         if(head_incoming_state){
             int unscored_size_his = UnscoredSize(head_incoming_state);
@@ -572,13 +574,17 @@ public:
         for(int i = 1;i < ucand.NLinks();i++){
             if(uscored_ws_outgoing_states[i]){
                 SetUnscoredSize(unscored_ws_size[i], uscored_ws_outgoing_states[i]);
+#ifdef DEBUG_ULM
                 cerr << "\tFINAL OUTGOING STATE[" << i << "] = ";
                 PrintLMS(uscored_ws_outgoing_states[i]);
+#endif
                 //					uscored_ws_outgoing_states[i]=NULL; //not needed if finishing methond
             }
         }
 
+#ifdef DEBUG_ULM
         cerr << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
+#endif
         return sum;
     }
     //GU Utils

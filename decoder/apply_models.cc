@@ -775,12 +775,14 @@ private:
 	//check if cand is correct (for training)
 	bool IsCorrect(const UCandidate & ucand)
 	{
+#ifdef DEBUG_GU
 		cerr << "\tIs correct? : (" << &ucand << ")";
 		if((*correct_edges_mask_)[ucand.in_edge_->id_]){
 			cerr << " true" << endl;
 		}else{
 			cerr << " false" << endl;
 		}
+#endif
 		return (*correct_edges_mask_)[ucand.in_edge_->id_];
 	}
 

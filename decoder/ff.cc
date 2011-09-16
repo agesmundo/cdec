@@ -8,6 +8,7 @@
 
 #include "tdict.h"
 #include "hg.h"
+#include "weights.h"
 
 using namespace std;
 
@@ -305,4 +306,10 @@ void ModelSet::UpdateWeight(SparseVector<Featval> vector, double loss){
 
 double ModelSet::ScoreVector(SparseVector<Featval> vector){
 	return vector.dot(weights_);
+}
+
+void ModelSet::WriteToFile(const std::string& fname){
+	Weights w;
+	w.InitFromVector(weights_);
+	w.WriteToFile(fname);
 }

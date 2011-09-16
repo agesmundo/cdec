@@ -447,6 +447,7 @@ public:
 		}
 		if(is_training_){
 			delete correct_edges_mask_;
+			models.WriteToFile("this_is_OUT");
 		}
 		//LG transform the UCands structure in the out_hg
 		BuildOutHG(topCand);

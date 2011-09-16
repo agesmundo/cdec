@@ -335,7 +335,7 @@ class ModelSet {
   std::ostream& PrintWeights(std::ostream& os);
 
 ////////////////////////
-//LG methods
+//GU methods
 
   void AddFeaturesToUCandidate(const SentenceMetadata& smeta,
                                    //const FFStates& node_states,
@@ -347,6 +347,8 @@ class ModelSet {
   void UpdateWeight(SparseVector<Featval> vector, double alpha);
 
   double ScoreVector(SparseVector<Featval> vector);
+
+  void WriteToFile(const std::string& fname);
 
 ///////////////
 

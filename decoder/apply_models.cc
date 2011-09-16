@@ -204,6 +204,7 @@ public:
 
 	void Apply()
 	{
+		int wrong_count=0;
 		int num_nodes = in.nodes_.size();
 		assert(num_nodes >= 2);
 		int goal_id = num_nodes - 1;
@@ -239,7 +240,10 @@ public:
 			cerr << "BEST IS: " << *topCand << "\n";
 #endif
 
-			if(!is_training_ || IsCorrect(*topCand)){
+			if(!is_training_ || IsCorrect(*topCand) || wrong_count>50){
+
+				wrong_count=0;
+
 				//stor info about links expansions and re-expansions (cause updated source)
 				vector < pair < UCandidate*, int > > links_to_expand;
 
@@ -369,7 +373,7 @@ public:
 				}
 
 			}else{
-
+				wrong_count++;
 				//IF WRONG
 #ifdef DEBUG_GU
 				cerr<< "\nLEARN FROM WRONG PREDICTION:" << endl;
@@ -394,8 +398,11 @@ public:
 						break;
 					}
 				}
-				assert(correctCand!=NULL);//TODO GU what do in case there are no correct edges?
+//				assert(correctCand!=NULL);//TODO GU what do in case there are no correct edges?
 
+				if(correctCand==NULL){
+					(*correct_edges_mask_)[topCand->in_edge_->id_]==true;
+				}else{
 				//update weights vector
 #ifdef DEBUG_GU
 				cerr<< "\nUPDATE WEIGHT VECTOR" << endl;
@@ -443,6 +450,7 @@ public:
 					IsCorrect(ucand);
 #endif
 				}
+			}
 			}
 		}
 		if(is_training_){

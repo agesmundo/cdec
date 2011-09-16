@@ -427,7 +427,7 @@ DecoderImpl::DecoderImpl(po::variables_map& conf, int argc, char** argv, istream
         ("vector_format",po::value<string>()->default_value("b64"), "Sparse vector serialization format for feature expectations or gradients, includes (text or b64)")
         ("combine_size,C",po::value<int>()->default_value(1), "When option -G is used, process this many sentence pairs before writing the gradient (1=emit after every sentence pair)")
         ("forest_output,O",po::value<string>(),"Directory to write forests to")
-        ("gu_train_file", po::value<string>()->default_value("GUT_out"), "Set out train file name used if intersection_strategy=Guided_Undirected_Training")
+        ("gu_train_file,T", po::value<string>()->default_value("GUT_out"), "Set out train file name used if intersection_strategy=Guided_Undirected_Training")
         ;
 
   // ob.AddOptions(&opts);

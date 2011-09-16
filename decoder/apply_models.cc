@@ -192,7 +192,7 @@ class GreedyUndirectedRescorer {
 
 public:
 	GreedyUndirectedRescorer /*const*/
-	(ModelSet & m, const SentenceMetadata & sm, const Hypergraph & i, bool is_training, Hypergraph *o, string wf=NULL)
+	(ModelSet & m, const SentenceMetadata & sm, const Hypergraph & i, bool is_training, Hypergraph *o, string wf="")
 	:models(m), smeta(sm), in(i), out(*o), //D(in.nodes_.size()),
 	 is_training_(is_training), weight_file_name_(wf)
 	{

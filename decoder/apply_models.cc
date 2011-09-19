@@ -310,7 +310,7 @@ public:
 					for (int i=0;i<links_to_expand.size();i++){
 						int node_id = links_to_expand[i].first->GetNodeIdFromLinkId(links_to_expand[i].second);
 #ifdef DEBUG_GU
-						assert(node_id<0);
+						assert(node_id>=0);
 						cerr << "\tRemoving cands from link: (" << links_to_expand[i].first << " , "<< links_to_expand[i].second <<")" <<endl;
 #endif
 						DelCandsFromNodeId(cands,node_id);

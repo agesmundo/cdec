@@ -275,7 +275,7 @@ while (1){
 	print STDERR unchecked_output("date");
 	my $im1 = $iteration - 1;
 	my $weightsFile="$dir/weights.$im1";
-	my $decoder_cmd = "$decoder -c $iniFile --weights$pass_suffix $weightsFile -O $dir/hgs";
+	my $decoder_cmd = "$decoder -c $iniFile -w$pass_suffix $weightsFile -O $dir/hgs";
 	if ($density_prune) {
 		$decoder_cmd .= " --density_prune $density_prune";
 	}

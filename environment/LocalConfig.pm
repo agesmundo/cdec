@@ -12,7 +12,11 @@ my $host = domainname;
 
 # keys are: HOST_REGEXP, MERTMem, QSubQueue, QSubMemFlag, QSubExtraFlags
 my $CCONFIG = {
-  'StarCluster' => {
+  'l711' => {
+    'HOST_REGEXP' => "l711unige-desktop.unige.ch",
+    'QSubMemFlag' => '-l mem',
+  },
+   'StarCluster' => {
     'HOST_REGEXP' => qr/compute-\d+\.internal$/,
     'QSubMemFlag' => '-l mem',
   },

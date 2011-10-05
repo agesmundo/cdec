@@ -9,6 +9,10 @@ TODO code style
 	?better structure for context links and link states?
 	avoid passing spos down
 
+111005
+experiments on fr-it europarl
+cdec mert B30 29.8999
+cdec mert B1  29.575
 
 110909
 OK!	propagation (see 110909log)

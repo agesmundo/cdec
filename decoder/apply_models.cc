@@ -798,7 +798,7 @@ private:
 	void InitCands(UCandidateHeap & cands)
 	{
 #ifdef DEBUG_GU
-		cerr << "InintCands(): " << "\n";
+		cerr << "InitCands(): " << "\n";
 #endif
 		for (int i = 0; i < in.edges_.size(); ++i) {//loop edges
 			const Hypergraph::Edge& edge= in.edges_.at(i);

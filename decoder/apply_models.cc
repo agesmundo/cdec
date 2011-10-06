@@ -407,9 +407,12 @@ public:
 #ifdef DEBUG_GU
 				cerr<< "\nUPDATE WEIGHT VECTOR" << endl;
 #endif
-				double margin = 1;
-				double loss = log(topCand->action_prob_) - log(correctCand->action_prob_) + margin;
-				assert(loss>=0);
+
+				double loss=1;
+//PASSIVE AGGRESSIVE PA
+//				double margin = 1;
+//				double loss = log(topCand->action_prob_) - log(correctCand->action_prob_) + margin;
+//				assert(loss>=0);
 #ifdef DEBUG_GU
 				cerr << "\tLoss: " << loss << endl;
 #endif

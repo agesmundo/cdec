@@ -291,15 +291,16 @@ ostream& ModelSet::PrintWeights(ostream& os) {
 }
 
 void ModelSet::UpdateWeight(SparseVector<Featval> vector, double loss){
-	double norm = vector.l2norm_sq();
-	assert(norm!=0);
-	double alpha =  loss / norm;
+//PASSIVE AGGRESSIVE
+//	double norm = vector.l2norm_sq();
+//	assert(norm!=0);
+//	double alpha =  loss / norm;
 
 //	cerr << "\tALPHA= "<<alpha<<endl;
 
 	for (SparseVector<Featval>::const_iterator i=vector.begin(),e=vector.end();i!=e;++i) {
 		if (weights_.size() <= i->first) weights_.resize(i->first+1);
-		weights_[i->first] += i->second * alpha;
+		weights_[i->first] += i->second /* * alpha*/;
 	}
 
 }

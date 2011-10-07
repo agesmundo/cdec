@@ -181,6 +181,9 @@ void ArityPenalty::TraversalFeaturesImpl(const SentenceMetadata& smeta,
 ModelSet::ModelSet(const vector<double>& w, const vector<const FeatureFunction*>& models) :
     models_(models),
     weights_(w),
+    weights_avg_(w),
+    is_avg_(true),
+    count_avg_(0),
     state_size_(0),
     model_state_pos_(models.size()) {
   for (int i = 0; i < models_.size(); ++i) {
@@ -301,6 +304,11 @@ void ModelSet::UpdateWeight(SparseVector<Featval> vector, double loss){
 	for (SparseVector<Featval>::const_iterator i=vector.begin(),e=vector.end();i!=e;++i) {
 		if (weights_.size() <= i->first) weights_.resize(i->first+1);
 		weights_[i->first] += i->second /* * alpha*/;
+		if(is_avg_){
+			if (weights_avg_.size() <= i->first) weights_avg_.resize(i->first+1);
+			weights_avg_[i->first] += i->second * (count_avg_+1.0)/* * alpha*/;
+			count_avg_++;
+		}
 	}
 
 }
@@ -311,6 +319,17 @@ double ModelSet::ScoreVector(SparseVector<Featval> vector){
 
 void ModelSet::WriteToFile(const std::string& fname){
 	Weights w;
-	w.InitFromVector(weights_);
+
+	if(is_avg_){
+		std::vector<double> avg_w (weights_);
+		assert(weights_.size()==weights_avg_.size());
+		for(int i =0 ; i<weights_.size(); i++){
+			avg_w[i] -= (weights_avg_[i] / count_avg_);
+		}
+		w.InitFromVector(avg_w);
+	}
+	else{
+		w.InitFromVector(weights_);
+	}
 	w.WriteToFile(fname);
 }

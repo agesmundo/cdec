@@ -356,6 +356,11 @@ class ModelSet {
  private:
   std::vector<const FeatureFunction*> models_;
   std::vector<double> weights_;
+  //Avg perceptron
+  bool is_avg_;
+  std::vector<double> weights_avg_;
+  int count_avg_;
+
   int state_size_;
   std::vector<int> model_state_pos_;
 };

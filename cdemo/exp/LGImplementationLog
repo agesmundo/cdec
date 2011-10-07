@@ -9,6 +9,33 @@ TODO code style
 	?better structure for context links and link states?
 	avoid passing spos down
 
+111007
+AP:(time half comp to B1 on first tst sentence 0.08/0.16(B1)/0.25(B30))
+0.241862 0.232468
+0.242376 0.23122
+0.244555 0.23161
+0.243041 0.232562
+-
+P: distinguishing LM_EST feat
+0.167042
+0.0285186
+0.166069
+0.0184826
+0.163937
+0.126759
+0.16779
+0.127539
+-
+P:(iteration\ dev | tst = BLEU/10)
+0.167042 0.0285186
+0.166069 0.0184826
+0.163937 0.126759
+0.16779 0.127539
+-
+PA: (iteration\ dev | tst = BLEU)
+23.61 14.68
+23.24 11.47
+
 111005
 experiments on fr-it europarl
 cdec mert B30 29.8999

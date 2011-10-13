@@ -10,6 +10,12 @@ TODO code style
 	avoid passing spos down
 
 111007
+APA:
+0.236052 0.0931652
+0.237324 0.218246
+0.237111 0.0931247
+0.233586 0.139822
+
 AP:(time half comp to B1 on first tst sentence 0.08/0.16(B1)/0.25(B30))
 0.241862 0.232468
 0.242376 0.23122

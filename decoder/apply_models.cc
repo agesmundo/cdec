@@ -413,9 +413,10 @@ public:
 //				double margin = 1;
 //				double loss = log(topCand->action_prob_) - log(correctCand->action_prob_) + margin;
 //				assert(loss>=0);
-#ifdef DEBUG_GU
-				cerr << "\tLoss: " << loss << endl;
-#endif
+//#ifdef DEBUG_GU
+//				cerr << "\tLoss: " << loss << endl;
+//#endif
+
 				SparseVector<Featval> diff (correctCand->feature_values_);
 				//    		cerr << diff << endl;
 				diff +=correctCand->est_vals_;
@@ -560,7 +561,9 @@ private:
 	//and free memory
 	void BuildOutHG(UCandidate *first)
 	{
+#ifdef DEBUG_GU
 		cerr << "BUILD OUT HG" << endl;
+#endif
 		map<int,int> inNid2outNid; //in Node id to out Node id
 		UCandidateList ucands_stack;
 		ucands_stack.push_back(first);

@@ -348,6 +348,8 @@ class ModelSet {
 
   double ScoreVector(SparseVector<Featval> vector);
 
+  std::vector<double> ComputeAvgWeight();
+
   void WriteToFile(const std::string& fname);
 
 ///////////////

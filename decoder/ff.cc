@@ -190,6 +190,10 @@ ModelSet::ModelSet(const vector<double>& w, const vector<const FeatureFunction*>
     model_state_pos_[i] = state_size_;
     state_size_ += models_[i]->NumBytesContext();
   }
+  //TODO fix this in initialization find method
+  for(int i=0; i<weights_avg_.size();i++){
+	  weights_avg_[i]=0;
+  }
 }
 
 void ModelSet::PrepareForInput(const SentenceMetadata& smeta) {
@@ -291,6 +295,17 @@ ostream& ModelSet::PrintWeights(ostream& os) {
 		os << FD::Convert(i)<<"("<<i<<")"<<"="<<weights_[i]<< " ";
 	}
 	os<<endl;
+
+	if(is_avg_){
+		os<<"AVG_WEIGHTS: ";
+		std::vector<double> avg_w=ComputeAvgWeight();
+		for(int i=0; i< avg_w.size();i++){
+			os << FD::Convert(i)<<"("<<i<<")"<<"="<<avg_w[i]<< " ";
+		}
+		os<<endl;
+		os<<"COUNT_AVG: "<< count_avg_<<endl;
+	}
+
 }
 
 void ModelSet::UpdateWeight(SparseVector<Featval> vector, double loss){
@@ -307,26 +322,29 @@ void ModelSet::UpdateWeight(SparseVector<Featval> vector, double loss){
 		if(is_avg_){
 			if (weights_avg_.size() <= i->first) weights_avg_.resize(i->first+1);
 			weights_avg_[i->first] += i->second * (count_avg_+1.0)/* * alpha*/;
-			count_avg_++;
 		}
 	}
-
+	count_avg_++;
 }
 
 double ModelSet::ScoreVector(SparseVector<Featval> vector){
 	return vector.dot(weights_);
 }
 
+std::vector<double> ModelSet::ComputeAvgWeight(){
+	std::vector<double> avg_w (weights_);
+	assert(weights_.size()==weights_avg_.size());
+	for(int i =0 ; i<weights_.size(); i++){
+		avg_w[i] -= (weights_avg_[i] / (count_avg_+1));
+	}
+	return avg_w;
+}
+
 void ModelSet::WriteToFile(const std::string& fname){
 	Weights w;
 
 	if(is_avg_){
-		std::vector<double> avg_w (weights_);
-		assert(weights_.size()==weights_avg_.size());
-		for(int i =0 ; i<weights_.size(); i++){
-			avg_w[i] -= (weights_avg_[i] / count_avg_);
-		}
-		w.InitFromVector(avg_w);
+		w.InitFromVector(ComputeAvgWeight());
 	}
 	else{
 		w.InitFromVector(weights_);

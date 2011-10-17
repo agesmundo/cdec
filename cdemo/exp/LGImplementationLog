@@ -11,18 +11,21 @@ TODO code style
 
 111007
 APA:
+(desk)
 0.236052 0.0931652
 0.237324 0.218246
 0.237111 0.0931247
 0.233586 0.139822
 
 AP:(time half comp to B1 on first tst sentence 0.08/0.16(B1)/0.25(B30))
+(desk)
 0.241862 0.232468
 0.242376 0.23122
 0.244555 0.23161
 0.243041 0.232562
 -
 P: distinguishing LM_EST feat
+(desk)
 0.167042
 0.0285186
 0.166069
@@ -33,12 +36,14 @@ P: distinguishing LM_EST feat
 0.127539
 -
 P:(iteration\ dev | tst = BLEU/10)
+(desk)
 0.167042 0.0285186
 0.166069 0.0184826
 0.163937 0.126759
 0.16779 0.127539
 -
 PA: (iteration\ dev | tst = BLEU)
+(desk)
 23.61 14.68
 23.24 11.47
 

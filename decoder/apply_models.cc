@@ -204,6 +204,10 @@ public:
 
 	void Apply()
 	{
+#ifdef DEBUG_GU
+				cerr << "\tInit weight vector: ";
+				models.PrintWeights(cerr);
+#endif
 		int wrong_count=0;
 		int num_nodes = in.nodes_.size();
 		assert(num_nodes >= 2);
@@ -240,7 +244,7 @@ public:
 			cerr << "BEST IS: " << *topCand << "\n";
 #endif
 
-			if(!is_training_ || IsCorrect(*topCand) || wrong_count>50){
+			if(!is_training_ || IsCorrect(*topCand) || wrong_count>=1){
 
 				wrong_count=0;
 

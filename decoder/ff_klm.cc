@@ -835,6 +835,22 @@ KLanguageModel<Model>::KLanguageModel(const string& param) {
     lnk_fid_ = FD::Convert(featname+"_LNK");
     cerr << featname << "_LNK" << " ; FID: " << lnk_fid_ << endl;
 
+    //arity related feats
+    lnk_bin_fids_=new int[max_lnks_];
+    for(int i=0; i<max_lnks_; i++){
+  	  string currFeat;
+  	  stringstream ss;
+  	  string id;
+  	  ss << i+1;
+  	  ss >> id;
+
+	  string suff= "_LNK-BIN_" ;
+	  currFeat = featname+suff+id;
+	  lnk_bin_fids_[i] = FD::Convert(currFeat);
+	  cerr << currFeat << " ; FID: " << lnk_bin_fids_[i] << endl;
+    }
+
+    //order related feats
   int order = pimpl_->GetOrder();
   ngram_avg_fids_=new int[order];
   ngram_cnt_fids_=new int[order];
@@ -855,6 +871,7 @@ KLanguageModel<Model>::KLanguageModel(const string& param) {
 	  ngram_cnt_fids_[i] = FD::Convert(featname+suff+id);
 	  cerr << currFeat << " ; FID: " << ngram_cnt_fids_[i] << endl;
   }
+
   SetStateSize(pimpl_->ReserveStateSize());
 }
 
@@ -866,7 +883,9 @@ Features KLanguageModel<Model>::features() const {
 template <class Model>
 KLanguageModel<Model>::~KLanguageModel() {
   delete pimpl_;
+  delete[] lnk_bin_fids_;
   delete[] ngram_avg_fids_;
+  delete[] ngram_cnt_fids_;
 }
 
 template <class Model>
@@ -912,12 +931,15 @@ void KLanguageModel<Model>::TraversalUndirectedFeaturesImpl(const SentenceMetada
   	  }
 	  pimpl_->UndirectedLookupWords(ucand,ngram_sum,ngram_cnt/*, ant_states*/,&sum , &est, &oovs, &est_oovs/*, state*/,spos);
 
-//	  ucand.feature_values_.set_value(fid_, sum);
-//	  ucand.est_vals_.set_value(fid_, est);
+	  ucand.feature_values_.set_value(fid_, sum);
+	  ucand.est_vals_.set_value(fid_, est);
 
 //	  ucand.est_vals_.set_value(est_fid_, est);
 
-//	  ucand.est_vals_.set_value(lnk_fid_, ucand.in_edge_->Arity()+1);
+	  int arity=ucand.in_edge_->Arity();
+//	  ucand.feature_values_.set_value(lnk_fid_, arity+1);
+	  assert(arity>=0 &&arity<max_lnks_);
+	  ucand.feature_values_.set_value(lnk_bin_fids_[arity], 1);//binary
 
 	  if (oov_fid_) {
 	    if (oovs) ucand.feature_values_.set_value(oov_fid_, oovs);
@@ -925,8 +947,8 @@ void KLanguageModel<Model>::TraversalUndirectedFeaturesImpl(const SentenceMetada
 	  }
 
 	  for(int i=0;i<order;i++){
-		  ucand.est_vals_.set_value(ngram_avg_fids_[i], ngram_sum[i]);
-//		  if(ngram_cnt[i]!=0) ucand.est_vals_.set_value(ngram_avg_fids_[i], ngram_sum[i]/ngram_cnt[i]);
+//		  ucand.est_vals_.set_value(ngram_avg_fids_[i], ngram_sum[i]);
+		  if(ngram_cnt[i]!=0) ucand.est_vals_.set_value(ngram_avg_fids_[i], ngram_sum[i]/ngram_cnt[i]);
 		  ucand.est_vals_.set_value(ngram_cnt_fids_[i], ngram_cnt[i]);
 	  }
 }

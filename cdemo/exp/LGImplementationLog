@@ -9,6 +9,58 @@ TODO code style
 	?better structure for context links and link states?
 	avoid passing spos down
 
+111019
+Aggressive update not good!
+less features, no need to force update on rarel triggered feats since there are no rarely triggered feats.
+-
+feats : sum-cnt-lnkBin-lnk  (lap)
+s1: 20.40 25.11
+-
+feats : sum-cnt-lnkBin  (lap) *
+s1: 20.74 25.31
+-
+feats : avg-cnt-lnk					
+(lap)
+soglia	1	2	4	8	50
+train	20.0393	20.999	22.7089	23.7641	26.23
+test	24.8937	24.6546	24.3191	23.6216	22.87
+-
+feats : sum-cnt-lnk -BASE (lap)
+s1: 19.67 24.57
+-
+feats : sum-cnt-lnk (lap)
+s1: 19.27 24.80
+-
+feats : avg-cnt
+(lap)
+soglia	1	50
+train   18.67	25.99
+test	22.77	20.90
+-
+feats : sum-cnt (lap)
+s1: 17.90 21.95
+-
+feats : lnk (lap)
+s1: 18.91 24.24 
+-
+feats : cnt (lap)
+s1: 18.35 21.25
+-
+feats : avg
+(lap)
+soglia	1	50
+train   17.80	25.90
+test	21.99	21.14
+-
+feats : Base
+(lap)
+soglia	1	50
+train   17.51	24.47
+test	23.30	23.29
+-
+why is tst > train? the test contains diff type of sents? (shorter, easier..)
+
+
 111007
 APA:
 (desk)

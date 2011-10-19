@@ -1,6 +1,7 @@
 #include "ff_klm.h"
 
 #include <cstring>
+#include <sstream>
 #include <iostream>
 
 #include <boost/scoped_ptr.hpp>
@@ -291,9 +292,10 @@ public:
         return sum;
     }
     //GU
-    double UndirectedLookupWords(UCandidate & ucand, /*const vector<const void*>& ant_states, */ double* psum, double* pest_sum, double *oovs, double *est_oovs,
+    double UndirectedLookupWords(UCandidate & ucand, double ngram_sum[],  int ngram_cnt[],/*const vector<const void*>& ant_states, */ double* psum, double* pest_sum, double *oovs, double *est_oovs,
     int spos)
     {
+
         double sum = 0.0;
         double est_sum = 0.0;
         int num_scored = 0;
@@ -311,10 +313,10 @@ public:
         //const int source_node_id = ucand.GetSourceNodeId();
         const vector<WordID> & e = rule.e();
         lm::ngram::State state;
-        void *uscored_ws_outgoing_states[ucand.NLinks()]; //outgoing states collecting unscored words, ids : 0 head, 1 first child, 2 right child
+        void *unscored_ws_outgoing_states[ucand.NLinks()]; //outgoing states collecting unscored words, ids : 0 head, 1 first child, 2 right child
         int unscored_ws_size[ucand.NLinks()]; //number of unscored words for each outgoing state //TODO GU try write directly in state space ?
         for(int i=0;i<ucand.NLinks();i++){//initialize
-    		uscored_ws_outgoing_states[i]=NULL;
+    		unscored_ws_outgoing_states[i]=NULL;
     		unscored_ws_size[i]=0;
     	}
 #ifdef DEBUG_ULM
@@ -327,7 +329,7 @@ public:
         assert(ffs_head_out!=NULL);
 #endif
         void *head_outgoing_state = FFS2LMS(ffs_head_out, spos);
-        uscored_ws_outgoing_states[0] = head_outgoing_state;
+        unscored_ws_outgoing_states[0] = head_outgoing_state;
         FFState *ffs_head_in = ucand.GetHeadIncomingState();
         void* head_incoming_state=NULL;
         if(ffs_head_in!=NULL){ //head is incoming state
@@ -409,13 +411,13 @@ public:
     						if (num_scored >= order_) context_complete = true;
     					}
     					if (context_complete) {
-    						sum += p;
+    						sum += p; ngram_sum[order_-1]+=p; ngram_cnt[order_-1]++;
     						if (oovs && is_oov) (*oovs)++;
     					} else {
-    						est_sum += p;
+    						est_sum += p; ngram_sum[num_scored-1]+=p; ngram_cnt[num_scored-1]++;
     						if (est_oovs && is_oov) (*est_oovs)++;
     					}
-    					AddUscoredWord(unscored_ws_size,cur_word,uscored_ws_outgoing_states,saw_eos,ucand.NLinks());
+    					AddUscoredWord(unscored_ws_size,cur_word,unscored_ws_outgoing_states,saw_eos,ucand.NLinks());
     				}
 
     				bool tail_incoming_has_no_hole = GetFlag(tail_incoming_state, HAS_NO_HOLE);
@@ -425,7 +427,7 @@ public:
 
     				//close outgoing states if not continuous
     				if(!tail_incoming_has_no_hole || context_complete){
-    					CloseOutgoingStates(ucand,uscored_ws_outgoing_states,unscored_ws_size);
+    					CloseOutgoingStates(ucand,unscored_ws_outgoing_states,unscored_ws_size);
     				}
 
     				//choose state to restart with
@@ -450,7 +452,7 @@ public:
     				cerr << "\tNO TAIL IMCOMING STATE["<<tail_id+1<<"]"<<endl;
 #endif
     				//close outgoing states
-    				CloseOutgoingStates(ucand,uscored_ws_outgoing_states,unscored_ws_size);
+    				CloseOutgoingStates(ucand,unscored_ws_outgoing_states,unscored_ws_size);
 
     				state= ngram_->NullContextState();
     				//  				SetUnscoredSize(num_estimated, current_outgoing_state);//TODO2 ???//XXX
@@ -458,7 +460,7 @@ public:
     				num_scored=0;
     			}
 
-    			uscored_ws_outgoing_states[tail_id+1] = next_outgoing_state;
+    			unscored_ws_outgoing_states[tail_id+1] = next_outgoing_state;
 
     		} else {   // *1 handle terminal
     			const WordID cdec_word_or_class = ClassifyWordIfNecessary(e[j]);  // in future,
@@ -492,13 +494,13 @@ public:
     				if (num_scored >= order_) context_complete = true;
     			}
     			if (context_complete) {
-    				sum += p;
+    				sum += p; ngram_sum[order_-1]+=p; ngram_cnt[order_-1]++;
     				if (oovs && is_oov) (*oovs)++;
     			} else {
-    				est_sum += p;
+    				est_sum += p; ngram_sum[num_scored-1]+=p; ngram_cnt[num_scored-1]++;
     				if (est_oovs && is_oov) (*est_oovs)++;
     			}
-    			AddUscoredWord(unscored_ws_size,cur_word,uscored_ws_outgoing_states,saw_eos,ucand.NLinks());
+    			AddUscoredWord(unscored_ws_size,cur_word,unscored_ws_outgoing_states,saw_eos,ucand.NLinks());
     		}
     	}
         //write head outgoing KLM state
@@ -507,9 +509,9 @@ public:
         SetFlag(saw_eos, HAS_EOS_ON_RIGHT, head_outgoing_state);
         SetHasFullContext(context_complete || (num_scored >= order_ - 1), head_outgoing_state); //NB -1 since flag if next will have full context |order-1|
         SetFlag(!has_hole, HAS_NO_HOLE, head_outgoing_state);
-        if(uscored_ws_outgoing_states[0]){
-  			SetUnscoredSize(unscored_ws_size[0], uscored_ws_outgoing_states[0]);
-  			uscored_ws_outgoing_states[0]=NULL;
+        if(unscored_ws_outgoing_states[0]){
+  			SetUnscoredSize(unscored_ws_size[0], unscored_ws_outgoing_states[0]);
+  			unscored_ws_outgoing_states[0]=NULL;
   		}
 #ifdef DEBUG_ULM
         cerr << "\tFINAL HEAD OUTGOING STATE = ";
@@ -556,34 +558,39 @@ public:
 
                 }
                 if(context_complete){
-                    sum += p;
+                    sum += p; ngram_sum[order_-1]+=p; ngram_cnt[order_-1]++;
                     if(oovs && is_oov)
                         (*oovs)++;
                 }else{
-                	est_sum += p;
+                	est_sum += p; ngram_sum[num_scored-1]+=p; ngram_cnt[num_scored-1]++;
                 	if (est_oovs && is_oov) (*est_oovs)++;
                 }
-                AddUscoredWord(unscored_ws_size, cur_word, uscored_ws_outgoing_states, saw_eos, ucand.NLinks());
+                AddUscoredWord(unscored_ws_size, cur_word, unscored_ws_outgoing_states, saw_eos, ucand.NLinks());
             }
 
         }
 
         if (pest_sum) *pest_sum = est_sum;
+        assert((ngram_sum[0]+ngram_sum[1])==est_sum);
+        assert(ngram_sum[order_-1]==sum);//del me
         if (psum) *psum = sum;
         //close outgoing tail states
-        assert(uscored_ws_outgoing_states[0]==NULL);
+        assert(unscored_ws_outgoing_states[0]==NULL);
         for(int i = 1;i < ucand.NLinks();i++){
-            if(uscored_ws_outgoing_states[i]){
-                SetUnscoredSize(unscored_ws_size[i], uscored_ws_outgoing_states[i]);
+            if(unscored_ws_outgoing_states[i]){
+                SetUnscoredSize(unscored_ws_size[i], unscored_ws_outgoing_states[i]);
 #ifdef DEBUG_ULM
                 cerr << "\tFINAL OUTGOING STATE[" << i << "] = ";
-                PrintLMS(uscored_ws_outgoing_states[i]);
+                PrintLMS(unscored_ws_outgoing_states[i]);
 #endif
                 //					uscored_ws_outgoing_states[i]=NULL; //not needed if finishing methond
             }
         }
 
 #ifdef DEBUG_ULM
+  	  for(int i=0;i<order_;i++){
+  		  cerr<< " ngram : " << i+1 << "; sum : "<<ngram_sum[i] << "; cnt : "<< ngram_cnt[i]<<endl;
+  	  }
         cerr << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
 #endif
 //        return sum;
@@ -822,19 +829,31 @@ KLanguageModel<Model>::KLanguageModel(const string& param) {
   oov_fid_ = FD::Convert(featname+"_OOV");
   cerr << featname << "_OOV" << " ; FID: " << oov_fid_ << endl;
 
-  est_fid_ = FD::Convert(featname+"_EST");
-  cerr << featname << "_EST" << " ; FID: " << est_fid_ << endl;
+//  est_fid_ = FD::Convert(featname+"_EST");
+//  cerr << featname << "_EST" << " ; FID: " << est_fid_ << endl;
+
+    lnk_fid_ = FD::Convert(featname+"_LNK");
+    cerr << featname << "_LNK" << " ; FID: " << lnk_fid_ << endl;
 
   int order = pimpl_->GetOrder();
-  ngram_avg_fid=new int[order];
-  ngram_cnt_fid=new int[order];
+  ngram_avg_fids_=new int[order];
+  ngram_cnt_fids_=new int[order];
   for(int i=0; i<order; i++){
-	  string suff = "_AVG_"+i; //TODO !!!! this is not appending
-	  ngram_avg_fid[i] = FD::Convert(featname+suff);
-	  cerr << featname << suff << " ; FID: " << ngram_avg_fid[i] << endl;
-	  suff = "_CNT_"+i;
-	  ngram_cnt_fid[i] = FD::Convert(featname+suff);
-	  cerr << featname << suff << " ; FID: " << ngram_cnt_fid[i] << endl;
+	  string currFeat;
+	  stringstream ss;
+	  string id;
+	  ss << i+1;
+	  ss >> id;
+
+	  string suff= "_AVG_" ;
+	  currFeat = featname+suff+id;
+	  ngram_avg_fids_[i] = FD::Convert(currFeat);
+	  cerr << currFeat << " ; FID: " << ngram_avg_fids_[i] << endl;
+
+	  suff = "_CNT_";
+	  currFeat = featname+suff+id;
+	  ngram_cnt_fids_[i] = FD::Convert(featname+suff+id);
+	  cerr << currFeat << " ; FID: " << ngram_cnt_fids_[i] << endl;
   }
   SetStateSize(pimpl_->ReserveStateSize());
 }
@@ -847,7 +866,7 @@ Features KLanguageModel<Model>::features() const {
 template <class Model>
 KLanguageModel<Model>::~KLanguageModel() {
   delete pimpl_;
-  delete[] ngram_avg_fid;
+  delete[] ngram_avg_fids_;
 }
 
 template <class Model>
@@ -885,15 +904,30 @@ void KLanguageModel<Model>::TraversalUndirectedFeaturesImpl(const SentenceMetada
 	  double est = 0;//TODO GU meaning of estimated?
 	  double oovs = 0;
 	  double est_oovs = 0;
-	  double ngram_avg[order];
+	  double ngram_sum[order];
 	  int ngram_cnt[order];
-	  pimpl_->UndirectedLookupWords(ucand/*, ant_states*/,&sum , &est, &oovs, &est_oovs/*, state*/,spos);
-	  ucand.feature_values_.set_value(fid_, sum);
-	  ucand.est_vals_.set_value(fid_, est);
-//	  ucand.est_vals_.set_value(est_fid_, sum);
+  	  for(int i=0;i<order;i++){
+  		ngram_sum[i]=0;
+  		ngram_cnt[i]=0;
+  	  }
+	  pimpl_->UndirectedLookupWords(ucand,ngram_sum,ngram_cnt/*, ant_states*/,&sum , &est, &oovs, &est_oovs/*, state*/,spos);
+
+//	  ucand.feature_values_.set_value(fid_, sum);
+//	  ucand.est_vals_.set_value(fid_, est);
+
+//	  ucand.est_vals_.set_value(est_fid_, est);
+
+//	  ucand.est_vals_.set_value(lnk_fid_, ucand.in_edge_->Arity()+1);
+
 	  if (oov_fid_) {
 	    if (oovs) ucand.feature_values_.set_value(oov_fid_, oovs);
 	    if (est_oovs) ucand.est_vals_.set_value(oov_fid_, est_oovs);
+	  }
+
+	  for(int i=0;i<order;i++){
+		  ucand.est_vals_.set_value(ngram_avg_fids_[i], ngram_sum[i]);
+//		  if(ngram_cnt[i]!=0) ucand.est_vals_.set_value(ngram_avg_fids_[i], ngram_sum[i]/ngram_cnt[i]);
+		  ucand.est_vals_.set_value(ngram_cnt_fids_[i], ngram_cnt[i]);
 	  }
 }
 

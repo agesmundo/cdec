@@ -40,9 +40,10 @@ class KLanguageModel : public FeatureFunction {
  private:
   int fid_; // conceptually const; mutable only to simplify constructor
   int oov_fid_; // will be zero if extra OOV feature is not configured by decoder
-  int est_fid_;
-  int* ngram_avg_fid;//for each 0<=i<order fid of the feat storing the average score of all ngrams of size i+1
-  int* ngram_cnt_fid;//for each 0<=i<order fid of the feat storing the count all ngrams of size i+1
+//  int est_fid_;
+  int lnk_fid_;
+  int* ngram_avg_fids_;//for each 0<=i<order fid of the feat storing the average score of all ngrams of size i+1
+  int* ngram_cnt_fids_;//for each 0<=i<order fid of the feat storing the count all ngrams of size i+1
   KLanguageModelImpl<Model>* pimpl_;
 };
 

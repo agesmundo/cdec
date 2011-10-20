@@ -832,28 +832,47 @@ KLanguageModel<Model>::KLanguageModel(const string& param) {
 //  est_fid_ = FD::Convert(featname+"_EST");
 //  cerr << featname << "_EST" << " ; FID: " << est_fid_ << endl;
 
-    lnk_fid_ = FD::Convert(featname+"_LNK");
-    cerr << featname << "_LNK" << " ; FID: " << lnk_fid_ << endl;
+//    lnk_fid_ = FD::Convert(featname+"_LNK");
+//    cerr << featname << "_LNK" << " ; FID: " << lnk_fid_ << endl;
+
+  cln_fid_ = FD::Convert(featname+"_CLN");
+  cerr << featname << "_CLN" << " ; FID: " << cln_fid_ << endl;
+
+  string suff;
 
     //arity related feats
-    lnk_bin_fids_=new int[max_lnks_];
-    for(int i=0; i<max_lnks_; i++){
-  	  string currFeat;
-  	  stringstream ss;
-  	  string id;
-  	  ss << i+1;
-  	  ss >> id;
+  lnk_bin_fids_=new int[max_lnks_];//remember destroyer
+  for(int i=0; i<max_lnks_; i++){
+	  string currFeat;
+	  stringstream ss;
+	  string id;
+	  ss << i+1;
+	  ss >> id;
 
-	  string suff= "_LNK-BIN_" ;
+	  suff= "_LNK-BIN_" ;
 	  currFeat = featname+suff+id;
 	  lnk_bin_fids_[i] = FD::Convert(currFeat);
 	  cerr << currFeat << " ; FID: " << lnk_bin_fids_[i] << endl;
+  }
+
+    cln_bin_fids_=new int[max_lnks_+1];//remember destroyer
+    for(int i=0; i<max_lnks_+1; i++){
+  	  string currFeat;
+  	  stringstream ss;
+  	  string id;
+  	  ss << i;
+  	  ss >> id;
+
+  	  suff= "_CLN-BIN_" ;
+	  currFeat = featname+suff+id;
+	  cln_bin_fids_[i] = FD::Convert(currFeat);
+	  cerr << currFeat << " ; FID: " << cln_bin_fids_[i] << endl;
     }
 
     //order related feats
   int order = pimpl_->GetOrder();
-  ngram_avg_fids_=new int[order];
-  ngram_cnt_fids_=new int[order];
+  ngram_avg_fids_=new int[order];//remember destroyer
+  ngram_cnt_fids_=new int[order];//remember destroyer
   for(int i=0; i<order; i++){
 	  string currFeat;
 	  stringstream ss;
@@ -861,7 +880,7 @@ KLanguageModel<Model>::KLanguageModel(const string& param) {
 	  ss << i+1;
 	  ss >> id;
 
-	  string suff= "_AVG_" ;
+	  suff= "_AVG_" ;
 	  currFeat = featname+suff+id;
 	  ngram_avg_fids_[i] = FD::Convert(currFeat);
 	  cerr << currFeat << " ; FID: " << ngram_avg_fids_[i] << endl;
@@ -884,6 +903,7 @@ template <class Model>
 KLanguageModel<Model>::~KLanguageModel() {
   delete pimpl_;
   delete[] lnk_bin_fids_;
+  delete[] cln_bin_fids_;
   delete[] ngram_avg_fids_;
   delete[] ngram_cnt_fids_;
 }
@@ -931,10 +951,17 @@ void KLanguageModel<Model>::TraversalUndirectedFeaturesImpl(const SentenceMetada
   	  }
 	  pimpl_->UndirectedLookupWords(ucand,ngram_sum,ngram_cnt/*, ant_states*/,&sum , &est, &oovs, &est_oovs/*, state*/,spos);
 
-	  ucand.feature_values_.set_value(fid_, sum);
-	  ucand.est_vals_.set_value(fid_, est);
+//	  ucand.feature_values_.set_value(fid_, sum);
+//	  ucand.est_vals_.set_value(fid_, est);
+	  ucand.feature_values_.set_value(fid_, sum+est);
 
 //	  ucand.est_vals_.set_value(est_fid_, est);
+
+	  ucand.feature_values_.set_value(cln_fid_, ucand.ConnectedLinks());
+	  assert(ucand.ConnectedLinks()>=0);
+	  assert(ucand.ConnectedLinks()<max_lnks_+1);
+	  ucand.feature_values_.set_value(cln_bin_fids_[ucand.ConnectedLinks()], 1);
+
 
 	  int arity=ucand.in_edge_->Arity();
 //	  ucand.feature_values_.set_value(lnk_fid_, arity+1);

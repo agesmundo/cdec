@@ -70,6 +70,14 @@ using namespace std;
 	  return context_links_.size();
   }
 
+  int UCandidate::ConnectedLinks() const{
+	  int c=0;
+	  for(int i=0; i<NLinks(); i++){
+		  if(context_links_[i]!=NULL)c++;
+	  }
+	  return c;
+  }
+
   void UCandidate::UpdateStates(stack<UCandidate*> &stck, vector < pair < UCandidate*, int > > &links_to_expand){
 	  //store link to old states for comparison
 	  FFState** old_outgoing_states=outgoing_states_;

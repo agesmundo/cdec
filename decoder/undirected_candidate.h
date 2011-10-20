@@ -11,8 +11,8 @@ struct SentenceMetadata;
 
 // Define the following macro if you want to see lots of debugging output
 // when running Guided Undirected Greedy decoding
-//#define DEBUG_GU
-#undef DEBUG_GU
+#define DEBUG_GU
+//#undef DEBUG_GU
 
 /////////////////////////////////////
 //added here because model uses UCand as generalization of Edge
@@ -33,7 +33,7 @@ struct UCandidate {
 
   const Hypergraph::Edge* in_edge_;    // in -LM forest
 
-  FFState** outgoing_states_;
+  FFState** outgoing_states_;//bounded by NLinks()
 
   //  Node2State** outgoing_states_;         //in_node_id 2 state seen from that node //array max 2 elements (simple map)
 //  int outgoing_states_size_; //no need, need a state for each link (also source to check if update)
@@ -41,7 +41,7 @@ struct UCandidate {
 //  FFState state_;
 
   //TODO? add pointer to in_edge feature for local features and avoid copy in costructor?
-  FeatureVector est_vals_;
+  FeatureVector est_vals_;//TODO remove est feats
   FeatureVector feature_values_;
 
   //TODO? make this a pointer to avoid copy in costructor?
@@ -88,7 +88,11 @@ struct UCandidate {
 
 //  bool HasSingleMissingLink() const;
 
+  //total number of edge's links (head included)
   int NLinks() const;
+
+  //number of established links (non null)
+  int ConnectedLinks() const;
 
   void UpdateStates(stack<UCandidate*> &stck, vector < pair < UCandidate*, int > > &links_to_expand);
 

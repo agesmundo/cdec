@@ -14,10 +14,28 @@ Aggressive update not good!
 less features, no need to force update on rarel triggered feats since there are no rarely triggered feats.
 -
 feats : sum-cnt-lnkBin-lnk  (lap)
+s1: 20.53 25.36 \ 20.32 25.20
+//combination of bin-lin fail
+-
+feats : sum-cnt-lnkBin-clkBin  (lap)
+s1: 20.42 25.36 \ 20.63 25.43
+//bin version fail~=, only 2 values are effectively used 1 and 2
+//3 links only update previously selected
+//0 links first loop, seems always picking correct (starting from '.' ?)
+-
+feats : sum-cnt-lnkBin-clk  (lap) * (clk=count established links)
+s1: 20.59 25.43 \ 20.56 25.60
+-
+feats : sum-cnt-lnkBin-lnk  (lap)
 s1: 20.40 25.11
+//combination of bin-lin fail
 -
 feats : sum-cnt-lnkBin  (lap) *
 s1: 20.74 25.31
+//bin feats win, only 3 values but not linear:
+//LanguageModel_LNK-BIN_1 37.889952667814114
+//LanguageModel_LNK-BIN_2 -10.641028399311532
+//LanguageModel_LNK-BIN_3 -27.248924268502581
 -
 feats : avg-cnt-lnk					
 (lap)

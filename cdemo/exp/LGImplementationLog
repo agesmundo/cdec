@@ -13,7 +13,7 @@ TODO code style
 Aggressive update not good!
 less features, no need to force update on rarel triggered feats since there are no rarely triggered feats.
 -
-feats : sum-cnt-lnkBin-lnk  (lap)
+feats : sum-cnt-lnkBin-clkBin-clk (lap)
 s1: 20.53 25.36 \ 20.32 25.20
 //combination of bin-lin fail
 -
@@ -21,7 +21,7 @@ feats : sum-cnt-lnkBin-clkBin  (lap)
 s1: 20.42 25.36 \ 20.63 25.43
 //bin version fail~=, only 2 values are effectively used 1 and 2
 //3 links only update previously selected
-//0 links first loop, seems always picking correct (starting from '.' ?)
+//0 links first loop, every time a wrong leaf if choosen the correction is still a leaf so diff vector has clkBin_0 feat to 1-1=zero 
 -
 feats : sum-cnt-lnkBin-clk  (lap) * (clk=count established links)
 s1: 20.59 25.43 \ 20.56 25.60

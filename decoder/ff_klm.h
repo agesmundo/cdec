@@ -47,7 +47,7 @@ class KLanguageModel : public FeatureFunction {
   //feats # bounded by edge's links #
   static const int max_lnks_ =3; //max number of edge's links (head+2 children) for binary grammar
   int* lnk_bin_fids_; //binary version of lnk_fid_
-  int* cln_bin_fids_; //binary version of cln_fid_
+//  int* cln_bin_fids_; //binary version of cln_fid_ //lin version win, only 2 values effective
 
   //feats # bounded by order
   int* ngram_avg_fids_;//for each 0<=i<order fid of the feat storing the average score of all ngrams of size i+1

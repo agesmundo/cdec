@@ -242,6 +242,9 @@ public:
 
 #ifdef DEBUG_GU
 			cerr << "BEST IS: " << *topCand << "\n";
+			cerr << "FIRST :" << *topCand->in_edge_ << endl;
+			if (IsCorrect(*topCand)) cerr << " IS CORR" <<endl;
+			else cerr << " WRONGGGG! " <<endl;
 #endif
 
 			if(!is_training_ || IsCorrect(*topCand) || wrong_count>=1){
@@ -294,10 +297,10 @@ public:
 						candsToUpdate.pop();
 						//TODO? speedup: avoid propagation for tails and root (no missing links, no further porpagations)
 
-#ifdef DEBUG_GU
-						cerr << "\tCurrent cand: "<< *curr<< endl;
-#endif
 						curr->UpdateStates(candsToUpdate,links_to_expand);
+#ifdef DEBUG_GU
+						cerr << "\tCurrent cand (updated): "<< *curr<< endl;
+#endif
 					}
 #ifdef DEBUG_GU
 	  			cerr <<"\tlinks_to_expand.size : "<< links_to_expand.size()<<endl;

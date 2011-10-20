@@ -855,19 +855,19 @@ KLanguageModel<Model>::KLanguageModel(const string& param) {
 	  cerr << currFeat << " ; FID: " << lnk_bin_fids_[i] << endl;
   }
 
-    cln_bin_fids_=new int[max_lnks_+1];//remember destroyer
-    for(int i=0; i<max_lnks_+1; i++){
-  	  string currFeat;
-  	  stringstream ss;
-  	  string id;
-  	  ss << i;
-  	  ss >> id;
-
-  	  suff= "_CLN-BIN_" ;
-	  currFeat = featname+suff+id;
-	  cln_bin_fids_[i] = FD::Convert(currFeat);
-	  cerr << currFeat << " ; FID: " << cln_bin_fids_[i] << endl;
-    }
+//    cln_bin_fids_=new int[max_lnks_+1];//remember destroyer
+//    for(int i=0; i<max_lnks_+1; i++){
+//  	  string currFeat;
+//  	  stringstream ss;
+//  	  string id;
+//  	  ss << i;
+//  	  ss >> id;
+//
+//  	  suff= "_CLN-BIN_" ;
+//	  currFeat = featname+suff+id;
+//	  cln_bin_fids_[i] = FD::Convert(currFeat);
+//	  cerr << currFeat << " ; FID: " << cln_bin_fids_[i] << endl;
+//    }
 
     //order related feats
   int order = pimpl_->GetOrder();
@@ -903,7 +903,7 @@ template <class Model>
 KLanguageModel<Model>::~KLanguageModel() {
   delete pimpl_;
   delete[] lnk_bin_fids_;
-  delete[] cln_bin_fids_;
+//  delete[] cln_bin_fids_;
   delete[] ngram_avg_fids_;
   delete[] ngram_cnt_fids_;
 }
@@ -958,9 +958,9 @@ void KLanguageModel<Model>::TraversalUndirectedFeaturesImpl(const SentenceMetada
 //	  ucand.est_vals_.set_value(est_fid_, est);
 
 	  ucand.feature_values_.set_value(cln_fid_, ucand.ConnectedLinks());
-	  assert(ucand.ConnectedLinks()>=0);
-	  assert(ucand.ConnectedLinks()<max_lnks_+1);
-	  ucand.feature_values_.set_value(cln_bin_fids_[ucand.ConnectedLinks()], 1);
+//	  assert(ucand.ConnectedLinks()>=0);
+//	  assert(ucand.ConnectedLinks()<max_lnks_+1);
+//	  ucand.feature_values_.set_value(cln_bin_fids_[ucand.ConnectedLinks()], 1);
 
 
 	  int arity=ucand.in_edge_->Arity();

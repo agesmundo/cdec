@@ -292,7 +292,7 @@ public:
         return sum;
     }
     //GU
-    double UndirectedLookupWords(UCandidate & ucand, double ngram_sum[],  int ngram_cnt[],/*const vector<const void*>& ant_states, */ double* psum, double* pest_sum, double *oovs, double *est_oovs,
+    double UndirectedLookupWords(UCandidate & ucand, double ngram_sum[], int ngram_cnt[], /*int oov_cnt[],/*const vector<const void*>& ant_states, */ double* psum, double* pest_sum, int *oovs, int *est_oovs,
     int spos)
     {
 
@@ -413,9 +413,11 @@ public:
     					if (context_complete) {
     						sum += p; ngram_sum[order_-1]+=p; ngram_cnt[order_-1]++;
     						if (oovs && is_oov) (*oovs)++;
+//    						if (is_oov)oov_cnt[order_-1]++; //TODO adjust here and similar portions (just use num_scored)
     					} else {
     						est_sum += p; ngram_sum[num_scored-1]+=p; ngram_cnt[num_scored-1]++;
     						if (est_oovs && is_oov) (*est_oovs)++;
+//    						if (is_oov)oov_cnt[num_scored-1]++;
     					}
     					AddUscoredWord(unscored_ws_size,cur_word,unscored_ws_outgoing_states,saw_eos,ucand.NLinks());
     				}
@@ -496,9 +498,11 @@ public:
     			if (context_complete) {
     				sum += p; ngram_sum[order_-1]+=p; ngram_cnt[order_-1]++;
     				if (oovs && is_oov) (*oovs)++;
+//					if (is_oov)oov_cnt[order_-1]++;
     			} else {
     				est_sum += p; ngram_sum[num_scored-1]+=p; ngram_cnt[num_scored-1]++;
     				if (est_oovs && is_oov) (*est_oovs)++;
+//					if (is_oov)oov_cnt[num_scored-1]++;
     			}
     			AddUscoredWord(unscored_ws_size,cur_word,unscored_ws_outgoing_states,saw_eos,ucand.NLinks());
     		}
@@ -559,11 +563,12 @@ public:
                 }
                 if(context_complete){
                     sum += p; ngram_sum[order_-1]+=p; ngram_cnt[order_-1]++;
-                    if(oovs && is_oov)
-                        (*oovs)++;
+                    if(oovs && is_oov)(*oovs)++;
+//					if (is_oov)oov_cnt[order_-1]++;
                 }else{
                 	est_sum += p; ngram_sum[num_scored-1]+=p; ngram_cnt[num_scored-1]++;
                 	if (est_oovs && is_oov) (*est_oovs)++;
+//					if (is_oov)oov_cnt[num_scored-1]++;
                 }
                 AddUscoredWord(unscored_ws_size, cur_word, unscored_ws_outgoing_states, saw_eos, ucand.NLinks());
             }
@@ -873,6 +878,7 @@ KLanguageModel<Model>::KLanguageModel(const string& param) {
   int order = pimpl_->GetOrder();
   ngram_avg_fids_=new int[order];//remember destroyer
   ngram_cnt_fids_=new int[order];//remember destroyer
+//  ngram_oov_fids_=new int[order];
   for(int i=0; i<order; i++){
 	  string currFeat;
 	  stringstream ss;
@@ -889,6 +895,11 @@ KLanguageModel<Model>::KLanguageModel(const string& param) {
 	  currFeat = featname+suff+id;
 	  ngram_cnt_fids_[i] = FD::Convert(featname+suff+id);
 	  cerr << currFeat << " ; FID: " << ngram_cnt_fids_[i] << endl;
+
+//	  suff = "_OOV_";
+//	  currFeat = featname+suff+id;
+//	  ngram_oov_fids_[i] = FD::Convert(featname+suff+id);
+//	  cerr << currFeat << " ; FID: " << ngram_oov_fids_[i] << endl;
   }
 
   SetStateSize(pimpl_->ReserveStateSize());
@@ -906,6 +917,7 @@ KLanguageModel<Model>::~KLanguageModel() {
 //  delete[] cln_bin_fids_;
   delete[] ngram_avg_fids_;
   delete[] ngram_cnt_fids_;
+//  delete[] ngram_oov_fids_;
 }
 
 template <class Model>
@@ -941,15 +953,17 @@ void KLanguageModel<Model>::TraversalUndirectedFeaturesImpl(const SentenceMetada
 
 	  double sum = 0;
 	  double est = 0;//TODO GU meaning of estimated?
-	  double oovs = 0;
-	  double est_oovs = 0;
+	  int oovs = 0;
+	  int est_oovs = 0;
 	  double ngram_sum[order];
 	  int ngram_cnt[order];
+//	  int oov_cnt[order];
   	  for(int i=0;i<order;i++){
   		ngram_sum[i]=0;
   		ngram_cnt[i]=0;
+//  		oov_cnt[i]=0;
   	  }
-	  pimpl_->UndirectedLookupWords(ucand,ngram_sum,ngram_cnt/*, ant_states*/,&sum , &est, &oovs, &est_oovs/*, state*/,spos);
+	  pimpl_->UndirectedLookupWords(ucand,ngram_sum,ngram_cnt/*,oov_cnt/*, ant_states*/,&sum , &est, &oovs, &est_oovs/*, state*/,spos);
 
 //	  ucand.feature_values_.set_value(fid_, sum);
 //	  ucand.est_vals_.set_value(fid_, est);
@@ -974,9 +988,11 @@ void KLanguageModel<Model>::TraversalUndirectedFeaturesImpl(const SentenceMetada
 	  }
 
 	  for(int i=0;i<order;i++){
-//		  ucand.est_vals_.set_value(ngram_avg_fids_[i], ngram_sum[i]);
-		  if(ngram_cnt[i]!=0) ucand.est_vals_.set_value(ngram_avg_fids_[i], ngram_sum[i]/ngram_cnt[i]);
-		  ucand.est_vals_.set_value(ngram_cnt_fids_[i], ngram_cnt[i]);
+//		  ucand.feature_values_.set_value(ngram_avg_fids_[i], ngram_sum[i]);
+		  if(ngram_cnt[i]!=0 && ngram_sum[i]!=0) ucand.feature_values_.set_value(ngram_avg_fids_[i], ngram_sum[i]/ngram_cnt[i]);
+		  if(ngram_cnt[i]!=0) ucand.feature_values_.set_value(ngram_cnt_fids_[i], ngram_cnt[i]);
+//		  if(oov_cnt[i]!=0)ucand.feature_values_.set_value(ngram_oov_fids_[i], oov_cnt[i]);
+
 	  }
 }
 

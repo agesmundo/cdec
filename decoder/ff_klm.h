@@ -52,6 +52,7 @@ class KLanguageModel : public FeatureFunction {
   //feats # bounded by order
   int* ngram_avg_fids_;//for each 0<=i<order fid of the feat storing the average score of all ngrams of size i+1
   int* ngram_cnt_fids_;//for each 0<=i<order fid of the feat storing the count all ngrams of size i+1
+//  int* ngram_oov_fids_;//
 
   KLanguageModelImpl<Model>* pimpl_;
 };

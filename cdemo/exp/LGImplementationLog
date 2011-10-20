@@ -13,24 +13,24 @@ TODO code style
 Aggressive update not good!
 less features, no need to force update on rarel triggered feats since there are no rarely triggered feats.
 -
-feats : sum-cnt-lnkBin-clkBin-clk (lap)
+feats : avg-cnt-lnkBin-clkBin-clk (lap)
 s1: 20.53 25.36 \ 20.32 25.20
 //combination of bin-lin fail
 -
-feats : sum-cnt-lnkBin-clkBin  (lap)
+feats : avg-cnt-lnkBin-clkBin  (lap)
 s1: 20.42 25.36 \ 20.63 25.43
 //bin version fail~=, only 2 values are effectively used 1 and 2
 //3 links only update previously selected
 //0 links first loop, every time a wrong leaf if choosen the correction is still a leaf so diff vector has clkBin_0 feat to 1-1=zero 
 -
-feats : sum-cnt-lnkBin-clk  (lap) * (clk=count established links)
+feats : avg-cnt-lnkBin-clk  (lap) * (clk=count established links)
 s1: 20.59 25.43 \ 20.56 25.60
 -
-feats : sum-cnt-lnkBin-lnk  (lap)
+feats : avg-cnt-lnkBin-lnk  (lap)
 s1: 20.40 25.11
 //combination of bin-lin fail
 -
-feats : sum-cnt-lnkBin  (lap) *
+feats : avg-cnt-lnkBin  (lap) *
 s1: 20.74 25.31
 //bin feats win, only 3 values but not linear:
 //LanguageModel_LNK-BIN_1 37.889952667814114
@@ -43,7 +43,7 @@ soglia	1	2	4	8	50
 train	20.0393	20.999	22.7089	23.7641	26.23
 test	24.8937	24.6546	24.3191	23.6216	22.87
 -
-feats : sum-cnt-lnk -BASE (lap)
+feats : avg-cnt-lnk -BASE (lap)
 s1: 19.67 24.57
 -
 feats : sum-cnt-lnk (lap)

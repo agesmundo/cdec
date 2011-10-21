@@ -247,7 +247,7 @@ public:
 			else cerr << " WRONGGGG! " <<endl;
 #endif
 
-			if(!is_training_ || IsCorrect(*topCand) || wrong_count>=1){
+			if(!is_training_ || IsCorrect(*topCand) || wrong_count>=2){
 
 				wrong_count=0;
 

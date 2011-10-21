@@ -197,8 +197,8 @@ class WordPenalty : public FeatureFunction {
   const int fid_;
   const double value_;
 
-  int* bin_fids_; //binary version
-  int bin_threshold_ ; //from this number of words the feature turns linear
+//  int* bin_fids_; //binary version
+//  int bin_threshold_ ; //from this number of words the feature turns linear
 };
 
 class SourceWordPenalty : public FeatureFunction {

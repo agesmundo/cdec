@@ -13,6 +13,14 @@ TODO code style
 Aggressive update not good!
 less features, no need to force update on rarel triggered feats since there are no rarely triggered feats.
 -
+feats : avg-cnt-lnkBin-cln binWordPenalty (split 1 ... 6lin) (lap) 
+s1: 0.207607 0.253908 \ 0.210468 0.25487
+//NB init feats to WordPenalty
+-
+feats : avg-cnt-lnkBin-cln binWordPenalty (split 1 2lin) (lap) 
+s1:20.33 25.18 \ 20.58 25.18
+//NB init feats to WordPenalty
+-
 feats : avg-cnt-lnkBin-cln  (lap)
 s2:21.34 24.73 \ 21.99 24.95
 //aggressive update still fail

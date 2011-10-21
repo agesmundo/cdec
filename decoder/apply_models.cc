@@ -242,12 +242,12 @@ public:
 
 #ifdef DEBUG_GU
 			cerr << "BEST IS: " << *topCand << "\n";
-			cerr << "FIRST :" << *topCand->in_edge_ << endl;
-			if (IsCorrect(*topCand)) cerr << " IS CORR" <<endl;
-			else cerr << " WRONGGGG! " <<endl;
+//			cerr << "FIRST :" << *topCand->in_edge_ << endl;
+//			if (IsCorrect(*topCand)) cerr << " IS CORR" <<endl;
+//			else cerr << " WRONGGGG! " <<endl;
 #endif
 
-			if(!is_training_ || IsCorrect(*topCand) || wrong_count>=2){
+			if(!is_training_ || IsCorrect(*topCand) || wrong_count>=1){
 
 				wrong_count=0;
 

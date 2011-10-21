@@ -63,6 +63,22 @@ void ModelSet::show_features(std::ostream &out,std::ostream &warn,bool warn_zero
 WordPenalty::WordPenalty(const string& param) :
   fid_(FD::Convert("WordPenalty")),
     value_(-1.0 / log(10)) {
+
+	string featname = "SourceWordPenalty";
+	bin_threshold_=1;
+	bin_fids_=new int[bin_threshold_];//TODO remember destroyer
+	  for(int i=0; i<bin_threshold_; i++){
+		  string currFeat;
+		  stringstream ss;
+		  string id;
+		  ss << i;
+		  ss >> id;
+
+		  string suff= "_WRP-BIN_" ;
+		  currFeat = featname+suff+id;
+		  bin_fids_[i] = FD::Convert(currFeat);
+		  cerr << currFeat << " ; FID: " << bin_fids_[i] << endl;
+	  }
   if (!param.empty()) {
     cerr << "Warning WordPenalty ignoring parameter: " << param << endl;
   }
@@ -113,7 +129,18 @@ void WordPenalty::TraversalUndirectedFeaturesImpl(const SentenceMetadata& smeta,
 //  (void) ant_states;
 //  (void) state;
 //  (void) estimated_features;
-  ucand.feature_values_.set_value(fid_, ucand.in_edge_->rule_->EWords() * value_);
+
+  //lin
+//  ucand.feature_values_.set_value(fid_, ucand.in_edge_->rule_->EWords() * value_);
+
+  //bin
+  int target_words=ucand.in_edge_->rule_->EWords();
+  if(target_words<bin_threshold_-1){
+	  ucand.feature_values_.set_value(bin_fids_[target_words], target_words* value_);
+  }else{
+	  ucand.feature_values_.set_value(bin_fids_[bin_threshold_-1], target_words* value_); //last is lin end
+  }
+
 }
 
 SourceWordPenalty::SourceWordPenalty(const string& param) :

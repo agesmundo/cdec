@@ -9,6 +9,46 @@ TODO code style
 	?better structure for context links and link states?
 	avoid passing spos down
 
+111028
+measures for paper:
+---------
+BD b=30
+-> dec test
+Fri Oct 28 17:37:27 CEST 2011
+Fri Oct 28 17:45:58 CEST 2011
+=511s
+-> dec test / sents (1994)
+=0.26s /sent
+-> resc
+Time required for Cube Pruning execution: 305.02 seconds.
+-> bleu
+29.89
+---------
+BD b=1
+-> dec test
+Fri Oct 28 18:03:12 CEST 2011
+Fri Oct 28 18:09:31 CEST 2011
+=379s
+-> dec test / sents (1994)
+=0.19 s /sent
+-> resc
+Time required for Cube Pruning execution: 198.42 seconds
+-> bleu
+29.07
+---------
+BD b=30
+-> dec test
+Fri Oct 28 18:40:29 CEST 2011
+Fri Oct 28 18:44:00 CEST 2011
+=221s
+-> dec test / sents (1994)
+=0.11s /sent
+-> resc
+Time required for Cube Pruning execution: 43.45 seconds.
+-> bleu
+25.61
+
+
 111019
 Aggressive update not good!
 less features, no need to force update on rarel triggered feats since there are no rarely triggered feats.

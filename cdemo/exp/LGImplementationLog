@@ -8,6 +8,10 @@ TODO speed up
 TODO code style
 	?better structure for context links and link states?
 	avoid passing spos down
+TODO training
+	chat
+	avg consider also not updates
+	normalize dimensions
 
 111028
 measures for paper (desk):
@@ -52,6 +56,36 @@ Time required for Cube Pruning execution: 43.45 seconds.
 111019-21
 Aggressive update not good!
 less features, no need to force update on rarel triggered feats since there are no rarely triggered feats.
+-
+feats : avg-cnt-lnkBin-cln (-)sumLM (lap) 
+0.202562
+0.24859
+0.205177
+0.248595
+-
+feats : avg-cnt-lnkBin-cln binOOV binWordPenalty(split 1 ... 6lin) (lap) 
+0.208531
+0.252989
+0.206978
+0.251592
+-
+feats : avg-cnt-lnkBin-cln binOOV bin_cln binWordPenalty(split 1 ... 6lin) (lap) 
+0.205639
+0.25289
+0.206013
+0.251214
+-
+feats : avg-cnt-lnkBin-cln binOOV bin_cln (lap) 
+0.207233
+0.253391
+0.206825
+0.251157
+-
+feats : avg-cnt-lnkBin-cln binOOV (lap) 
+0.205987
+0.253389
+0.211048
+0.256116 (~)
 -
 feats : avg-cnt-lnkBin-cln binWordPenalty (split 1 ... 6lin) (lap) 
 s1: 0.207607 0.253908 \ 0.210468 0.25487

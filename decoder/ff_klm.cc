@@ -902,6 +902,25 @@ KLanguageModel<Model>::KLanguageModel(const string& param) {
 //	  cerr << currFeat << " ; FID: " << ngram_oov_fids_[i] << endl;
   }
 
+  //order * bin-lin related feats
+//  ngram_cnt_bin_threshold_=4;
+//  ngram_cnt_bin_fids_=new int*[order];//TODO remember destroyer
+//  for(int j=0; j<order; j++){
+//	  ngram_cnt_bin_fids_[j]=new int[ngram_cnt_bin_threshold_];//TODO remember destroyer
+//	  for(int i=0; i<ngram_cnt_bin_threshold_; i++){
+//		  string currFeat;
+//		  stringstream ss;
+//		  string id;
+//		  ss << j << "-" << i;
+//		  ss >> id;
+//
+//		  string suff= "_CNT-BIN_" ;
+//		  currFeat = featname+suff+id;
+//		  ngram_cnt_bin_fids_[j][i] = FD::Convert(currFeat);
+//		  cerr << currFeat << " ; FID: " << ngram_cnt_bin_fids_[j][i] << endl;
+//	  }
+//  }
+
   SetStateSize(pimpl_->ReserveStateSize());
 }
 
@@ -993,6 +1012,12 @@ void KLanguageModel<Model>::TraversalUndirectedFeaturesImpl(const SentenceMetada
 		  if(ngram_cnt[i]!=0) ucand.feature_values_.set_value(ngram_cnt_fids_[i], ngram_cnt[i]);
 //		  if(oov_cnt[i]!=0)ucand.feature_values_.set_value(ngram_oov_fids_[i], oov_cnt[i]);
 
+//		    //cnt-bin-lin
+//		  if(ngram_cnt[i]<ngram_cnt_bin_threshold_-1){
+//			  ucand.feature_values_.set_value(ngram_cnt_bin_fids_[i][ngram_cnt[i]], ngram_cnt[i]);
+//		  }else{
+//			  ucand.feature_values_.set_value(ngram_cnt_bin_fids_[i][ngram_cnt_bin_threshold_-1], ngram_cnt[i]); //last is lin end
+//		  }
 	  }
 }
 

@@ -53,9 +53,37 @@ Time required for Cube Pruning execution: 43.45 seconds.
 25.61
 
 
-111019-21
+111019-111101
 Aggressive update not good!
 less features, no need to force update on rarel triggered feats since there are no rarely triggered feats.
+-
+feats : avg-!-lnkBin-cln (+)clnBinLin thr5 (lap) 
+0.20592
+0.252806
+0.20451
+0.249841
+//TODO why thr5 or 6 trigger LanguageModel_CNT-BIN_0-3 ?
+//triggered only one and keep growing?
+-
+feats : avg-!-lnkBin-cln (+)clnBinLin thr4 (lap) 
+0.208239
+0.251654
+0.205159
+0.252413
+-
+feats : avg-!-lnkBin-cln (+)clnBinLin thr3 (lap) 
+0.205394
+0.251812
+0.203699
+0.250941
+-
+feats : avg-!-lnkBin-cln (+)clnBinLin thr1=thr2=(*) (lap) 
+-
+feats : avg-cnt-lnkBin-cln (+)clnBinLin thr4 (lap) 
+0.20681
+0.254542
+0.202269
+0.252583
 -
 feats : avg-cnt-lnkBin-cln (-)sumLM (lap) 
 0.202562
@@ -71,9 +99,7 @@ feats : avg-cnt-lnkBin-cln binOOV binWordPenalty(split 1 ... 6lin) (lap)
 -
 feats : avg-cnt-lnkBin-cln binOOV bin_cln binWordPenalty(split 1 ... 6lin) (lap) 
 0.205639
-0.25289
-0.206013
-0.251214
+0.25289 0.206013 0.251214
 -
 feats : avg-cnt-lnkBin-cln binOOV bin_cln (lap) 
 0.207233

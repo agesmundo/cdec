@@ -141,6 +141,10 @@ s1: 20.42 25.36 \ 20.63 25.43
 -
 feats : avg-cnt-lnkBin-cln  (lap) * (cln=count established links)
 s1: 20.59 25.43 \ 20.56 25.60
+0.205954
+0.254334
+0.205607
+0.256045
 -
 feats : avg-cnt-lnkBin-lnk  (lap)
 s1: 20.40 25.11

@@ -249,6 +249,10 @@ public:
 
 			if(!is_training_ || IsCorrect(*topCand) || wrong_count>=1){
 
+//				if(is_training_ &&   wrong_count==0 /*&& IsCorrect(*topCand) */){ //wrong count = 0 it is correct
+//					models.UpAvgCnt();//TODO check if is averaged models.is_avg
+//				}
+
 				wrong_count=0;
 
 				//stor info about links expansions and re-expansions (cause updated source)

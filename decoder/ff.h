@@ -349,6 +349,8 @@ class ModelSet {
 
   void UpdateWeight(SparseVector<Featval> vector, double alpha);
 
+  void UpAvgCnt();
+
   double ScoreVector(SparseVector<Featval> vector);
 
   std::vector<double> ComputeAvgWeight();

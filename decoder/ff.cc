@@ -343,15 +343,16 @@ void ModelSet::UpdateWeight(SparseVector<Featval> vector, double loss){
 
 //	cerr << "\tALPHA= "<<alpha<<endl;
 
+	count_avg_++;
 	for (SparseVector<Featval>::const_iterator i=vector.begin(),e=vector.end();i!=e;++i) {
 		if (weights_.size() <= i->first) weights_.resize(i->first+1);
 		weights_[i->first] += i->second /* * alpha*/;
 		if(is_avg_){
 			if (weights_avg_.size() <= i->first) weights_avg_.resize(i->first+1);
-			weights_avg_[i->first] += i->second * (count_avg_+1.0)/* * alpha*/;
+			weights_avg_[i->first] += i->second * (count_avg_)/* * alpha*/;
 		}
 	}
-	count_avg_++;
+
 }
 
 double ModelSet::ScoreVector(SparseVector<Featval> vector){

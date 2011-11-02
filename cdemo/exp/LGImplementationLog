@@ -10,8 +10,12 @@ TODO code style
 	avoid passing spos down
 TODO training
 	chat
-	avg consider also not updates
+	avg/standar-deviation consider also not updates
 	normalize dimensions
+
+111102
+changing learning rate get similar results ~<25.6 .2 .3
+changing word penalty learning rate : ~<25.6 .2 .3
 
 111028
 measures for paper (desk):

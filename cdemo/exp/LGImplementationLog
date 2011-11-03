@@ -10,12 +10,16 @@ TODO code style
 	avoid passing spos down
 TODO training
 	chat
-	avg/standar-deviation consider also not updates
+	avg/standar-deviation 
 	normalize dimensions
+	ModelSet::UpAvgCnt debug use
+	ModelSet::ScoreVector debug version with avg
 
 111102
 changing learning rate get similar results ~<25.6 .2 .3
 changing word penalty learning rate : ~<25.6 .2 .3
+add in the avg count the w not updated that got correct action at first: ~<25.6 25.55
+use avg w for predictions : tragic 14-17 (seems legit)
 
 111028
 measures for paper (desk):

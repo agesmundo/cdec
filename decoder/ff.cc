@@ -291,13 +291,15 @@ void ModelSet::AddFeaturesToUCandidate(const SentenceMetadata& smeta,
   //TODO pass spos (and smeta) all the time seems like a waste of time
     ff.TraversalUndirectedFeatures(smeta, *ucand, spos/*ants, &ucand->feature_values_, &ucand->est_vals_, cur_ff_context*/);
   }
-  prob_t estimate = prob_t::One();
-  estimate.logeq(ucand->est_vals_.dot(weights_));
+//  prob_t estimate = prob_t::One();
+//  estimate.logeq(ucand->est_vals_.dot(weights_));
 
-  prob_t local = prob_t::One();
-  local.logeq(ucand->feature_values_.dot(weights_));
+//  prob_t local = prob_t::One();
+//  local.logeq(ScoreVector(ucand->feature_values_));
+//  local.logeq(ucand->feature_values_.dot(weights_));
 
-  ucand->action_prob_ = local * estimate; //sum exps
+//  ucand->action_prob_ = local ;//* estimate; //sum exps
+  ucand->action_prob_.logeq(ScoreVector(ucand->feature_values_));
 }
 
 void ModelSet::AddFinalFeatures(const FFState& state, Hypergraph::Edge* edge,SentenceMetadata const& smeta) const {
@@ -359,11 +361,12 @@ void ModelSet::UpAvgCnt(){
 	count_avg_++;
 }
 
-double ModelSet::ScoreVector(SparseVector<Featval> vector){
+double ModelSet::ScoreVector(SparseVector<Featval> vector) const{
+//	return vector.dot(ComputeAvgWeight());
 	return vector.dot(weights_);
 }
 
-std::vector<double> ModelSet::ComputeAvgWeight(){
+std::vector<double> ModelSet::ComputeAvgWeight() const{
 	std::vector<double> avg_w (weights_);
 	assert(weights_.size()==weights_avg_.size());
 	for(int i =0 ; i<weights_.size(); i++){

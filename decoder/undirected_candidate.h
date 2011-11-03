@@ -41,7 +41,7 @@ struct UCandidate {
 //  FFState state_;
 
   //TODO? add pointer to in_edge feature for local features and avoid copy in costructor?
-  FeatureVector est_vals_;//TODO remove est feats
+//  FeatureVector est_vals_;//TODO remove est feats
   FeatureVector feature_values_;
 
   //TODO? make this a pointer to avoid copy in costructor?

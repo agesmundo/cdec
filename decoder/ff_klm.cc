@@ -1001,10 +1001,11 @@ void KLanguageModel<Model>::TraversalUndirectedFeaturesImpl(const SentenceMetada
 	  assert(arity>=0 &&arity<max_lnks_);
 	  ucand.feature_values_.set_value(lnk_bin_fids_[arity], 1);//binary
 
-	  if (oov_fid_) {
-	    if (oovs) ucand.feature_values_.set_value(oov_fid_, oovs);
-	    if (est_oovs) ucand.est_vals_.set_value(oov_fid_, est_oovs);
-	  }
+//	  if (oov_fid_) {
+//	    if (oovs)
+	    	ucand.feature_values_.set_value(oov_fid_, oovs+est_oovs);
+//	    if (est_oovs) ucand.est_vals_.set_value(oov_fid_, est_oovs);
+//	  }
 
 	  for(int i=0;i<order;i++){
 //		  ucand.feature_values_.set_value(ngram_avg_fids_[i], ngram_sum[i]);

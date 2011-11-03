@@ -308,8 +308,8 @@ ostream& operator<<(ostream& os, const UCandidate& cand) {
   os << " in_edge_= " << *(cand.in_edge_)<< "; ";
   os << endl;
   os << "\tFEATS : " << cand.feature_values_;
-  os << endl;
-  os << "\tEST_F : " << cand.est_vals_;
+//  os << endl;
+//  os << "\tEST_F : " << cand.est_vals_;
   return os << ']';
 }
 

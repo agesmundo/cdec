@@ -430,11 +430,11 @@ public:
 
 				SparseVector<Featval> diff (correctCand->feature_values_);
 				//    		cerr << diff << endl;
-				diff +=correctCand->est_vals_;
+//				diff +=correctCand->est_vals_;
 				//    		cerr << diff << endl;
 				diff -=topCand->feature_values_;
 				//    		cerr << diff << endl;
-				diff -=topCand->est_vals_;
+//				diff -=topCand->est_vals_;
 #ifdef DEBUG_GU
 				cerr << "\tDiff vector: " << diff << endl;
 				cerr << "\tWeight vector: ";
@@ -453,13 +453,14 @@ public:
 				for(UCandidateHeap::iterator it = cands.begin();it!=cands.end();it++){
 					UCandidate& ucand = **it;
 
-					prob_t estimate = prob_t::One();
-					estimate.logeq(models.ScoreVector(ucand.est_vals_));
+//					prob_t estimate = prob_t::One();
+//					estimate.logeq(models.ScoreVector(ucand.est_vals_));
 
-					prob_t local = prob_t::One();
-					local.logeq(models.ScoreVector(ucand.feature_values_));
+//					prob_t local = prob_t::One();
+//					local.logeq(models.ScoreVector(ucand.feature_values_));
 
-					ucand.action_prob_ = local * estimate; //sum exps
+//					ucand.action_prob_ = local;// * estimate; //sum exps
+					ucand.action_prob_.logeq(models.ScoreVector(ucand.feature_values_));
 #ifdef DEBUG_GU
 					cerr << "\t-\n\tRescored " << ucand <<endl;
 					IsCorrect(ucand);

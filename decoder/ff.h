@@ -351,9 +351,9 @@ class ModelSet {
 
   void UpAvgCnt();
 
-  double ScoreVector(SparseVector<Featval> vector);
+  double ScoreVector(SparseVector<Featval> vector) const;
 
-  std::vector<double> ComputeAvgWeight();
+  std::vector<double> ComputeAvgWeight() const;
 
   void WriteToFile(const std::string& fname);
 

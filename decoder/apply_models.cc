@@ -199,6 +199,13 @@ public:
 	 is_training_(is_training), weight_file_name_(wf)
 	{
 
+//		for(int i=0; i<in.edges_.size();i++){
+//			if(in.edges_[i].edge_prob_.is_0()){
+//				cerr << "Edges has 0 prob! : "<<in.edges_[i];
+//				abort();
+//			}
+//			cout << in.edges_[i] << endl;
+//		}
 		Inside<MaxSum<prob_t>, EdgeProb>(in, &inside_);
 		UCandidate::inside_=&inside_;
 

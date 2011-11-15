@@ -848,7 +848,7 @@ ostream& operator<<(
         }
         os << ") ";
         os << "rule_= " << *(edge.rule_.get()) << "; ";
-        os << "edge_prob_= " << edge.edge_prob_ << "; ";
+        os << "edge_prob_(log_score)= " << edge.edge_prob_ << "; ";
         return os << "]";
 }
 

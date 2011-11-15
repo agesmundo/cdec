@@ -1030,19 +1030,22 @@ void KLanguageModel<Model>::TraversalUndirectedFeaturesImpl(const SentenceMetada
 	  double io_sum=0;
 	  if(ucand.context_links_[0]==NULL){//missing && not goal
 		  assert(ucand.in_edge_->head_node_ < UCandidate::outside_->size() );
-		  io_sum+=UCandidate::outside_->at(ucand.in_edge_->head_node_).GetValue();
+		  assert(UCandidate::outside_->at(ucand.in_edge_->head_node_).GetValue().s_==false);
+		  io_sum+=UCandidate::outside_->at(ucand.in_edge_->head_node_).GetValue().v_;
 	  }
 	  //left tail
 	  if(ucand.context_links_.size()>1 && ucand.context_links_[1]==NULL){
 		  assert(ucand.in_edge_->tail_nodes_[0]<UCandidate::inside_->size());
-		  io_sum+=UCandidate::inside_->at(ucand.in_edge_->tail_nodes_[0]).GetValue();
+		  assert(UCandidate::inside_->at(ucand.in_edge_->tail_nodes_[0]).GetValue().s_==false);
+		  io_sum+=UCandidate::inside_->at(ucand.in_edge_->tail_nodes_[0]).GetValue().v_;
 	  }
 	  //right tail
 	  if(ucand.context_links_.size()>2 && ucand.context_links_[2]==NULL){
 		  assert(ucand.in_edge_->tail_nodes_[1]<UCandidate::inside_->size());
-		  io_sum+=UCandidate::inside_->at(ucand.in_edge_->tail_nodes_[1]).GetValue();
+		  assert(UCandidate::inside_->at(ucand.in_edge_->tail_nodes_[1]).GetValue().s_==false);
+		  io_sum+=UCandidate::inside_->at(ucand.in_edge_->tail_nodes_[1]).GetValue().v_;
 	  }
-//	  ucand.feature_values_.set_value(inout_fid_,io_sum);
+	  ucand.feature_values_.set_value(inout_fid_,io_sum);
 }
 
 template <class Model>

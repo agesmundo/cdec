@@ -20,6 +20,8 @@
 //#include "ff.h"
 #include "hg_intersect.h"
 #include "sentence_metadata.h"
+#include "inside_outside.h"
+#include "semirings.h"
 
 using namespace std;
 using namespace std::tr1;
@@ -196,6 +198,13 @@ public:
 	:models(m), smeta(sm), in(i), out(*o), //D(in.nodes_.size()),
 	 is_training_(is_training), weight_file_name_(wf)
 	{
+
+		Inside<MaxSum<prob_t>, EdgeProb>(in, &inside_);
+		UCandidate::inside_=&inside_;
+
+		Outside<MaxSum<prob_t>, EdgeProb>(in, inside_, &outside_);
+		UCandidate::outside_=&outside_;
+
 		if(!SILENT)
 			cerr << "  Applying feature functions (training = " << is_training_ << ')' << endl;
 
@@ -255,7 +264,7 @@ public:
 
 				wrong_count=0;
 
-				//stor info about links expansions and re-expansions (cause updated source)
+				//store info about links expansions and re-expansions (cause updated source)
 				vector < pair < UCandidate*, int > > links_to_expand;
 
 				//POP BEST FROM QUEUE
@@ -973,6 +982,10 @@ private:
 	string& weight_file_name_;
 
 	//UCandidateList free_; //store UCands pointer to free mem
+
+	//NB! indexed with node ids ,size is hg.nodes_.size()
+	vector<MaxSum<prob_t> > inside_;//inside scores of in_hg
+	vector<MaxSum<prob_t> > outside_;//inside scores of in_hg
 };
 
 class CubePruningRescorer {

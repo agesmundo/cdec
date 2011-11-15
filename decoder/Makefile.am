@@ -82,7 +82,8 @@ libcdec_a_SOURCES = \
   JSON_parser.c \
   json_parse.cc \
   grammar.cc \
-  undirected_candidate.cc
+  undirected_candidate.cc \
+  semirings.cc
 
 if GLC
   # Until we build GLC as a library...

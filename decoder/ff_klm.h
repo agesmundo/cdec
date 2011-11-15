@@ -54,9 +54,12 @@ class KLanguageModel : public FeatureFunction {
   int* ngram_cnt_fids_;//for each 0<=i<order fid of the feat storing the count all ngrams of size i+1
 //  int* ngram_oov_fids_;//
 
-//  //cnt bin
+//  //cnt bin-lin
 //  int** ngram_cnt_bin_fids_;
 //  int ngram_cnt_bin_threshold_;
+
+  //inside-outside
+  int inout_fid_;
 
   KLanguageModelImpl<Model>* pimpl_;
 };

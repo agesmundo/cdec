@@ -843,6 +843,9 @@ KLanguageModel<Model>::KLanguageModel(const string& param) {
   cln_fid_ = FD::Convert(featname+"_CLN");
   cerr << featname << "_CLN" << " ; FID: " << cln_fid_ << endl;
 
+  inout_fid_= FD::Convert(featname+"_IO");
+  cerr << featname << "_IO" << " ; FID: " << inout_fid_ << endl;
+
   string suff;
 
     //arity related feats
@@ -1020,6 +1023,26 @@ void KLanguageModel<Model>::TraversalUndirectedFeaturesImpl(const SentenceMetada
 //			  ucand.feature_values_.set_value(ngram_cnt_bin_fids_[i][ngram_cnt_bin_threshold_-1], ngram_cnt[i]); //last is lin end
 //		  }
 	  }
+
+	  //INSIDE-OUTSIDE FEATS
+	  //out-head
+	  assert(UCandidate::outside_!=NULL);assert(UCandidate::inside_!=NULL);
+	  double io_sum=0;
+	  if(ucand.context_links_[0]==NULL){//missing && not goal
+		  assert(ucand.in_edge_->head_node_ < UCandidate::outside_->size() );
+		  io_sum+=UCandidate::outside_->at(ucand.in_edge_->head_node_).GetValue();
+	  }
+	  //left tail
+	  if(ucand.context_links_.size()>1 && ucand.context_links_[1]==NULL){
+		  assert(ucand.in_edge_->tail_nodes_[0]<UCandidate::inside_->size());
+		  io_sum+=UCandidate::inside_->at(ucand.in_edge_->tail_nodes_[0]).GetValue();
+	  }
+	  //right tail
+	  if(ucand.context_links_.size()>2 && ucand.context_links_[2]==NULL){
+		  assert(ucand.in_edge_->tail_nodes_[1]<UCandidate::inside_->size());
+		  io_sum+=UCandidate::inside_->at(ucand.in_edge_->tail_nodes_[1]).GetValue();
+	  }
+//	  ucand.feature_values_.set_value(inout_fid_,io_sum);
 }
 
 template <class Model>

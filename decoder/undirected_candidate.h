@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stack>
 #include "ff.h"
+#include "semirings.h"
 
 struct ModelSet;
 struct Hypergraph;
@@ -66,6 +67,8 @@ struct UCandidate {
   const ModelSet& models_;
 
   static UCandidate* goal_head_link_;
+  static vector<MaxSum<prob_t> >* inside_;
+  static vector<MaxSum<prob_t> >* outside_;
 
   UCandidate(const Hypergraph::Edge& e,
 		    const LinksVector& lv,

@@ -314,6 +314,8 @@ ostream& operator<<(ostream& os, const UCandidate& cand) {
 }
 
 UCandidate* UCandidate::goal_head_link_ =(UCandidate*)-1;
+vector<MaxSum<prob_t> >* UCandidate::inside_=NULL;
+vector<MaxSum<prob_t> >* UCandidate::outside_=NULL;
 
 ////////////////////////////////////////////
 

@@ -1,5 +1,4 @@
-TODO
-	?remove feats est_feats from traversal methods structure? can be passed with ucand
+TODO debug
 	test with double hole (propagate from head) fixing scores
 TODO speed up
 	sparse vector should not store 0s
@@ -14,6 +13,28 @@ TODO training
 	normalize dimensions
 	ModelSet::UpAvgCnt debug use
 	ModelSet::ScoreVector debug version with avg
+
+111117
+inside outside features new best(see spreadsheets/111117):
+0.206862
+0.263287
+0.214944
+0.283914 (*)
+0.210536
+0.281764
+-
+nella prima versione aggiungiamo una features che somma gli scores di tutti i rami mancanti, S
+S puo' essere decomposta in S=B+A-K dove:
+B e' la somma dei rami mancanti dalla strutture base
+K e' il costo del ramo della connessione usata dall'azione corrente
+A e' il costo dei rami mancanti dall'azione corrente
+tutte le azioni hanno lo stesso costo base B
+per cui possiamo rimuoverlo dalla feature in quanto inifluente per confrontare azioni
+usando la feature A-K(log) si ottiene 22.24
+dopo aver notato che la nuova feature ha varianza piu' grande applichiamo uno scale factor per ioFeat /100 25.88 bleu
+efettivamente A-K e' una feature che avrebbe senso quando si vuole approssimare lo score totale dello sync-tree come in gjemnlp2011
+cambiando la feat =A e scale /8.5 -> 28.39
+
 
 111102
 changing learning rate get similar results ~<25.6 .2 .3

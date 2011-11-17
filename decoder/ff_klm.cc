@@ -1045,13 +1045,13 @@ void KLanguageModel<Model>::TraversalUndirectedFeaturesImpl(const SentenceMetada
 		  assert(UCandidate::inside_->at(ucand.in_edge_->tail_nodes_[1]).GetValue().s_==false);
 		  io_sum+=UCandidate::inside_->at(ucand.in_edge_->tail_nodes_[1]).GetValue().v_;
 	  }
-	  if(ucand.source_link_==0){
-		  io_sum-=UCandidate::inside_->at(ucand.GetSourceNodeId()).GetValue().v_;
-	  }
-	  else if (ucand.source_link_>0){
-		  io_sum-=UCandidate::outside_->at(ucand.GetSourceNodeId()).GetValue().v_;
-	  }
-	  ucand.feature_values_.set_value(inout_fid_,io_sum/100);
+//	  if(ucand.source_link_==0){
+//		  io_sum-=UCandidate::inside_->at(ucand.GetSourceNodeId()).GetValue().v_;
+//	  }
+//	  else if (ucand.source_link_>0){
+//		  io_sum-=UCandidate::outside_->at(ucand.GetSourceNodeId()).GetValue().v_;
+//	  }
+//	  ucand.feature_values_.set_value(inout_fid_,io_sum/8.5);
 }
 
 template <class Model>

@@ -1,5 +1,7 @@
 TODO debug
 	test with double hole (propagate from head) fixing scores
+	why gap?:LanguageModel ; FID: 4\ LanguageModel_OOV ; FID: 5\  LanguageModel_AVG_1 ; FID: 10\ LanguageModel_CNT_1 ; FID: 11
+	quick triggers feat Number tst??
 TODO speed up
 	sparse vector should not store 0s
 	boundry_ implement with hash table, use boost:hash (pointers)
@@ -7,12 +9,15 @@ TODO speed up
 TODO code style
 	?better structure for context links and link states?
 	avoid passing spos down
-TODO training
+TODO paper
+	compare with context free forest (no LM no WordPenalty as baseline)
+TODO devel 
 	chat
 	avg/standar-deviation 
 	normalize dimensions
 	ModelSet::UpAvgCnt debug use
 	ModelSet::ScoreVector debug version with avg
+	try margin on perceptron
 
 111117
 inside outside features new best(see spreadsheets/111117):

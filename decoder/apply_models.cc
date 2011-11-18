@@ -488,6 +488,10 @@ public:
 		if(is_training_){
 			delete correct_edges_mask_;
 			models.WriteToFile(weight_file_name_);
+
+#ifdef VARIANCE_LOG
+			models.VarianceWriteToFile("updates");
+#endif
 		}
 		//LG transform the UCands structure in the out_hg
 		BuildOutHG(topCand);

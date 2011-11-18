@@ -345,7 +345,10 @@ void ModelSet::UpdateWeight(SparseVector<Featval> vector, double loss){
 
 //	cerr << "\tALPHA= "<<alpha<<endl;
 
-	count_avg_++;
+#ifdef VARIANCE_LOG
+//	count_updates_++;
+#endif
+	if(is_avg_)count_avg_++;
 	for (SparseVector<Featval>::const_iterator i=vector.begin(),e=vector.end();i!=e;++i) {
 		if (weights_.size() <= i->first) weights_.resize(i->first+1);
 		weights_[i->first] += i->second /* * alpha*/;
@@ -353,6 +356,14 @@ void ModelSet::UpdateWeight(SparseVector<Featval> vector, double loss){
 			if (weights_avg_.size() <= i->first) weights_avg_.resize(i->first+1);
 			weights_avg_[i->first] += i->second * (count_avg_)/* * alpha*/;
 		}
+#ifdef VARIANCE_LOG
+		if (updates_sums_.size() <= i->first) updates_sums_.resize(i->first+1);
+		updates_sums_[i->first] += abs(i->second);
+		if (updates_counts_.size() <= i->first) updates_counts_.resize(i->first+1);
+		updates_counts_[i->first] ++;
+		if (updates_variance_sums_.size() <= i->first) updates_variance_sums_.resize(i->first+1);
+		updates_variance_sums_[i->first] += abs((updates_sums_[i->first]/updates_counts_[i->first]) - i->second);
+#endif
 	}
 
 }
@@ -386,3 +397,42 @@ void ModelSet::WriteToFile(const std::string& fname){
 	}
 	w.WriteToFile(fname);
 }
+
+#ifdef VARIANCE_LOG
+void ModelSet::VarianceWriteToFile(const std::string& fname){
+
+	{
+		//updates average
+		std::vector<double> ups (updates_sums_);
+		for(int i =0 ; i<updates_sums_.size(); i++){
+			//		ups[i] /= count_updates_;
+			if (updates_counts_[i]>0) ups[i] /= updates_counts_[i];
+		}
+
+		Weights avg;
+		avg.InitFromVector(ups);
+		avg.WriteToFile(fname+"_avg");
+	}
+
+
+	{
+		//counts
+		Weights cnt;
+		cnt.InitFromVector(updates_counts_);
+		cnt.WriteToFile(fname+"_cnt");
+	}
+
+	{
+		//updates average
+		std::vector<double> var (updates_variance_sums_);
+		for(int i =0 ; i<updates_variance_sums_.size(); i++){
+			if (updates_variance_sums_[i]>0) var[i] /= updates_variance_sums_[i];
+		}
+
+		Weights varavg;
+		varavg.InitFromVector(var);
+		varavg.WriteToFile(fname+"_var");
+	}
+
+}
+#endif

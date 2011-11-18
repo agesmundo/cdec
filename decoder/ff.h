@@ -1,6 +1,10 @@
 #ifndef _FF_H_
 #define _FF_H_
 
+#undef VARIANCE_LOG
+//#define VARIANCE_LOG
+
+
 #define DEBUG_INIT 0
 #if DEBUG_INIT
 # include <iostream>
@@ -357,6 +361,9 @@ class ModelSet {
 
   void WriteToFile(const std::string& fname);
 
+  void VarianceWriteToFile(const std::string& fname);
+
+
 ///////////////
 
 
@@ -367,6 +374,14 @@ class ModelSet {
   bool is_avg_;
   std::vector<double> weights_avg_;
   int count_avg_;
+
+#ifdef VARIANCE_LOG
+  //variance
+  std::vector<double> updates_sums_;//sum of updates in absolute value
+  std::vector<double> updates_counts_;
+//  int count_updates_;
+  std::vector<double> updates_variance_sums_;//sum of distance from average in absolute value
+#endif
 
   int state_size_;
   std::vector<int> model_state_pos_;

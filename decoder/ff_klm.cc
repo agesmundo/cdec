@@ -1051,7 +1051,7 @@ void KLanguageModel<Model>::TraversalUndirectedFeaturesImpl(const SentenceMetada
 //	  else if (ucand.source_link_>0){
 //		  io_sum-=UCandidate::outside_->at(ucand.GetSourceNodeId()).GetValue().v_;
 //	  }
-//	  ucand.feature_values_.set_value(inout_fid_,io_sum/8.5);
+	  ucand.feature_values_.set_value(inout_fid_,io_sum/8.5);
 }
 
 template <class Model>

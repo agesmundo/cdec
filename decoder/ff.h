@@ -1,7 +1,7 @@
 #ifndef _FF_H_
 #define _FF_H_
 
-#undef VARIANCE_LOG
+//#undef VARIANCE_LOG
 //#define VARIANCE_LOG
 
 

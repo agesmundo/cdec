@@ -358,7 +358,7 @@ void ModelSet::UpdateWeight(SparseVector<Featval> vector, double loss){
 		}
 #ifdef VARIANCE_LOG
 		if (updates_sums_.size() <= i->first) updates_sums_.resize(i->first+1);
-		updates_sums_[i->first] += abs(i->second);
+		updates_sums_[i->first] += i->second;//abs(i->second);
 		if (updates_counts_.size() <= i->first) updates_counts_.resize(i->first+1);
 		updates_counts_[i->first] ++;
 		if (updates_variance_sums_.size() <= i->first) updates_variance_sums_.resize(i->first+1);
@@ -426,7 +426,7 @@ void ModelSet::VarianceWriteToFile(const std::string& fname){
 		//updates average
 		std::vector<double> var (updates_variance_sums_);
 		for(int i =0 ; i<updates_variance_sums_.size(); i++){
-			if (updates_variance_sums_[i]>0) var[i] /= updates_variance_sums_[i];
+			if (updates_variance_sums_[i]>0) var[i] /= updates_counts_[i];
 		}
 
 		Weights varavg;
